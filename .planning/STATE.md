@@ -90,7 +90,7 @@ None yet.
 
 | Worktree | Branch | Phase | Plan | Status | Started | Agent |
 |----------|--------|-------|------|--------|---------|-------|
-| /home/max/git/mowism | master | test-phase | — | executing | 2026-02-19T05:20:58.362Z | unknown |
+
 ## Session Continuity
 
 Last session: 2026-02-19
