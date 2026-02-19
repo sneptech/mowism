@@ -101,7 +101,9 @@ Plans:
   1. After running `install.sh`, user can run `/mow:update` and it successfully detects the installation method and updates all files without error
   2. `reapply-patches` command works gracefully when no patches are saved (no references to unimplemented mechanisms)
   3. `update.md` contains no stale references to future tooling planned for earlier phases
+**Plans:** 1 plan
 Plans:
+- [ ] 05-01-PLAN.md -- Rewrite update workflow with dual-path support + fix stale references in command/help files
 
 ### Phase 6: Cleanup Orphaned Workflows
 **Goal**: Remove dead code and fix stale metadata so the codebase matches its documented state
@@ -125,5 +127,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | 2. Worktree State and Quality Gates | 5/5 | Complete    | 2026-02-19 |
 | 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
 | 4. Distribution Portability | 3/3 | Complete    | 2026-02-19 |
-| 5. Fix Update Workflow | 0/0 | Not Started | — |
+| 5. Fix Update Workflow | 0/1 | Not Started | — |
 | 6. Cleanup Orphaned Workflows | 0/0 | Not Started | — |
