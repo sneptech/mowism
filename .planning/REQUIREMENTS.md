@@ -56,11 +56,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Distribution
 
-- [ ] **DIST-01**: One-command install script that clones repo and registers all `/mow:*` skills in `~/.claude/`
+- [x] **DIST-01**: One-command install script that clones repo and registers all `/mow:*` skills in `~/.claude/`
 - [ ] **DIST-02**: `???` suffix on any `/mow:*` command opens that command's workflow markdown in `$EDITOR`
-- [ ] **DIST-03**: Install script checks for WorkTrunk and warns if not installed
-- [ ] **DIST-04**: Install script checks for Agent Teams env var and informs user it's optional but recommended
-- [ ] **DIST-05**: GitHub repo with README explaining what Mowism is, how to install, and how to use
+- [x] **DIST-03**: Install script checks for WorkTrunk and warns if not installed
+- [x] **DIST-04**: Install script checks for Agent Teams env var and informs user it's optional but recommended
+- [x] **DIST-05**: GitHub repo with README explaining what Mowism is, how to install, and how to use
 
 ## v2 Requirements
 
@@ -138,11 +138,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | TEAM-03 | Phase 3 | Pending |
 | TEAM-04 | Phase 3 | Pending |
 | TEAM-05 | Phase 3 | Pending |
-| DIST-01 | Phase 3 | Pending |
+| DIST-01 | Phase 3 | Complete |
 | DIST-02 | Phase 3 | Pending |
-| DIST-03 | Phase 3 | Pending |
-| DIST-04 | Phase 3 | Pending |
-| DIST-05 | Phase 3 | Pending |
+| DIST-03 | Phase 3 | Complete |
+| DIST-04 | Phase 3 | Complete |
+| DIST-05 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 36 total
