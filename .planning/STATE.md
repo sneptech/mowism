@@ -39,6 +39,7 @@ Progress: [████████--] 83% (5/6 plans in Phase 3)
 | Phase 03 P01 | 4min | 2 tasks | 2 files |
 | Phase 03 P04 | 2min | 2 tasks | 2 files |
 | Phase 03 P05 | 3min | 2 tasks | 3 files |
+| Phase 03 P03 | 7min | 3 tasks | 67 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [03-05]: New projects always show prominent nudge regardless of dismiss state
 - [03-05]: Resume-project shows lighter tooltip (not full nudge) since new-project already nudged
 - [03-05]: Execute-phase shows prominent nudge when not dismissed, lighter tooltip when dismissed
+- [Phase 03]: [03-03]: Editor fallback chain: $VISUAL -> $EDITOR -> nano -> vi -> less -> cat
+- [Phase 03]: [03-03]: Help files use 5-section format: Usage, Arguments/Flags, What Happens, Examples, Related
+- [Phase 03]: [03-03]: ??? detection block placed after frontmatter ---, before command body
 
 ### Pending Todos
 
