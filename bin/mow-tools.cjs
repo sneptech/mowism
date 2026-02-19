@@ -22,6 +22,7 @@
  *   list-todos [area]                  Count and enumerate pending todos
  *   verify-path-exists <path>          Check file/directory existence
  *   config-ensure-section              Initialize .planning/config.json
+ *   config nudge-dismiss               Dismiss Agent Teams nudge (writes to config.json)
  *   history-digest                     Aggregate all SUMMARY.md data
  *   summary-extract <path> [--fields]  Extract structured data from SUMMARY.md
  *   state-snapshot                     Structured parse of STATE.md
@@ -59,6 +60,16 @@
  *
  * Todos:
  *   todo complete <filename>           Move todo from pending to completed
+ *
+ * Agent Teams:
+ *   team-status                        Read Agent Team Status from STATE.md
+ *   team-update --action start         Start team (create section in STATE.md)
+ *     --team-name <name>
+ *   team-update --action add-teammate  Add teammate row
+ *     --name <n> --worktree <wt> --task <t>
+ *   team-update --action update-teammate  Update teammate row
+ *     --name <n> --status <s> --task <t>
+ *   team-update --action stop          Stop team (remove section from STATE.md)
  *
  * Scaffolding:
  *   scaffold context --phase <N>       Create CONTEXT.md template
@@ -168,6 +179,39 @@ Install via:
   Other:        https://worktrunk.dev
 
 After installing, run: wt config shell install`);
+  }
+}
+
+// ─── Agent Teams Detection ──────────────────────────────────────────────────
+
+function checkAgentTeams() {
+  // Check shell-level env var first
+  if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') {
+    return { enabled: true, source: 'env' };
+  }
+
+  // Fallback: check ~/.claude/settings.json
+  try {
+    const homedir = require('os').homedir();
+    const settingsPath = path.join(homedir, '.claude', 'settings.json');
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    if (settings.env && settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') {
+      return { enabled: true, source: 'settings' };
+    }
+  } catch {
+    // settings.json doesn't exist or is malformed — that's fine
+  }
+
+  return { enabled: false, source: null };
+}
+
+function getAgentTeamsNudgeDismissed(cwd) {
+  try {
+    const configPath = path.join(cwd, '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return config.agent_teams_nudge_dismissed || false;
+  } catch {
+    return false;
   }
 }
 
@@ -842,6 +886,39 @@ function cmdConfigGet(cwd, keyPath, raw) {
   }
 
   output(current, raw, String(current));
+}
+
+function cmdConfigNudgeDismiss(cwd, raw) {
+  const configPath = path.join(cwd, '.planning', 'config.json');
+
+  // Load existing config or start fresh
+  let config = {};
+  try {
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    }
+  } catch {
+    // Malformed JSON — start fresh
+    config = {};
+  }
+
+  // Merge nudge dismiss fields
+  config.agent_teams_nudge_dismissed = true;
+  config.agent_teams_nudge_dismissed_at = new Date().toISOString().split('T')[0];
+
+  // Ensure .planning/ exists
+  const planningDir = path.join(cwd, '.planning');
+  if (!fs.existsSync(planningDir)) {
+    fs.mkdirSync(planningDir, { recursive: true });
+  }
+
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+
+  const result = {
+    dismissed: true,
+    dismissed_at: config.agent_teams_nudge_dismissed_at,
+  };
+  output(result, raw, 'dismissed');
 }
 
 function cmdHistoryDigest(cwd, raw) {
@@ -4408,6 +4485,10 @@ function cmdInitExecutePhase(cwd, phase, includes, raw) {
     state_exists: pathExistsInternal(cwd, '.planning/STATE.md'),
     roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
     config_exists: pathExistsInternal(cwd, '.planning/config.json'),
+
+    // Agent Teams
+    agent_teams_enabled: checkAgentTeams().enabled,
+    agent_teams_nudge_dismissed: getAgentTeamsNudgeDismissed(cwd),
   };
 
   // Include file contents if requested via --include
@@ -4575,6 +4656,10 @@ function cmdInitNewProject(cwd, raw) {
 
     // Enhanced search
     brave_search_available: hasBraveSearch,
+
+    // Agent Teams
+    agent_teams_enabled: checkAgentTeams().enabled,
+    agent_teams_nudge_dismissed: getAgentTeamsNudgeDismissed(cwd),
   };
 
   output(result, raw);
@@ -4684,6 +4769,10 @@ function cmdInitResume(cwd, raw) {
 
     // Config
     commit_docs: config.commit_docs,
+
+    // Agent Teams
+    agent_teams_enabled: checkAgentTeams().enabled,
+    agent_teams_nudge_dismissed: getAgentTeamsNudgeDismissed(cwd),
   };
 
   output(result, raw);
@@ -5621,6 +5710,16 @@ async function main() {
 
     case 'config-get': {
       cmdConfigGet(cwd, args[1], raw);
+      break;
+    }
+
+    case 'config': {
+      const subcommand = args[1];
+      if (subcommand === 'nudge-dismiss') {
+        cmdConfigNudgeDismiss(cwd, raw);
+      } else {
+        error('Unknown config subcommand. Available: nudge-dismiss');
+      }
       break;
     }
 
