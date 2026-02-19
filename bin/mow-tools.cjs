@@ -171,6 +171,90 @@ After installing, run: wt config shell install`);
   }
 }
 
+// ─── WorkTrunk Config Auto-Setup ─────────────────────────────────────────────
+
+const WT_CONFIG_CONTENT = `# WorkTrunk project configuration for Mowism
+# Auto-created by Mowism init. See: https://worktrunk.dev
+
+[post-create]
+# Copy .planning/ from main worktree to new worktree
+planning-copy = """
+SRC="{{ primary_worktree_path }}/.planning"
+DEST="{{ worktree_path }}/.planning"
+if [ -d "$SRC" ]; then
+  cp -r "$SRC" "$DEST"
+  echo "MOW: Copied .planning/ from $(basename {{ primary_worktree_path }})"
+  if [ -f "$DEST/STATE.md" ]; then
+    echo "MOW: State file verified"
+  else
+    echo "MOW: WARNING - STATE.md not found after copy" >&2
+    exit 1
+  fi
+else
+  echo "MOW: No .planning/ found in main worktree (skipping)"
+fi
+"""
+`;
+
+const WT_PLANNING_COPY_HOOK = `# Copy .planning/ from main worktree to new worktree
+planning-copy = """
+SRC="{{ primary_worktree_path }}/.planning"
+DEST="{{ worktree_path }}/.planning"
+if [ -d "$SRC" ]; then
+  cp -r "$SRC" "$DEST"
+  echo "MOW: Copied .planning/ from $(basename {{ primary_worktree_path }})"
+  if [ -f "$DEST/STATE.md" ]; then
+    echo "MOW: State file verified"
+  else
+    echo "MOW: WARNING - STATE.md not found after copy" >&2
+    exit 1
+  fi
+else
+  echo "MOW: No .planning/ found in main worktree (skipping)"
+fi
+"""`;
+
+function ensureWtConfig(cwd) {
+  const configDir = path.join(cwd, '.config');
+  const configPath = path.join(configDir, 'wt.toml');
+
+  if (!fs.existsSync(configPath)) {
+    // Create .config/ directory if needed
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    fs.writeFileSync(configPath, WT_CONFIG_CONTENT, 'utf-8');
+    process.stderr.write('MOW: Created .config/wt.toml with post-create hook\n');
+    return;
+  }
+
+  // File exists — check if it has the planning-copy hook
+  const content = fs.readFileSync(configPath, 'utf-8');
+  const hasPostCreate = content.includes('[post-create]');
+  const hasPlanningCopy = content.includes('planning-copy');
+
+  if (hasPostCreate && hasPlanningCopy) {
+    // Already configured — nothing to do
+    return;
+  }
+
+  if (hasPostCreate && !hasPlanningCopy) {
+    // Has post-create section but missing planning-copy hook — append to it
+    const updated = content.replace(
+      /(\[post-create\][^\[]*)/s,
+      `$1\n${WT_PLANNING_COPY_HOOK}\n`
+    );
+    fs.writeFileSync(configPath, updated, 'utf-8');
+    process.stderr.write('MOW: Added planning-copy hook to .config/wt.toml\n');
+    return;
+  }
+
+  // No post-create section at all — append the whole block
+  const updated = content.trimEnd() + '\n\n[post-create]\n' + WT_PLANNING_COPY_HOOK + '\n';
+  fs.writeFileSync(configPath, updated, 'utf-8');
+  process.stderr.write('MOW: Added planning-copy hook to .config/wt.toml\n');
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseIncludeFlag(args) {
@@ -4268,6 +4352,7 @@ function getMilestoneInfo(cwd) {
 function cmdInitExecutePhase(cwd, phase, includes, raw) {
   requireWorkTrunk();
   silentWorktreeClean(cwd);
+  ensureWtConfig(cwd);
   if (!phase) {
     error('phase required for init execute-phase');
   }

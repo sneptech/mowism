@@ -1,0 +1,21 @@
+# WorkTrunk project configuration for Mowism
+# Auto-created by Mowism init. See: https://worktrunk.dev
+
+[post-create]
+# Copy .planning/ from main worktree to new worktree
+planning-copy = """
+SRC="{{ primary_worktree_path }}/.planning"
+DEST="{{ worktree_path }}/.planning"
+if [ -d "$SRC" ]; then
+  cp -r "$SRC" "$DEST"
+  echo "MOW: Copied .planning/ from $(basename {{ primary_worktree_path }})"
+  if [ -f "$DEST/STATE.md" ]; then
+    echo "MOW: State file verified"
+  else
+    echo "MOW: WARNING - STATE.md not found after copy" >&2
+    exit 1
+  fi
+else
+  echo "MOW: No .planning/ found in main worktree (skipping)"
+fi
+"""
