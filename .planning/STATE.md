@@ -85,6 +85,12 @@ None yet.
 - Agent Teams API is experimental and may change before Phase 3 implementation (monitor Anthropic releases)
 - Worktree state merge conflicts for `.planning/STATE.md` concurrent updates not fully solved (address in Phase 2)
 
+
+## Worktree Assignments
+
+| Worktree | Branch | Phase | Plan | Status | Started | Agent |
+|----------|--------|-------|------|--------|---------|-------|
+| /home/max/git/mowism | master | test-phase | — | executing | 2026-02-19T05:20:58.362Z | unknown |
 ## Session Continuity
 
 Last session: 2026-02-19
