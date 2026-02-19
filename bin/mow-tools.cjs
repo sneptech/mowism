@@ -4267,6 +4267,7 @@ function getMilestoneInfo(cwd) {
 
 function cmdInitExecutePhase(cwd, phase, includes, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   if (!phase) {
     error('phase required for init execute-phase');
   }
@@ -4340,6 +4341,7 @@ function cmdInitExecutePhase(cwd, phase, includes, raw) {
 
 function cmdInitPlanPhase(cwd, phase, includes, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   if (!phase) {
     error('phase required for init plan-phase');
   }
@@ -4437,6 +4439,7 @@ function cmdInitPlanPhase(cwd, phase, includes, raw) {
 
 function cmdInitNewProject(cwd, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
 
   // Detect Brave Search API key availability
@@ -4494,6 +4497,7 @@ function cmdInitNewProject(cwd, raw) {
 
 function cmdInitNewMilestone(cwd, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
@@ -4522,6 +4526,7 @@ function cmdInitNewMilestone(cwd, raw) {
 
 function cmdInitQuick(cwd, description, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
   const now = new Date();
   const slug = description ? generateSlugInternal(description)?.substring(0, 40) : null;
@@ -4572,6 +4577,7 @@ function cmdInitQuick(cwd, description, raw) {
 
 function cmdInitResume(cwd, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
 
   // Check for interrupted agent
@@ -4600,6 +4606,7 @@ function cmdInitResume(cwd, raw) {
 
 function cmdInitVerifyWork(cwd, phase, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   if (!phase) {
     error('phase required for init verify-work');
   }
@@ -4630,6 +4637,7 @@ function cmdInitVerifyWork(cwd, phase, raw) {
 
 function cmdInitPhaseOp(cwd, phase, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase);
 
@@ -4684,6 +4692,7 @@ function cmdInitPhaseOp(cwd, phase, raw) {
 
 function cmdInitTodos(cwd, area, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
   const now = new Date();
 
@@ -4744,6 +4753,7 @@ function cmdInitTodos(cwd, area, raw) {
 
 function cmdInitMilestoneOp(cwd, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
@@ -4806,6 +4816,7 @@ function cmdInitMilestoneOp(cwd, raw) {
 
 function cmdInitMapCodebase(cwd, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
 
   // Check for existing codebase maps
@@ -4841,6 +4852,7 @@ function cmdInitMapCodebase(cwd, raw) {
 
 function cmdInitProgress(cwd, includes, raw) {
   requireWorkTrunk();
+  silentWorktreeClean(cwd);
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
@@ -4947,6 +4959,351 @@ function cmdInitProgress(cwd, includes, raw) {
   output(result, raw);
 }
 
+// ─── Worktree State Tracking ──────────────────────────────────────────────────
+
+function getWorktreePath(cwd) {
+  try {
+    return execSync('git rev-parse --show-toplevel', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return cwd;
+  }
+}
+
+function getCurrentBranch(cwd) {
+  try {
+    return execSync('git branch --show-current', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
+function ensureWorktreeSection(content) {
+  if (!content.includes('## Worktree Assignments')) {
+    const section = `\n## Worktree Assignments
+
+| Worktree | Branch | Phase | Plan | Status | Started | Agent |
+|----------|--------|-------|------|--------|---------|-------|\n`;
+    // Insert before ## Session Continuity if it exists, otherwise append
+    if (content.includes('## Session Continuity')) {
+      content = content.replace('## Session Continuity', section + '\n## Session Continuity');
+    } else {
+      content = content.trimEnd() + '\n' + section;
+    }
+  }
+  return content;
+}
+
+function ensureVerificationSection(content) {
+  if (!content.includes('### Verification Results')) {
+    const section = `\n### Verification Results
+
+| Phase | Tier | Result | Date | Blockers |
+|-------|------|--------|------|----------|\n`;
+    // Insert after Worktree Assignments table, or before Session Continuity
+    if (content.includes('## Worktree Assignments')) {
+      // Find end of worktree table
+      const wtIdx = content.indexOf('## Worktree Assignments');
+      const afterWt = content.indexOf('\n##', wtIdx + 1);
+      if (afterWt !== -1) {
+        content = content.slice(0, afterWt) + section + content.slice(afterWt);
+      } else {
+        content = content.trimEnd() + section;
+      }
+    } else if (content.includes('## Session Continuity')) {
+      content = content.replace('## Session Continuity', section + '\n## Session Continuity');
+    } else {
+      content = content.trimEnd() + section;
+    }
+  }
+  return content;
+}
+
+function parseWorktreeTable(content) {
+  const rows = [];
+  const sectionMatch = content.match(/## Worktree Assignments\n[\s\S]*?\n\|[^\n]+\n\|[-|\s]+\n([\s\S]*?)(?=\n###|\n## |\n$|$)/);
+  if (!sectionMatch) return rows;
+
+  const tableBody = sectionMatch[1].trim();
+  if (!tableBody) return rows;
+
+  for (const line of tableBody.split('\n')) {
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    if (cells.length >= 7) {
+      rows.push({
+        worktree: cells[0],
+        branch: cells[1],
+        phase: cells[2],
+        plan: cells[3],
+        status: cells[4],
+        started: cells[5],
+        agent: cells[6],
+      });
+    }
+  }
+  return rows;
+}
+
+function writeWorktreeTable(content, rows) {
+  const header = `## Worktree Assignments
+
+| Worktree | Branch | Phase | Plan | Status | Started | Agent |
+|----------|--------|-------|------|--------|---------|-------|`;
+
+  const tableRows = rows.map(r =>
+    `| ${r.worktree} | ${r.branch} | ${r.phase} | ${r.plan} | ${r.status} | ${r.started} | ${r.agent} |`
+  ).join('\n');
+
+  const newSection = header + '\n' + tableRows;
+
+  // Replace existing section
+  const sectionPattern = /## Worktree Assignments\n[\s\S]*?(?=\n###|\n## |\n$|$)/;
+  if (sectionPattern.test(content)) {
+    return content.replace(sectionPattern, newSection);
+  }
+  return content;
+}
+
+function cmdWorktreeClaim(cwd, phase, raw) {
+  if (!phase) { error('phase required for worktree claim'); }
+
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { error('STATE.md not found'); }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  content = ensureWorktreeSection(content);
+
+  const rows = parseWorktreeTable(content);
+  const wtPath = getWorktreePath(cwd);
+
+  // Check for conflict: phase already claimed by ANOTHER worktree
+  const existing = rows.find(r => r.phase === phase && r.worktree !== wtPath);
+  if (existing) {
+    error(`Phase ${phase} is being executed by ${existing.worktree} (started ${existing.started}). Cannot claim the same phase from another worktree.\n\nRun \`/mow:worktree-status\` for details or \`/mow:progress\` for a summary, or execute a different phase.`);
+  }
+
+  // Check if already claimed by this worktree (idempotent)
+  const selfClaim = rows.find(r => r.phase === phase && r.worktree === wtPath);
+  if (selfClaim) {
+    output({ claimed: true, already_claimed: true, worktree: wtPath, phase }, raw);
+    return;
+  }
+
+  const branch = getCurrentBranch(cwd);
+  const timestamp = new Date().toISOString();
+  const agent = process.env.CLAUDE_SESSION_ID || process.env.HOSTNAME || 'unknown';
+
+  rows.push({
+    worktree: wtPath,
+    branch,
+    phase,
+    plan: '\u2014',
+    status: 'executing',
+    started: timestamp,
+    agent,
+  });
+
+  content = writeWorktreeTable(content, rows);
+  fs.writeFileSync(statePath, content, 'utf-8');
+
+  // Commit if configured
+  const config = loadConfig(cwd);
+  if (config.commit_docs) {
+    try {
+      execGit(cwd, ['add', '.planning/STATE.md']);
+      execGit(cwd, ['commit', '-m', `chore: claim phase ${phase} for worktree ${path.basename(wtPath)}`]);
+    } catch {}
+  }
+
+  output({ claimed: true, already_claimed: false, worktree: wtPath, phase, branch, agent }, raw);
+}
+
+function cmdWorktreeRelease(cwd, phase, raw) {
+  if (!phase) { error('phase required for worktree release'); }
+
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { error('STATE.md not found'); }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  content = ensureWorktreeSection(content);
+
+  const rows = parseWorktreeTable(content);
+  const wtPath = getWorktreePath(cwd);
+
+  const newRows = rows.filter(r => !(r.worktree === wtPath && r.phase === phase));
+  const released = newRows.length < rows.length;
+
+  content = writeWorktreeTable(content, newRows);
+  fs.writeFileSync(statePath, content, 'utf-8');
+
+  output({ released, worktree: wtPath, phase }, raw);
+}
+
+function cmdWorktreeStatus(cwd, raw) {
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) {
+    output([], raw);
+    return;
+  }
+
+  const content = fs.readFileSync(statePath, 'utf-8');
+  const rows = parseWorktreeTable(content);
+  output(rows, raw);
+}
+
+function cmdWorktreeUpdatePlan(cwd, phase, planId, raw) {
+  if (!phase || !planId) { error('phase and plan-id required for worktree update-plan'); }
+
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { error('STATE.md not found'); }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  content = ensureWorktreeSection(content);
+
+  const rows = parseWorktreeTable(content);
+  const wtPath = getWorktreePath(cwd);
+
+  let updated = false;
+  for (const row of rows) {
+    if (row.worktree === wtPath && row.phase === phase) {
+      row.plan = planId;
+      updated = true;
+      break;
+    }
+  }
+
+  if (updated) {
+    content = writeWorktreeTable(content, rows);
+    fs.writeFileSync(statePath, content, 'utf-8');
+  }
+
+  output({ updated, worktree: wtPath, phase, plan: planId }, raw);
+}
+
+function getActiveWorktrees(cwd) {
+  try {
+    const wtOutput = execSync('wt list --format=json 2>&1', {
+      encoding: 'utf-8',
+      timeout: 10000,
+      cwd: cwd || process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const parsed = JSON.parse(wtOutput);
+    // wt list returns array of objects with 'path' field
+    return Array.isArray(parsed) ? parsed.map(w => w.path || w.directory || w.dir || '') : [];
+  } catch {
+    return null; // null means wt list failed — don't clean
+  }
+}
+
+function cmdWorktreeClean(cwd, raw) {
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) {
+    output({ cleaned: 0, released: [] }, raw);
+    return;
+  }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  if (!content.includes('## Worktree Assignments')) {
+    output({ cleaned: 0, released: [] }, raw);
+    return;
+  }
+
+  const activeWorktrees = getActiveWorktrees();
+  if (activeWorktrees === null) {
+    // wt list failed — don't clean
+    output({ cleaned: 0, released: [], error: 'wt list failed' }, raw);
+    return;
+  }
+
+  const rows = parseWorktreeTable(content);
+  const released = [];
+  const newRows = rows.filter(r => {
+    const isActive = activeWorktrees.some(w => w === r.worktree || w.endsWith('/' + path.basename(r.worktree)));
+    if (!isActive) {
+      released.push(r.worktree);
+      process.stderr.write(`MOW: Released stale claim for ${r.worktree} (worktree no longer exists)\n`);
+    }
+    return isActive;
+  });
+
+  if (released.length > 0) {
+    content = writeWorktreeTable(content, newRows);
+    fs.writeFileSync(statePath, content, 'utf-8');
+  }
+
+  output({ cleaned: released.length, released }, raw);
+}
+
+function silentWorktreeClean(cwd) {
+  // Silent stale cleanup — called on every init, wrapped in try/catch
+  try {
+    const statePath = path.join(cwd, '.planning', 'STATE.md');
+    if (!fs.existsSync(statePath)) return;
+    const content = fs.readFileSync(statePath, 'utf-8');
+    if (!content.includes('## Worktree Assignments')) return;
+
+    const rows = parseWorktreeTable(content);
+    if (rows.length === 0) return;
+
+    const activeWorktrees = getActiveWorktrees();
+    if (activeWorktrees === null) return;
+
+    const released = [];
+    const newRows = rows.filter(r => {
+      const isActive = activeWorktrees.some(w => w === r.worktree || w.endsWith('/' + path.basename(r.worktree)));
+      if (!isActive) {
+        released.push(r.worktree);
+        process.stderr.write(`MOW: Released stale claim for ${r.worktree} (worktree no longer exists)\n`);
+      }
+      return isActive;
+    });
+
+    if (released.length > 0) {
+      const newContent = writeWorktreeTable(content, newRows);
+      fs.writeFileSync(statePath, newContent, 'utf-8');
+    }
+  } catch {
+    // Silent — never block init
+  }
+}
+
+function cmdWorktreeVerifyResult(cwd, phase, options, raw) {
+  if (!phase) { error('phase required for worktree verify-result'); }
+  const { tier, result: verifyResult, blockers } = options;
+  if (!tier || !verifyResult) { error('--tier and --result required for worktree verify-result'); }
+
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { error('STATE.md not found'); }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  content = ensureWorktreeSection(content);
+  content = ensureVerificationSection(content);
+
+  const date = new Date().toISOString().split('T')[0];
+  const blockersStr = blockers || 'none';
+  const newRow = `| ${phase} | ${tier} | ${verifyResult} | ${date} | ${blockersStr} |`;
+
+  // Find Verification Results table and append/update
+  const vrPattern = /(### Verification Results\n[\s\S]*?\n\|[^\n]+\n\|[-|\s]+\n)([\s\S]*?)(?=\n###|\n## |\n$|$)/;
+  const vrMatch = content.match(vrPattern);
+
+  if (vrMatch) {
+    let tableBody = vrMatch[2].trim();
+    // Check if this phase+tier already has an entry — update it
+    const existingPattern = new RegExp(`^\\|\\s*${phase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\|\\s*${tier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\|.*$`, 'm');
+    if (existingPattern.test(tableBody)) {
+      tableBody = tableBody.replace(existingPattern, newRow);
+    } else {
+      tableBody = tableBody ? tableBody + '\n' + newRow : newRow;
+    }
+    content = content.replace(vrPattern, vrMatch[1] + tableBody);
+  }
+
+  fs.writeFileSync(statePath, content, 'utf-8');
+  output({ recorded: true, phase, tier, result: verifyResult, date, blockers: blockersStr }, raw);
+}
+
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -5020,6 +5377,33 @@ async function main() {
         }, raw);
       } else {
         cmdStateLoad(cwd, raw);
+      }
+      break;
+    }
+
+    case 'worktree': {
+      const subcommand = args[1];
+      if (subcommand === 'claim') {
+        cmdWorktreeClaim(cwd, args[2], raw);
+      } else if (subcommand === 'release') {
+        cmdWorktreeRelease(cwd, args[2], raw);
+      } else if (subcommand === 'status') {
+        cmdWorktreeStatus(cwd, raw);
+      } else if (subcommand === 'update-plan') {
+        cmdWorktreeUpdatePlan(cwd, args[2], args[3], raw);
+      } else if (subcommand === 'clean') {
+        cmdWorktreeClean(cwd, raw);
+      } else if (subcommand === 'verify-result') {
+        const tierIdx = args.indexOf('--tier');
+        const resultIdx = args.indexOf('--result');
+        const blockersIdx = args.indexOf('--blockers');
+        cmdWorktreeVerifyResult(cwd, args[2], {
+          tier: tierIdx !== -1 ? args[tierIdx + 1] : null,
+          result: resultIdx !== -1 ? args[resultIdx + 1] : null,
+          blockers: blockersIdx !== -1 ? args[blockersIdx + 1] : null,
+        }, raw);
+      } else {
+        error('Unknown worktree subcommand. Available: claim, release, status, update-plan, clean, verify-result');
       }
       break;
     }

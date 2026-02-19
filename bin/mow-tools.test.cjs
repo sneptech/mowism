@@ -2344,3 +2344,217 @@ describe('scaffold command', () => {
     assert.strictEqual(output.reason, 'already_exists');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WorkTrunk dependency check
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('checkWorkTrunk', () => {
+  test('returns installed: true when wt is available', () => {
+    // wt is installed on this system
+    const result = runMowTools('worktree status');
+    // If wt were missing, init commands would fail, but worktree status
+    // doesn't call requireWorkTrunk. Let's test via init progress which does.
+    const initResult = runMowTools('init progress');
+    assert.ok(initResult.success, 'init progress should succeed when wt is installed');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Worktree state tracking
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('worktree commands', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Create a minimal STATE.md
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `# Project State
+
+## Current Position
+
+Phase: 1 of 3
+
+## Session Continuity
+
+Last session: 2026-02-19
+`
+    );
+    // Create config.json with commit_docs false to avoid git commit in tests
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ commit_docs: false })
+    );
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('worktree status returns empty array when no assignments', () => {
+    const result = runMowTools('worktree status', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const rows = JSON.parse(result.output);
+    assert.deepStrictEqual(rows, []);
+  });
+
+  test('worktree claim writes to STATE.md correctly', () => {
+    const result = runMowTools('worktree claim 02-worktree-state', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.claimed, true);
+    assert.strictEqual(output.already_claimed, false);
+    assert.strictEqual(output.phase, '02-worktree-state');
+
+    // Verify STATE.md has the section
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('## Worktree Assignments'), 'should have Worktree Assignments section');
+    assert.ok(content.includes('02-worktree-state'), 'should contain claimed phase');
+    assert.ok(content.includes('executing'), 'should have executing status');
+  });
+
+  test('worktree claim is idempotent for same worktree', () => {
+    runMowTools('worktree claim 02-test', tmpDir);
+    const result = runMowTools('worktree claim 02-test', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.claimed, true);
+    assert.strictEqual(output.already_claimed, true);
+  });
+
+  test('worktree claim detects conflict from another worktree', () => {
+    // Pre-populate STATE.md with an existing claim from another worktree
+    const stateContent = `# Project State
+
+## Worktree Assignments
+
+| Worktree | Branch | Phase | Plan | Status | Started | Agent |
+|----------|--------|-------|------|--------|---------|-------|
+| /some/other/worktree | feat-branch | 02-test | \u2014 | executing | 2026-02-19T00:00:00Z | agent1 |
+
+## Session Continuity
+
+Last session: 2026-02-19
+`;
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateContent);
+
+    const result = runMowTools('worktree claim 02-test', tmpDir);
+    assert.ok(!result.success, 'should fail with conflict');
+    assert.ok(result.error.includes('Cannot claim the same phase'), 'error should mention conflict');
+  });
+
+  test('worktree release removes the correct row', () => {
+    // Claim first
+    runMowTools('worktree claim 02-release-test', tmpDir);
+
+    // Verify claim exists
+    let status = JSON.parse(runMowTools('worktree status', tmpDir).output);
+    assert.strictEqual(status.length, 1, 'should have 1 claim');
+
+    // Release
+    const result = runMowTools('worktree release 02-release-test', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.released, true);
+
+    // Verify removed
+    status = JSON.parse(runMowTools('worktree status', tmpDir).output);
+    assert.strictEqual(status.length, 0, 'should have 0 claims after release');
+  });
+
+  test('worktree update-plan updates the Plan column correctly', () => {
+    // Claim first
+    runMowTools('worktree claim 02-plan-test', tmpDir);
+
+    // Update plan
+    const result = runMowTools('worktree update-plan 02-plan-test 02-03', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.updated, true);
+    assert.strictEqual(output.plan, '02-03');
+
+    // Verify in status
+    const status = JSON.parse(runMowTools('worktree status', tmpDir).output);
+    assert.strictEqual(status[0].plan, '02-03', 'plan column should be updated');
+  });
+
+  test('worktree clean removes entries for non-existent paths', () => {
+    // Initialize a git repo so wt list works
+    execSync('git init && git commit --allow-empty -m "init"', {
+      cwd: tmpDir,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    // Pre-populate with a stale entry
+    const stateContent = `# Project State
+
+## Worktree Assignments
+
+| Worktree | Branch | Phase | Plan | Status | Started | Agent |
+|----------|--------|-------|------|--------|---------|-------|
+| /nonexistent/path/that/does/not/exist | stale-branch | 01-stale | \u2014 | executing | 2026-02-18T00:00:00Z | stale-agent |
+
+## Session Continuity
+
+Last session: 2026-02-19
+`;
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateContent);
+
+    const result = runMowTools('worktree clean', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.cleaned, 1, 'should clean 1 stale entry');
+    assert.ok(output.released.includes('/nonexistent/path/that/does/not/exist'), 'should release the stale path');
+
+    // Verify removed from STATE.md
+    const status = JSON.parse(runMowTools('worktree status', tmpDir).output);
+    assert.strictEqual(status.length, 0, 'should have 0 claims after clean');
+  });
+
+  test('worktree verify-result writes verification results section', () => {
+    const result = runMowTools('worktree verify-result 02-test --tier t1-static --result pass', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.recorded, true);
+    assert.strictEqual(output.tier, 't1-static');
+    assert.strictEqual(output.result, 'pass');
+    assert.strictEqual(output.blockers, 'none');
+
+    // Verify in STATE.md
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('### Verification Results'), 'should have Verification Results section');
+    assert.ok(content.includes('t1-static'), 'should contain tier');
+    assert.ok(content.includes('pass'), 'should contain result');
+  });
+
+  test('worktree verify-result with blockers', () => {
+    const result = runMowTools('worktree verify-result 02-test --tier t2-functional --result fail --blockers "test X fails"', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.result, 'fail');
+    assert.strictEqual(output.blockers, 'test X fails');
+  });
+
+  test('worktree verify-result updates existing entry', () => {
+    // First result
+    runMowTools('worktree verify-result 02-test --tier t1-static --result fail --blockers "lint errors"', tmpDir);
+    // Update
+    runMowTools('worktree verify-result 02-test --tier t1-static --result pass', tmpDir);
+
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    // Should only have one t1-static entry, and it should be "pass"
+    const matches = content.match(/t1-static/g);
+    assert.strictEqual(matches.length, 1, 'should have exactly 1 t1-static entry');
+    assert.ok(content.includes('| 02-test | t1-static | pass |'), 'should be updated to pass');
+  });
+});
