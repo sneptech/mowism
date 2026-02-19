@@ -2558,3 +2558,172 @@ Last session: 2026-02-19
     assert.ok(content.includes('| 02-test | t1-static | pass |'), 'should be updated to pass');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Agent Teams detection
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Agent Teams detection', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('checkAgentTeams returns enabled: false when env var is not set', () => {
+    // Ensure the env var is NOT set (it should not be in test environment)
+    const original = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+
+    const result = runMowTools('init new-project', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.agent_teams_enabled, false, 'agent_teams_enabled should be false');
+    assert.strictEqual(output.agent_teams_nudge_dismissed, false, 'agent_teams_nudge_dismissed should be false');
+
+    // Restore
+    if (original !== undefined) process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = original;
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// team-status and team-update commands
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('team-status and team-update commands', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Create a basic STATE.md
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Current Position
+
+Phase: 3 of 3
+
+## Worktree Assignments
+
+| Worktree | Branch | Phase | Plan | Status | Started | Agent |
+|----------|--------|-------|------|--------|---------|-------|
+
+## Session Continuity
+
+Last session: 2026-02-19
+`);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('team-status returns active: false when no section exists', () => {
+    const result = runMowTools('team-status', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.active, false, 'active should be false');
+    assert.strictEqual(output.team_name, null, 'team_name should be null');
+    assert.deepStrictEqual(output.teammates, [], 'teammates should be empty');
+    assert.strictEqual(output.started, null, 'started should be null');
+  });
+
+  test('team-update --action start creates the section', () => {
+    const result = runMowTools('team-update --action start --team-name "Phase 3 Team"', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.started, true, 'should report started');
+    assert.strictEqual(output.team_name, 'Phase 3 Team', 'should report team name');
+
+    // Verify section exists in STATE.md
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('## Agent Team Status'), 'should have Agent Team Status section');
+    assert.ok(content.includes('**Team:** Phase 3 Team'), 'should have team name');
+    assert.ok(content.includes('| Teammate | Worktree | Task | Status | Last Update |'), 'should have table header');
+
+    // Verify Session Continuity is still after the team section
+    const teamIdx = content.indexOf('## Agent Team Status');
+    const sessionIdx = content.indexOf('## Session Continuity');
+    assert.ok(teamIdx < sessionIdx, 'Agent Team Status should be before Session Continuity');
+  });
+
+  test('team-update --action add-teammate adds a row', () => {
+    // Start the team first
+    runMowTools('team-update --action start --team-name "Test Team"', tmpDir);
+
+    // Add a teammate
+    const result = runMowTools('team-update --action add-teammate --name executor-1 --worktree /tmp/wt-1 --task "03-01-PLAN.md"', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.added, true, 'should report added');
+    assert.strictEqual(output.name, 'executor-1', 'should report name');
+
+    // Verify in STATE.md
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('executor-1'), 'should contain teammate name');
+    assert.ok(content.includes('/tmp/wt-1'), 'should contain worktree');
+    assert.ok(content.includes('03-01-PLAN.md'), 'should contain task');
+
+    // Verify team-status reads it back
+    const statusResult = runMowTools('team-status', tmpDir);
+    assert.ok(statusResult.success);
+    const status = JSON.parse(statusResult.output);
+    assert.strictEqual(status.active, true, 'should be active');
+    assert.strictEqual(status.teammates.length, 1, 'should have 1 teammate');
+    assert.strictEqual(status.teammates[0].name, 'executor-1', 'teammate name should match');
+  });
+
+  test('team-update --action update-teammate updates a row', () => {
+    // Start and add teammate
+    runMowTools('team-update --action start --team-name "Test Team"', tmpDir);
+    runMowTools('team-update --action add-teammate --name executor-1 --worktree /tmp/wt-1 --task "03-01-PLAN.md"', tmpDir);
+
+    // Update teammate
+    const result = runMowTools('team-update --action update-teammate --name executor-1 --status completed --task "03-02-PLAN.md"', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.updated, true, 'should report updated');
+    assert.strictEqual(output.status, 'completed', 'should report new status');
+    assert.strictEqual(output.task, '03-02-PLAN.md', 'should report new task');
+
+    // Verify in STATE.md
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('completed'), 'should contain updated status');
+    assert.ok(content.includes('03-02-PLAN.md'), 'should contain updated task');
+    assert.ok(!content.includes('03-01-PLAN.md'), 'should not contain old task');
+  });
+
+  test('team-update --action stop removes the section', () => {
+    // Start team and add teammate
+    runMowTools('team-update --action start --team-name "Test Team"', tmpDir);
+    runMowTools('team-update --action add-teammate --name executor-1 --worktree /tmp/wt-1 --task "03-01"', tmpDir);
+
+    // Stop team
+    const result = runMowTools('team-update --action stop', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.stopped, true, 'should report stopped');
+
+    // Verify section is gone
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(!content.includes('## Agent Team Status'), 'Agent Team Status section should be removed');
+    assert.ok(!content.includes('executor-1'), 'teammate should be removed');
+
+    // Session Continuity should still exist
+    assert.ok(content.includes('## Session Continuity'), 'Session Continuity should remain');
+
+    // team-status should report inactive
+    const statusResult = runMowTools('team-status', tmpDir);
+    const status = JSON.parse(statusResult.output);
+    assert.strictEqual(status.active, false, 'should report inactive after stop');
+  });
+});

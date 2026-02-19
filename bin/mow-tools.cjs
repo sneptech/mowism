@@ -5478,6 +5478,187 @@ function cmdWorktreeVerifyResult(cwd, phase, options, raw) {
   output({ recorded: true, phase, tier, result: verifyResult, date, blockers: blockersStr }, raw);
 }
 
+// ─── Agent Team Status ──────────────────────────────────────────────────────
+
+function parseTeammateTable(content) {
+  const rows = [];
+  const sectionMatch = content.match(/## Agent Team Status\n[\s\S]*?\n\|[^\n]+\n\|[-|\s]+\n([\s\S]*?)(?=\n###|\n## |\n$|$)/);
+  if (!sectionMatch) return rows;
+
+  const tableBody = sectionMatch[1].trim();
+  if (!tableBody) return rows;
+
+  for (const line of tableBody.split('\n')) {
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    if (cells.length >= 5) {
+      rows.push({
+        name: cells[0],
+        worktree: cells[1],
+        task: cells[2],
+        status: cells[3],
+        last_update: cells[4],
+      });
+    }
+  }
+  return rows;
+}
+
+function writeTeammateTable(content, teamName, started, rows) {
+  const header = `## Agent Team Status
+
+**Team:** ${teamName}
+**Started:** ${started}
+
+| Teammate | Worktree | Task | Status | Last Update |
+|----------|----------|------|--------|-------------|`;
+
+  const tableRows = rows.map(r =>
+    `| ${r.name} | ${r.worktree} | ${r.task} | ${r.status} | ${r.last_update} |`
+  ).join('\n');
+
+  const newSection = header + '\n' + tableRows;
+
+  // Replace existing section
+  const sectionPattern = /## Agent Team Status\n[\s\S]*?(?=\n## |\n$|$)/;
+  if (sectionPattern.test(content)) {
+    return content.replace(sectionPattern, newSection);
+  }
+
+  // Append before Session Continuity or at end
+  const sessionPattern = /\n## Session Continuity/;
+  if (sessionPattern.test(content)) {
+    return content.replace(sessionPattern, '\n' + newSection + '\n\n## Session Continuity');
+  }
+
+  return content.trimEnd() + '\n\n' + newSection + '\n';
+}
+
+function parseTeamMeta(content) {
+  const teamMatch = content.match(/## Agent Team Status\n\n\*\*Team:\*\*\s*(.+)\n\*\*Started:\*\*\s*(.+)\n/);
+  if (!teamMatch) return { team_name: null, started: null };
+  return { team_name: teamMatch[1].trim(), started: teamMatch[2].trim() };
+}
+
+function cmdTeamStatus(cwd, raw) {
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) {
+    output({ active: false, team_name: null, teammates: [], started: null }, raw);
+    return;
+  }
+
+  const content = fs.readFileSync(statePath, 'utf-8');
+
+  if (!content.includes('## Agent Team Status')) {
+    output({ active: false, team_name: null, teammates: [], started: null }, raw);
+    return;
+  }
+
+  const meta = parseTeamMeta(content);
+  const teammates = parseTeammateTable(content);
+
+  output({
+    active: true,
+    team_name: meta.team_name,
+    teammates,
+    started: meta.started,
+  }, raw);
+}
+
+function cmdTeamUpdate(cwd, options, raw) {
+  const { action, teamName, name, worktree, task, status } = options;
+
+  if (!action) { error('--action required for team-update'); }
+
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { error('STATE.md not found'); }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  const date = new Date().toISOString().split('T')[0];
+
+  switch (action) {
+    case 'start': {
+      if (!teamName) { error('--team-name required for team-update start'); }
+
+      // Create the Agent Team Status section
+      const section = writeTeammateTable('', teamName, date, []);
+      // If section already exists, replace it
+      if (content.includes('## Agent Team Status')) {
+        content = writeTeammateTable(content, teamName, date, []);
+      } else {
+        // Insert before Session Continuity or at end
+        const sessionPattern = /\n## Session Continuity/;
+        if (sessionPattern.test(content)) {
+          content = content.replace(sessionPattern, '\n' + section + '\n\n## Session Continuity');
+        } else {
+          content = content.trimEnd() + '\n\n' + section + '\n';
+        }
+      }
+      fs.writeFileSync(statePath, content, 'utf-8');
+      output({ started: true, team_name: teamName, date }, raw);
+      break;
+    }
+
+    case 'add-teammate': {
+      if (!name) { error('--name required for team-update add-teammate'); }
+
+      if (!content.includes('## Agent Team Status')) {
+        error('No Agent Team Status section found. Run team-update --action start first.');
+      }
+
+      const meta = parseTeamMeta(content);
+      const teammates = parseTeammateTable(content);
+      teammates.push({
+        name,
+        worktree: worktree || '\u2014',
+        task: task || '\u2014',
+        status: status || 'active',
+        last_update: date,
+      });
+      content = writeTeammateTable(content, meta.team_name, meta.started, teammates);
+      fs.writeFileSync(statePath, content, 'utf-8');
+      output({ added: true, name, worktree: worktree || '\u2014', task: task || '\u2014' }, raw);
+      break;
+    }
+
+    case 'update-teammate': {
+      if (!name) { error('--name required for team-update update-teammate'); }
+
+      if (!content.includes('## Agent Team Status')) {
+        error('No Agent Team Status section found.');
+      }
+
+      const meta = parseTeamMeta(content);
+      const teammates = parseTeammateTable(content);
+      const teammate = teammates.find(t => t.name === name);
+      if (!teammate) {
+        error(`Teammate not found: ${name}`);
+      }
+
+      if (status) teammate.status = status;
+      if (task) teammate.task = task;
+      teammate.last_update = date;
+
+      content = writeTeammateTable(content, meta.team_name, meta.started, teammates);
+      fs.writeFileSync(statePath, content, 'utf-8');
+      output({ updated: true, name, status: teammate.status, task: teammate.task }, raw);
+      break;
+    }
+
+    case 'stop': {
+      // Remove the Agent Team Status section entirely
+      const sectionPattern = /\n*## Agent Team Status\n[\s\S]*?(?=\n## |\n$|$)/;
+      content = content.replace(sectionPattern, '');
+      fs.writeFileSync(statePath, content, 'utf-8');
+      output({ stopped: true }, raw);
+      break;
+    }
+
+    default:
+      error(`Unknown team-update action: ${action}. Available: start, add-teammate, update-teammate, stop`);
+  }
+}
+
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -5579,6 +5760,29 @@ async function main() {
       } else {
         error('Unknown worktree subcommand. Available: claim, release, status, update-plan, clean, verify-result');
       }
+      break;
+    }
+
+    case 'team-status': {
+      cmdTeamStatus(cwd, raw);
+      break;
+    }
+
+    case 'team-update': {
+      const actionIdx = args.indexOf('--action');
+      const teamNameIdx = args.indexOf('--team-name');
+      const nameIdx = args.indexOf('--name');
+      const worktreeIdx = args.indexOf('--worktree');
+      const taskIdx = args.indexOf('--task');
+      const statusIdx = args.indexOf('--status');
+      cmdTeamUpdate(cwd, {
+        action: actionIdx !== -1 ? args[actionIdx + 1] : null,
+        teamName: teamNameIdx !== -1 ? args[teamNameIdx + 1] : null,
+        name: nameIdx !== -1 ? args[nameIdx + 1] : null,
+        worktree: worktreeIdx !== -1 ? args[worktreeIdx + 1] : null,
+        task: taskIdx !== -1 ? args[taskIdx + 1] : null,
+        status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+      }, raw);
       break;
     }
 
