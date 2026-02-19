@@ -36,6 +36,7 @@ Progress: [███-------] 33% (2/6 plans in Phase 3)
 - Trend: Steady
 
 *Updated after each plan completion*
+| Phase 03 P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [02-05]: All 14 Phase 2 requirements validated without code fixes -- deliverables correct as built
 - [03-02]: WorkTrunk version captured via stderr redirect (wt --version writes to stderr)
 - [03-02]: Help file copy guarded with directory existence check since Plan 03-03 creates help files later
+- [Phase 03]: Agent Teams detection checks process.env first, falls back to ~/.claude/settings.json
+- [Phase 03]: Team status section inserted before Session Continuity in STATE.md
+- [Phase 03]: Nudge dismiss merges into existing config.json rather than overwriting
 
 ### Pending Todos
 
@@ -98,5 +102,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 03-02-PLAN.md
-Resume file: .planning/phases/03-agent-teams-and-distribution/03-02-SUMMARY.md
+Stopped at: Completed 03-01-PLAN.md
+Resume file: .planning/phases/03-agent-teams-and-distribution/03-01-SUMMARY.md
