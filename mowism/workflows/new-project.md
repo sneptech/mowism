@@ -49,7 +49,7 @@ The document should describe what you want to build.
 INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init new-project)
 ```
 
-Parse JSON for: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `project_exists`, `has_codebase_map`, `planning_exists`, `has_existing_code`, `has_package_file`, `is_brownfield`, `needs_codebase_map`, `has_git`.
+Parse JSON for: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `project_exists`, `has_codebase_map`, `planning_exists`, `has_existing_code`, `has_package_file`, `is_brownfield`, `needs_codebase_map`, `has_git`, `agent_teams_enabled`, `agent_teams_nudge_dismissed`.
 
 **If `project_exists` is true:** Error — project already initialized. Use `/mow:progress`.
 
@@ -1023,6 +1023,82 @@ Use AskUserQuestion:
 ```bash
 node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs: create roadmap ([N] phases)" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md
 ```
+
+## 8.5. Agent Teams Offer / Nudge
+
+**After roadmap is committed**, check Agent Teams status from the init JSON (`agent_teams_enabled`, `agent_teams_nudge_dismissed`).
+
+**Case 1: Agent Teams IS enabled (`agent_teams_enabled: true`):**
+
+Check if the approved roadmap has any phase with 3+ plans. If so, offer Agent Teams setup:
+
+```
+Agent Teams is enabled. Would you like to set up parallel execution
+with a lead orchestrator and workers across worktrees? (yes/no)
+```
+
+- **If yes:** Spawn the lead orchestrator agent to handle team creation, task assignment, and worker spawning:
+  ```
+  Task(
+    subagent_type="mow-team-lead",
+    prompt="
+    <objective>
+    Set up Agent Teams for this project. Read the roadmap at .planning/ROADMAP.md
+    and coordinate parallel execution across worktrees.
+    </objective>
+
+    <context>
+    @.planning/ROADMAP.md
+    @.planning/STATE.md
+    @.planning/config.json
+    </context>
+    ",
+    description="Agent Teams lead orchestrator setup"
+  )
+  ```
+- **If no:** Continue with standard sequential execution (Step 9).
+
+**Case 2: Agent Teams is NOT enabled (`agent_teams_enabled: false`):**
+
+**New projects always show the nudge** (per locked decision -- regardless of `agent_teams_nudge_dismissed`):
+
+```
+---
+## Agent Teams: Parallel Execution
+
+Mowism works great solo, but its most powerful feature is running
+multiple Claude Code sessions in parallel across git worktrees.
+
+**To enable Agent Teams:**
+
+Option A (shell):
+  export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+
+Option B (settings.json):
+  Add to ~/.claude/settings.json:
+  { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+
+Then restart Claude Code.
+
+With Agent Teams, /mow:execute-phase spawns workers that each
+handle a plan in their own worktree -- simultaneously.
+
+> Type "don't remind me" to dismiss for this project.
+---
+```
+
+- **If user says "don't remind me":**
+  ```bash
+  node ~/.claude/mowism/bin/mow-tools.cjs config nudge-dismiss
+  ```
+  Then continue to Step 9.
+
+- **If user acknowledges or skips:** Continue to Step 9.
+
+**Per locked decisions:**
+- Prominent nudge at /mow:new-project (key moment)
+- Always nudge once at start of new project regardless of dismiss state
+- Persistent per-project dismiss saved to project config via mow-tools.cjs
 
 ## 9. Done
 
