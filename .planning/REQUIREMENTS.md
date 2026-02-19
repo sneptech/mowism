@@ -14,7 +14,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CORE-03**: All GSD agent definitions forked with updated references to Mowism paths
 - [x] **CORE-04**: All GSD templates forked with updated branding
 - [x] **CORE-05**: All GSD references (questioning guide, UI brand) forked with updated branding
-- [ ] **CORE-06**: `/mow:migrate` command upgrades existing GSD `.planning/` directory to Mowism format (backwards compatible)
+- [x] **CORE-06**: `/mow:migrate` command upgrades existing GSD `.planning/` directory to Mowism format (backwards compatible)
 
 ### Worktree Management
 
@@ -111,7 +111,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Complete |
 | CORE-05 | Phase 1 | Complete |
-| CORE-06 | Phase 1 | Pending |
+| CORE-06 | Phase 1 | Complete |
 | WKTR-01 | Phase 2 | Pending |
 | WKTR-02 | Phase 2 | Pending |
 | WKTR-03 | Phase 2 | Pending |

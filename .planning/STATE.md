@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 1 of 3 (Fork and Foundation)
-Plan: 5 of 6 in current phase
+Plan: 6 of 6 in current phase
 Status: Executing
-Last activity: 2026-02-19 -- Completed 01-04 (workflow files fork)
+Last activity: 2026-02-19 -- Completed 01-05 (command files fork + migrate command)
 
-Progress: [██████░░░░] 67%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 4min
-- Total execution time: 0.29 hours
+- Total execution time: 0.33 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-fork-and-foundation | 4 | 17min | 4min |
+| 01-fork-and-foundation | 5 | 20min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 01-02 (4min), 01-03 (5min), 01-04 (4min)
+- Last 5 plans: 01-01 (4min), 01-02 (4min), 01-03 (5min), 01-04 (4min), 01-05 (3min)
 - Trend: Steady
 
 *Updated after each plan completion*
@@ -54,6 +54,9 @@ Recent decisions affecting current work:
 - [01-04]: Replaced npm-based update mechanism with git-pull placeholder (full install/update in Phase 3)
 - [01-04]: Applied ordered replacement table with additional brand context patterns for workflow files
 - [01-04]: Files live in ~/.claude/ outside git repo -- tracked via planning artifacts only
+- [01-05]: Dropped join-discord.md per research recommendation (don't link to GSD Discord under Mowism brand)
+- [01-05]: Added missing name: frontmatter to reapply-patches.md and rebranded gsd-local-patches to mow-local-patches
+- [01-05]: Files live in ~/.claude/ outside git repo -- tracked via planning artifacts only
 
 ### Pending Todos
 
@@ -67,5 +70,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 01-04-PLAN.md
-Resume file: .planning/phases/01-fork-and-foundation/01-04-SUMMARY.md
+Stopped at: Completed 01-05-PLAN.md
+Resume file: .planning/phases/01-fork-and-foundation/01-05-SUMMARY.md
