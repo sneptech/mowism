@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Fork and Foundation** - Fork GSD, rebrand to `/mow:*`, port all quality skills into the repo
 - [x] **Phase 2: Worktree State and Quality Gates** - Make `.planning/` worktree-aware and build `/mow:refine-phase` with tiered quality checks
-- [ ] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
+- [x] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
 
 ## Phase Details
 
@@ -66,12 +66,12 @@ Plans:
   5. STATE.md tracks agent team status (active teammates, assigned worktrees) when Agent Teams are in use
 **Plans:** 6 plans
 Plans:
-- [ ] 03-01-PLAN.md -- Agent Teams env detection + STATE.md team tracking in mow-tools.cjs (TEAM-04, TEAM-05)
-- [ ] 03-02-PLAN.md -- Install script + README (DIST-01, DIST-03, DIST-04, DIST-05)
-- [ ] 03-03-PLAN.md -- Help system (??? suffix) with help files for all commands (DIST-02)
-- [ ] 03-04-PLAN.md -- Lead orchestrator agent + /mow:team-status command (TEAM-03)
-- [ ] 03-05-PLAN.md -- Agent Teams integration into new-project, resume-work, execute-phase workflows (TEAM-01, TEAM-02)
-- [ ] 03-06-PLAN.md -- End-to-end validation sweep (all requirements)
+- [x] 03-01-PLAN.md -- Agent Teams env detection + STATE.md team tracking in mow-tools.cjs (TEAM-04, TEAM-05)
+- [x] 03-02-PLAN.md -- Install script + README (DIST-01, DIST-03, DIST-04, DIST-05)
+- [x] 03-03-PLAN.md -- Help system (??? suffix) with help files for all commands (DIST-02)
+- [x] 03-04-PLAN.md -- Lead orchestrator agent + /mow:team-status command (TEAM-03)
+- [x] 03-05-PLAN.md -- Agent Teams integration into new-project, resume-work, execute-phase workflows (TEAM-01, TEAM-02)
+- [x] 03-06-PLAN.md -- End-to-end validation sweep (all requirements)
 
 ## Progress
 
@@ -82,4 +82,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Fork and Foundation | 6/6 | Complete    | 2026-02-19 |
 | 2. Worktree State and Quality Gates | 5/5 | Complete    | 2026-02-19 |
-| 3. Agent Teams and Distribution | 0/6 | Not started | - |
+| 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
