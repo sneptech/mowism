@@ -15,7 +15,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Fork and Foundation** - Fork GSD, rebrand to `/mow:*`, port all quality skills into the repo
 - [x] **Phase 2: Worktree State and Quality Gates** - Make `.planning/` worktree-aware and build `/mow:refine-phase` with tiered quality checks
 - [x] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
-- [ ] **Phase 4: Distribution Portability** - Fix hardcoded paths, env var mismatch, and stale files so Mowism works on any machine
+- [x] **Phase 4: Distribution Portability** - Fix hardcoded paths, env var mismatch, and stale files so Mowism works on any machine
+- [ ] **Phase 5: Fix Update Workflow** - Make `/mow:update` work after `install.sh` installation and fix broken `reapply-patches` references
+- [ ] **Phase 6: Cleanup Orphaned Workflows** - Remove dead workflow files and fix stale ROADMAP metadata
 
 ## Phase Details
 
@@ -90,6 +92,28 @@ Plans:
 - [ ] 04-02-PLAN.md -- Fix checkAgentTeams() env var mismatch + delete stale mowism/bin/ directory + add tests
 - [ ] 04-03-PLAN.md -- End-to-end portability validation sweep (all requirements)
 
+### Phase 5: Fix Update Workflow
+**Goal**: `/mow:update` works correctly after `install.sh` installation, and `reapply-patches` handles missing patches gracefully
+**Depends on**: Phase 4
+**Requirements**: DIST-01 (fix)
+**Gap Closure:** Closes INT-01, FLOW-01 from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. After running `install.sh`, user can run `/mow:update` and it successfully detects the installation method and updates all files without error
+  2. `reapply-patches` command works gracefully when no patches are saved (no references to unimplemented mechanisms)
+  3. `update.md` contains no stale references to future tooling planned for earlier phases
+Plans:
+
+### Phase 6: Cleanup Orphaned Workflows
+**Goal**: Remove dead code and fix stale metadata so the codebase matches its documented state
+**Depends on**: Phase 4
+**Requirements**: CORE-01 (fix)
+**Gap Closure:** Closes INT-02, INT-03 from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. `discovery-phase.md` either removed or documented as standalone (no false "called from plan-phase.md" claim)
+  2. `verify-phase.md` either removed or documented as standalone (no false "executed by execute-phase.md" claim)
+  3. ROADMAP.md Phase 4 plan checkboxes are `[x]` and progress table shows `3/3 | Complete`
+Plans:
+
 ## Progress
 
 **Execution Order:**
@@ -100,4 +124,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | 1. Fork and Foundation | 6/6 | Complete    | 2026-02-19 |
 | 2. Worktree State and Quality Gates | 5/5 | Complete    | 2026-02-19 |
 | 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
-| 4. Distribution Portability | 0/3 | Not Started | — |
+| 4. Distribution Portability | 3/3 | Complete    | 2026-02-19 |
+| 5. Fix Update Workflow | 0/0 | Not Started | — |
+| 6. Cleanup Orphaned Workflows | 0/0 | Not Started | — |
