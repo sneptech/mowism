@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 Phase: 2 of 3 (Worktree State and Quality Gates)
 Plan: 2 of 5 in current phase
 Status: Executing
-Last activity: 2026-02-19 -- Completed 02-02 (refine-phase command and workflow)
+Last activity: 2026-02-19 -- Re-executed 02-01 (worktree state and quality gates primitives)
 
 Progress: [████░░░░░░] 40% (2/5 plans in Phase 2)
 
@@ -65,6 +65,9 @@ Recent decisions affecting current work:
 - [02-02]: Auto-tier defaults to 'complex' when uncertain (per research recommendation)
 - [02-02]: Stage 2 placeholder comment for Plan 02-04 to inject parallel quality checks
 - [02-02]: Each Task() subagent writes findings with YAML frontmatter for machine-readable results
+- [Phase 02-01]: checkWorkTrunk uses POSIX command (not which/type) for portability
+- [Phase 02-01]: Worktree conflict detection is a hard block (error+exit), not a warning
+- [Phase 02-01]: Stale worktree cleanup runs silently on every init, never blocks on failure
 
 ### Pending Todos
 
@@ -78,5 +81,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 02-02-PLAN.md
-Resume file: .planning/phases/02-worktree-state-and-quality-gates/02-02-SUMMARY.md
+Stopped at: Completed 02-01-PLAN.md (re-executed with worktree state primitives)
+Resume file: .planning/phases/02-worktree-state-and-quality-gates/02-01-SUMMARY.md

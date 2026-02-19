@@ -18,9 +18,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Worktree Management
 
-- [ ] **WKTR-01**: WorkTrunk (`wt` CLI) declared as required dependency; Mowism checks for it on init and errors clearly if missing
-- [ ] **WKTR-02**: STATE.md tracks which worktree is executing which phase/plan
-- [ ] **WKTR-03**: STATE.md prevents double-execution (two worktrees claiming the same plan)
+- [x] **WKTR-01**: WorkTrunk (`wt` CLI) declared as required dependency; Mowism checks for it on init and errors clearly if missing
+- [x] **WKTR-02**: STATE.md tracks which worktree is executing which phase/plan
+- [x] **WKTR-03**: STATE.md prevents double-execution (two worktrees claiming the same plan)
 - [ ] **WKTR-04**: WorkTrunk post-create hook configures new worktrees with access to main worktree's `.planning/` state
 - [ ] **WKTR-05**: `/mow:execute-phase` is worktree-aware — routes plans to specific worktrees when running in parallel
 
@@ -42,7 +42,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **GATE-04**: Complex tier runs: scope-check (gate) → simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
 - [ ] **GATE-05**: Algorithmic tier runs: scope-check (gate) → prove-it + simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
 - [ ] **GATE-06**: Quality check subagents write findings to `.planning/phases/VERIFICATION-CHAIN-P{phase}.md`
-- [ ] **GATE-07**: STATE.md updated after refine-phase with verification results (date, tier used, pass/fail, blockers)
+- [x] **GATE-07**: STATE.md updated after refine-phase with verification results (date, tier used, pass/fail, blockers)
 - [ ] **GATE-08**: Each quality check within a worktree runs locally; findings summary is accessible to orchestrator
 - [ ] **GATE-09**: Reconciliation step after parallel quality checks synthesizes potentially conflicting recommendations
 
@@ -112,9 +112,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | CORE-04 | Phase 1 | Complete |
 | CORE-05 | Phase 1 | Complete |
 | CORE-06 | Phase 1 | Complete |
-| WKTR-01 | Phase 2 | Pending |
-| WKTR-02 | Phase 2 | Pending |
-| WKTR-03 | Phase 2 | Pending |
+| WKTR-01 | Phase 2 | Complete |
+| WKTR-02 | Phase 2 | Complete |
+| WKTR-03 | Phase 2 | Complete |
 | WKTR-04 | Phase 2 | Pending |
 | WKTR-05 | Phase 2 | Pending |
 | SKIL-01 | Phase 1 | Complete |
@@ -130,7 +130,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | GATE-04 | Phase 2 | Pending |
 | GATE-05 | Phase 2 | Pending |
 | GATE-06 | Phase 2 | Pending |
-| GATE-07 | Phase 2 | Pending |
+| GATE-07 | Phase 2 | Complete |
 | GATE-08 | Phase 2 | Pending |
 | GATE-09 | Phase 2 | Pending |
 | TEAM-01 | Phase 3 | Pending |
