@@ -1,3 +1,17 @@
+---
+archived: 2026-02-20
+reason: Orphaned workflow -- claims to be executed by execute-phase.md but mow-verifier agent is self-contained
+replaced_by: refine-phase.md workflow (tiered quality chain)
+phase: 06-cleanup-orphaned-workflows
+audit_ref: INT-03
+---
+
+> **ARCHIVED**: This workflow is no longer active. It was archived during Phase 6
+> (cleanup orphaned workflows) because execute-phase.md spawns the mow-verifier agent
+> with an inline prompt rather than referencing this file. The tiered verification
+> chain it attempted to implement is now fully realized by `/mow:refine-phase`.
+> Kept as a design reference.
+
 <purpose>
 Verify phase goal achievement through goal-backward analysis. Check that the codebase delivers what the phase promised, not just that tasks completed.
 

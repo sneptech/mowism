@@ -1,3 +1,17 @@
+---
+archived: 2026-02-20
+reason: Orphaned workflow -- claims to be called from plan-phase.md but no reference exists
+replaced_by: research-phase.md workflow + mow-phase-researcher agent
+phase: 06-cleanup-orphaned-workflows
+audit_ref: INT-02
+---
+
+> **ARCHIVED**: This workflow is no longer active. It was archived during Phase 6
+> (cleanup orphaned workflows) because it was never wired into plan-phase.md despite
+> claiming to be called from it. The research and discovery functionality it describes
+> is now covered by `/mow:research-phase` and the `mow-phase-researcher` agent.
+> Kept as a design reference.
+
 <purpose>
 Execute discovery at the appropriate depth level.
 Produces DISCOVERY.md (for Level 2-3) that informs PLAN.md creation.
