@@ -23,8 +23,8 @@ if $ARGUMENTS.profile not in ["quality", "balanced", "budget"]:
 Ensure config exists and load current state:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs config-ensure-section
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs state load)
+node ~/.claude/mowism/bin/mow-tools.cjs config-ensure-section
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs state load)
 ```
 
 This creates `.planning/config.json` with defaults if missing and loads current config.

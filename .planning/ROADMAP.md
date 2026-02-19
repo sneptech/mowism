@@ -83,10 +83,10 @@ Plans:
   1. A non-developer user running `install.sh` gets working `/mow:*` commands with no "No such file or directory" errors from hardcoded paths
   2. `checkAgentTeams()` detects both `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and `=true` — users following install.sh instructions see Agent Teams detected
   3. No files in the repo under `mowism/bin/` that are stale copies of `bin/` originals
-  4. Zero occurrences of `/home/max/.claude/` in any workflow, command, or agent file distributed to users
+  4. Zero occurrences of `~/.claude/` in any workflow, command, or agent file distributed to users
 **Plans:** 3 plans
 Plans:
-- [ ] 04-01-PLAN.md -- Replace hardcoded /home/max/.claude/ paths with portable ~/.claude/ across all 107 files
+- [ ] 04-01-PLAN.md -- Replace hardcoded ~/.claude/ paths with portable ~/.claude/ across all 107 files
 - [ ] 04-02-PLAN.md -- Fix checkAgentTeams() env var mismatch + delete stale mowism/bin/ directory + add tests
 - [ ] 04-03-PLAN.md -- End-to-end portability validation sweep (all requirements)
 

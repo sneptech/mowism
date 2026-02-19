@@ -20,10 +20,10 @@ Validate `.planning/` directory integrity and report actionable issues. Checks f
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/health.md
+@~/.claude/mowism/workflows/health.md
 </execution_context>
 
 <process>
-Execute the health workflow from @/home/max/.claude/mowism/workflows/health.md end-to-end.
+Execute the health workflow from @~/.claude/mowism/workflows/health.md end-to-end.
 Parse --repair flag from arguments and pass to workflow.
 </process>

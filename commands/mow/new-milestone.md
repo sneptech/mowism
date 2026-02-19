@@ -32,11 +32,11 @@ Brownfield equivalent of new-project. Project exists, PROJECT.md has history. Ga
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/new-milestone.md
-@/home/max/.claude/mowism/references/questioning.md
-@/home/max/.claude/mowism/references/ui-brand.md
-@/home/max/.claude/mowism/templates/project.md
-@/home/max/.claude/mowism/templates/requirements.md
+@~/.claude/mowism/workflows/new-milestone.md
+@~/.claude/mowism/references/questioning.md
+@~/.claude/mowism/references/ui-brand.md
+@~/.claude/mowism/templates/project.md
+@~/.claude/mowism/templates/requirements.md
 </execution_context>
 
 <context>
@@ -53,6 +53,6 @@ Milestone name: $ARGUMENTS (optional - will prompt if not provided)
 </context>
 
 <process>
-Execute the new-milestone workflow from @/home/max/.claude/mowism/workflows/new-milestone.md end-to-end.
+Execute the new-milestone workflow from @~/.claude/mowism/workflows/new-milestone.md end-to-end.
 Preserve all workflow gates (validation, questioning, research, requirements, roadmap approval, commits).
 </process>

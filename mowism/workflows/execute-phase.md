@@ -16,7 +16,7 @@ Read STATE.md before any operation to load project context.
 Load all context in one call:
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE_ARG}")
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE_ARG}")
 ```
 
 Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelization`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `incomplete_plans`, `plan_count`, `incomplete_count`, `state_exists`, `roadmap_exists`, `agent_teams_enabled`, `agent_teams_nudge_dismissed`.
@@ -30,7 +30,7 @@ When `parallelization` is false, plans within a wave execute sequentially.
 **Claim this phase for the current worktree:**
 ```bash
 # Claim phase — prevents other worktrees from executing the same phase
-node /home/max/.claude/mowism/bin/mow-tools.cjs worktree claim "${PHASE_NUMBER}"
+node ~/.claude/mowism/bin/mow-tools.cjs worktree claim "${PHASE_NUMBER}"
 ```
 This happens AFTER phase validation (no point claiming a phase that does not exist). If the claim fails (phase already claimed by another worktree), the error message from mow-tools.cjs will halt execution with a clear message.
 </step>
@@ -112,7 +112,7 @@ Report: "Found {plan_count} plans in {phase_dir} ({incomplete_count} incomplete)
 Load plan inventory with wave grouping in one call:
 
 ```bash
-PLAN_INDEX=$(node /home/max/.claude/mowism/bin/mow-tools.cjs phase-plan-index "${PHASE_NUMBER}")
+PLAN_INDEX=$(node ~/.claude/mowism/bin/mow-tools.cjs phase-plan-index "${PHASE_NUMBER}")
 ```
 
 Parse JSON for: `phase`, `plans[]` (each with `id`, `wave`, `autonomous`, `objective`, `files_modified`, `task_count`, `has_summary`), `waves` (map of wave number → plan IDs), `incomplete`, `has_checkpoints`.
@@ -163,7 +163,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
    **Update worktree plan progress before spawning each plan's agent:**
    ```bash
    # Update worktree claim with current plan progress
-   node /home/max/.claude/mowism/bin/mow-tools.cjs worktree update-plan "${PHASE_NUMBER}" "${PLAN_ID}"
+   node ~/.claude/mowism/bin/mow-tools.cjs worktree update-plan "${PHASE_NUMBER}" "${PLAN_ID}"
    ```
    This updates the "Plan" column in the Worktree Assignments table as execution advances through plans, so `/mow:progress` and `/mow:worktree-status` show the current plan.
 
@@ -178,10 +178,10 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
        </objective>
 
        <execution_context>
-       @/home/max/.claude/mowism/workflows/execute-plan.md
-       @/home/max/.claude/mowism/templates/summary.md
-       @/home/max/.claude/mowism/references/checkpoints.md
-       @/home/max/.claude/mowism/references/tdd.md
+       @~/.claude/mowism/workflows/execute-plan.md
+       @~/.claude/mowism/templates/summary.md
+       @~/.claude/mowism/references/checkpoints.md
+       @~/.claude/mowism/references/tdd.md
        </execution_context>
 
        <files_to_read>
@@ -247,7 +247,7 @@ Plans with `autonomous: false` require user interaction.
 
 Read auto-advance config:
 ```bash
-AUTO_CFG=$(node /home/max/.claude/mowism/bin/mow-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
+AUTO_CFG=$(node ~/.claude/mowism/bin/mow-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
 When executor returns a checkpoint AND `AUTO_CFG` is `"true"`:
@@ -322,7 +322,7 @@ fi
 
 **2. Find parent UAT file:**
 ```bash
-PARENT_INFO=$(node /home/max/.claude/mowism/bin/mow-tools.cjs find-phase "${PARENT_PHASE}" --raw)
+PARENT_INFO=$(node ~/.claude/mowism/bin/mow-tools.cjs find-phase "${PARENT_PHASE}" --raw)
 # Extract directory from PARENT_INFO JSON, then find UAT file in that directory
 ```
 
@@ -353,7 +353,7 @@ mv .planning/debug/{slug}.md .planning/debug/resolved/
 
 **6. Commit updated artifacts:**
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-${PARENT_PHASE}): resolve UAT gaps and debug sessions after ${PHASE_NUMBER} gap closure" --files .planning/phases/*${PARENT_PHASE}*/*-UAT.md .planning/debug/resolved/*.md
+node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-${PARENT_PHASE}): resolve UAT gaps and debug sessions after ${PHASE_NUMBER} gap closure" --files .planning/phases/*${PARENT_PHASE}*/*-UAT.md .planning/debug/resolved/*.md
 ```
 </step>
 
@@ -361,7 +361,7 @@ node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-${PARENT_PHAS
 Verify phase achieved its GOAL, not just completed tasks.
 
 ```bash
-PHASE_REQ_IDS=$(node /home/max/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE_NUMBER}" | jq -r '.section' | grep -i "Requirements:" | sed 's/.*Requirements:\*\*\s*//' | sed 's/[\[\]]//g')
+PHASE_REQ_IDS=$(node ~/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE_NUMBER}" | jq -r '.section' | grep -i "Requirements:" | sed 's/.*Requirements:\*\*\s*//' | sed 's/[\[\]]//g')
 ```
 
 ```
@@ -428,7 +428,7 @@ Gap closure cycle: `/mow:plan-phase {X} --gaps` reads VERIFICATION.md → create
 **Mark phase complete and update all tracking files:**
 
 ```bash
-COMPLETION=$(node /home/max/.claude/mowism/bin/mow-tools.cjs phase complete "${PHASE_NUMBER}")
+COMPLETION=$(node ~/.claude/mowism/bin/mow-tools.cjs phase complete "${PHASE_NUMBER}")
 ```
 
 The CLI handles:
@@ -443,12 +443,12 @@ Extract from result: `next_phase`, `next_phase_name`, `is_last_phase`.
 **Release worktree claim after successful completion:**
 ```bash
 # Release worktree claim — allows other worktrees to claim this phase if needed
-node /home/max/.claude/mowism/bin/mow-tools.cjs worktree release "${PHASE_NUMBER}"
+node ~/.claude/mowism/bin/mow-tools.cjs worktree release "${PHASE_NUMBER}"
 ```
 Per locked decision: auto-release claims when phase execution completes successfully.
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complete phase execution" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md .planning/phases/{phase_dir}/*-VERIFICATION.md
+node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complete phase execution" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md .planning/phases/{phase_dir}/*-VERIFICATION.md
 ```
 </step>
 
@@ -471,7 +471,7 @@ node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complet
 1. Parse `--auto` flag from $ARGUMENTS
 2. Read `workflow.auto_advance` from config:
    ```bash
-   AUTO_CFG=$(node /home/max/.claude/mowism/bin/mow-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
+   AUTO_CFG=$(node ~/.claude/mowism/bin/mow-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
    ```
 
 **If `--auto` flag present OR `AUTO_CFG` is true (AND verification passed with no gaps):**
@@ -485,7 +485,7 @@ node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complet
 
 Execute the transition workflow inline (do NOT use Task — orchestrator context is ~10-15%, transition needs phase completion data already in context):
 
-Read and follow `/home/max/.claude/mowism/workflows/transition.md`, passing through the `--auto` flag so it propagates to the next phase invocation.
+Read and follow `~/.claude/mowism/workflows/transition.md`, passing through the `--auto` flag so it propagates to the next phase invocation.
 
 **If neither `--auto` nor `AUTO_CFG` is true:**
 

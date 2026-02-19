@@ -325,11 +325,11 @@ After roadmap creation, REQUIREMENTS.md gets updated with phase mappings:
 | 2. Name | 0/2 | Not started | - |
 ```
 
-Reference full template: `/home/max/.claude/mowism/templates/roadmap.md`
+Reference full template: `~/.claude/mowism/templates/roadmap.md`
 
 ## STATE.md Structure
 
-Use template from `/home/max/.claude/mowism/templates/state.md`.
+Use template from `~/.claude/mowism/templates/state.md`.
 
 Key sections:
 - Project Reference (core value, current focus)

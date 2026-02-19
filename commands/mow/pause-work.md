@@ -26,11 +26,11 @@ Routes to the pause-work workflow which handles:
 
 <execution_context>
 @.planning/STATE.md
-@/home/max/.claude/mowism/workflows/pause-work.md
+@~/.claude/mowism/workflows/pause-work.md
 </execution_context>
 
 <process>
-**Follow the pause-work workflow** from `@/home/max/.claude/mowism/workflows/pause-work.md`.
+**Follow the pause-work workflow** from `@~/.claude/mowism/workflows/pause-work.md`.
 
 The workflow handles all logic including:
 1. Phase directory detection

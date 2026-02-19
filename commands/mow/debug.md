@@ -37,12 +37,12 @@ ls .planning/debug/*.md 2>/dev/null | grep -v resolved | head -5
 ## 0. Initialize Context
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs state load)
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs state load)
 ```
 
 Extract `commit_docs` from init JSON. Resolve debugger model:
 ```bash
-DEBUGGER_MODEL=$(node /home/max/.claude/mowism/bin/mow-tools.cjs resolve-model mow-debugger --raw)
+DEBUGGER_MODEL=$(node ~/.claude/mowism/bin/mow-tools.cjs resolve-model mow-debugger --raw)
 ```
 
 ## 1. Check Active Sessions

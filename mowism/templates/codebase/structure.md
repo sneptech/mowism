@@ -216,7 +216,7 @@ mowism/
 
 **New Workflow:**
 - Implementation: `mowism/workflows/{name}.md`
-- Usage: Reference from command with `@/home/max/.claude/mowism/workflows/{name}.md`
+- Usage: Reference from command with `@~/.claude/mowism/workflows/{name}.md`
 
 **New Reference Document:**
 - Implementation: `mowism/references/{name}.md`
@@ -229,12 +229,12 @@ mowism/
 ## Special Directories
 
 **mowism/**
-- Purpose: Resources installed to /home/max/.claude/
+- Purpose: Resources installed to ~/.claude/
 - Source: Copied by bin/install.js during installation
 - Committed: Yes (source of truth)
 
 **commands/**
-- Purpose: Slash commands installed to /home/max/.claude/commands/
+- Purpose: Slash commands installed to ~/.claude/commands/
 - Source: Copied by bin/install.js during installation
 - Committed: Yes (source of truth)
 

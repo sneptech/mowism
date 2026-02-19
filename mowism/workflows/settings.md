@@ -12,8 +12,8 @@ Read all files referenced by the invoking prompt's execution_context before star
 Ensure config exists and load current state:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs config-ensure-section
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs state load)
+node ~/.claude/mowism/bin/mow-tools.cjs config-ensure-section
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs state load)
 ```
 
 Creates `.planning/config.json` with defaults if missing and loads current config values.

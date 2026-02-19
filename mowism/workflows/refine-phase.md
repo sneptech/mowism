@@ -16,7 +16,7 @@ Read STATE.md before any operation to load project context.
 Load phase context:
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE_ARG}")
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE_ARG}")
 ```
 
 Parse from JSON: `phase_dir`, `phase_number`, `phase_name`, `plans`, `summaries`.
@@ -569,7 +569,7 @@ After writing the index file, update STATE.md with verification results.
 Call mow-tools.cjs to record the result:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs worktree verify-result "${PHASE_NUMBER}" \
+node ~/.claude/mowism/bin/mow-tools.cjs worktree verify-result "${PHASE_NUMBER}" \
   --tier "${TIER}" \
   --result "${OVERALL_RESULT}" \
   --blockers "${BLOCKERS_OR_NONE}"

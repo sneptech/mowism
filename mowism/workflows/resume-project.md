@@ -11,7 +11,7 @@ Instantly restore full project context so "Where were we?" has an immediate, com
 </purpose>
 
 <required_reading>
-@/home/max/.claude/mowism/references/continuation-format.md
+@~/.claude/mowism/references/continuation-format.md
 </required_reading>
 
 <process>
@@ -20,7 +20,7 @@ Instantly restore full project context so "Where were we?" has an immediate, com
 Load all context in one call:
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init resume)
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init resume)
 ```
 
 Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_exists`, `has_interrupted_agent`, `interrupted_agent_id`, `commit_docs`, `agent_teams_enabled`, `agent_teams_nudge_dismissed`.

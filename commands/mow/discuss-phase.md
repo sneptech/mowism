@@ -31,8 +31,8 @@ Extract implementation decisions that downstream agents need — researcher and 
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/discuss-phase.md
-@/home/max/.claude/mowism/templates/context.md
+@~/.claude/mowism/workflows/discuss-phase.md
+@~/.claude/mowism/templates/context.md
 </execution_context>
 
 <context>

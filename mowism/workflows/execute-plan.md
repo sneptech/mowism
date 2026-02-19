@@ -6,7 +6,7 @@ Execute a phase prompt (PLAN.md) and create the outcome summary (SUMMARY.md).
 Read STATE.md before any operation to load project context.
 Read config.json for planning behavior settings.
 
-@/home/max/.claude/mowism/references/git-integration.md
+@~/.claude/mowism/references/git-integration.md
 </required_reading>
 
 <process>
@@ -15,7 +15,7 @@ Read config.json for planning behavior settings.
 Load execution context (uses `init execute-phase` for full context, including file contents):
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE}" --include state,config)
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE}" --include state,config)
 ```
 
 Extract from init JSON: `executor_model`, `commit_docs`, `phase_dir`, `phase_number`, `plans`, `summaries`, `incomplete_plans`.
@@ -128,7 +128,7 @@ This IS the execution instructions. Follow exactly. If plan references CONTEXT.m
 
 <step name="previous_phase_check">
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs phases list --type summaries --raw
+node ~/.claude/mowism/bin/mow-tools.cjs phases list --type summaries --raw
 # Extract the second-to-last summary from the JSON result
 ```
 If previous SUMMARY has unresolved "Issues Encountered" or "Next Phase Readiness" blockers: AskUserQuestion(header="Previous Issues", options: "Proceed anyway" | "Address first" | "Review previous").
@@ -226,7 +226,7 @@ For `type: tdd` plans — RED-GREEN-REFACTOR:
 
 Errors: RED doesn't fail → investigate test/existing feature. GREEN doesn't pass → debug, iterate. REFACTOR breaks → undo.
 
-See `/home/max/.claude/mowism/references/tdd.md` for structure.
+See `~/.claude/mowism/references/tdd.md` for structure.
 </tdd_plan_execution>
 
 <task_commit>
@@ -278,7 +278,7 @@ Display: `CHECKPOINT: [Type]` box → Progress {X}/{Y} → Task name → type-sp
 
 After response: verify if specified. Pass → continue. Fail → inform, wait. WAIT for user — do NOT hallucinate completion.
 
-See /home/max/.claude/mowism/references/checkpoints.md for details.
+See ~/.claude/mowism/references/checkpoints.md for details.
 </step>
 
 <step name="checkpoint_return_for_orchestrator">
@@ -316,11 +316,11 @@ fi
 grep -A 50 "^user_setup:" .planning/phases/XX-name/{phase}-{plan}-PLAN.md | head -50
 ```
 
-If user_setup exists: create `{phase}-USER-SETUP.md` using template `/home/max/.claude/mowism/templates/user-setup.md`. Per service: env vars table, account setup checklist, dashboard config, local dev notes, verification commands. Status "Incomplete". Set `USER_SETUP_CREATED=true`. If empty/missing: skip.
+If user_setup exists: create `{phase}-USER-SETUP.md` using template `~/.claude/mowism/templates/user-setup.md`. Per service: env vars table, account setup checklist, dashboard config, local dev notes, verification commands. Status "Incomplete". Set `USER_SETUP_CREATED=true`. If empty/missing: skip.
 </step>
 
 <step name="create_summary">
-Create `{phase}-{plan}-SUMMARY.md` at `.planning/phases/XX-name/`. Use `/home/max/.claude/mowism/templates/summary.md`.
+Create `{phase}-{plan}-SUMMARY.md` at `.planning/phases/XX-name/`. Use `~/.claude/mowism/templates/summary.md`.
 
 **Frontmatter:** phase, plan, subsystem, tags | requires/provides/affects | tech-stack.added/patterns | key-files.created/modified | key-decisions | requirements-completed (**MUST** copy `requirements` array from PLAN.md frontmatter verbatim) | duration ($DURATION), completed ($PLAN_END_TIME date).
 
@@ -338,13 +338,13 @@ Update STATE.md using mow-tools:
 
 ```bash
 # Advance plan counter (handles last-plan edge case)
-node /home/max/.claude/mowism/bin/mow-tools.cjs state advance-plan
+node ~/.claude/mowism/bin/mow-tools.cjs state advance-plan
 
 # Recalculate progress bar from disk state
-node /home/max/.claude/mowism/bin/mow-tools.cjs state update-progress
+node ~/.claude/mowism/bin/mow-tools.cjs state update-progress
 
 # Record execution metrics
-node /home/max/.claude/mowism/bin/mow-tools.cjs state record-metric \
+node ~/.claude/mowism/bin/mow-tools.cjs state record-metric \
   --phase "${PHASE}" --plan "${PLAN}" --duration "${DURATION}" \
   --tasks "${TASK_COUNT}" --files "${FILE_COUNT}"
 ```
@@ -355,11 +355,11 @@ From SUMMARY: Extract decisions and add to STATE.md:
 
 ```bash
 # Add each decision from SUMMARY key-decisions
-node /home/max/.claude/mowism/bin/mow-tools.cjs state add-decision \
+node ~/.claude/mowism/bin/mow-tools.cjs state add-decision \
   --phase "${PHASE}" --summary "${DECISION_TEXT}" --rationale "${RATIONALE}"
 
 # Add blockers if any found
-node /home/max/.claude/mowism/bin/mow-tools.cjs state add-blocker "Blocker description"
+node ~/.claude/mowism/bin/mow-tools.cjs state add-blocker "Blocker description"
 ```
 </step>
 
@@ -367,7 +367,7 @@ node /home/max/.claude/mowism/bin/mow-tools.cjs state add-blocker "Blocker descr
 Update session info using mow-tools:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs state record-session \
+node ~/.claude/mowism/bin/mow-tools.cjs state record-session \
   --stopped-at "Completed ${PHASE}-${PLAN}-PLAN.md" \
   --resume-file "None"
 ```
@@ -381,7 +381,7 @@ If SUMMARY "Issues Encountered" ≠ "None": yolo → log and continue. Interacti
 
 <step name="update_roadmap">
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs roadmap update-plan-progress "${PHASE}"
+node ~/.claude/mowism/bin/mow-tools.cjs roadmap update-plan-progress "${PHASE}"
 ```
 Counts PLAN vs SUMMARY files on disk. Updates progress table row with correct count and status (`In Progress` or `Complete` with date).
 </step>
@@ -390,7 +390,7 @@ Counts PLAN vs SUMMARY files on disk. Updates progress table row with correct co
 Mark completed requirements from the PLAN.md frontmatter `requirements:` field:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs requirements mark-complete ${REQ_IDS}
+node ~/.claude/mowism/bin/mow-tools.cjs requirements mark-complete ${REQ_IDS}
 ```
 
 Extract requirement IDs from the plan's frontmatter (e.g., `requirements: [AUTH-01, AUTH-02]`). If no requirements field, skip.
@@ -400,7 +400,7 @@ Extract requirement IDs from the plan's frontmatter (e.g., `requirements: [AUTH-
 Task code already committed per-task. Commit plan metadata:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs({phase}-{plan}): complete [plan-name] plan" --files .planning/phases/XX-name/{phase}-{plan}-SUMMARY.md .planning/STATE.md .planning/ROADMAP.md .planning/REQUIREMENTS.md
+node ~/.claude/mowism/bin/mow-tools.cjs commit "docs({phase}-{plan}): complete [plan-name] plan" --files .planning/phases/XX-name/{phase}-{plan}-SUMMARY.md .planning/STATE.md .planning/ROADMAP.md .planning/REQUIREMENTS.md
 ```
 </step>
 
@@ -415,7 +415,7 @@ git diff --name-only ${FIRST_TASK}^..HEAD 2>/dev/null
 Update only structural changes: new src/ dir → STRUCTURE.md | deps → STACK.md | file pattern → CONVENTIONS.md | API client → INTEGRATIONS.md | config → STACK.md | renamed → update paths. Skip code-only/bugfix/content changes.
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "" --files .planning/codebase/*.md --amend
+node ~/.claude/mowism/bin/mow-tools.cjs commit "" --files .planning/codebase/*.md --amend
 ```
 </step>
 

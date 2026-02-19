@@ -122,7 +122,7 @@ Repeat for all milestones in the cleanup set.
 Commit the changes:
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "chore: archive phase directories from completed milestones" --files .planning/milestones/ .planning/phases/
+node ~/.claude/mowism/bin/mow-tools.cjs commit "chore: archive phase directories from completed milestones" --files .planning/milestones/ .planning/phases/
 ```
 
 </step>

@@ -5,7 +5,7 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.
 
-@/home/max/.claude/mowism/references/ui-brand.md
+@~/.claude/mowism/references/ui-brand.md
 </required_reading>
 
 <process>
@@ -15,7 +15,7 @@ Read all files referenced by the invoking prompt's execution_context before star
 Load all context in one call (include file contents to avoid redundant reads):
 
 ```bash
-INIT_RAW=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init plan-phase "$PHASE" --include state,roadmap,requirements,context,research,verification,uat)
+INIT_RAW=$(node ~/.claude/mowism/bin/mow-tools.cjs init plan-phase "$PHASE" --include state,roadmap,requirements,context,research,verification,uat)
 # Large payloads are written to a tmpfile — output starts with @file:/path
 if [[ "$INIT_RAW" == @file:* ]]; then
   INIT_FILE="${INIT_RAW#@file:}"
@@ -48,7 +48,7 @@ mkdir -p ".planning/phases/${padded_phase}-${phase_slug}"
 ## 3. Validate Phase
 
 ```bash
-PHASE_INFO=$(node /home/max/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE}")
+PHASE_INFO=$(node ~/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE}")
 ```
 
 **If `found` is false:** Error with available phases. **If `found` is true:** Extract `phase_number`, `phase_name`, `goal` from JSON.
@@ -93,11 +93,11 @@ Display banner:
 ### Spawn mow-phase-researcher
 
 ```bash
-PHASE_DESC=$(node /home/max/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE}" | jq -r '.section')
+PHASE_DESC=$(node ~/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE}" | jq -r '.section')
 # Use requirements_content from INIT (already loaded via --include requirements)
 REQUIREMENTS=$(echo "$INIT" | jq -r '.requirements_content // empty' | grep -A100 "## Requirements" | head -50)
 PHASE_REQ_IDS=$(echo "$INIT" | jq -r '.roadmap_content // empty' | grep -i "Requirements:" | head -1 | sed 's/.*Requirements:\*\*\s*//' | sed 's/[\[\]]//g' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
-STATE_SNAP=$(node /home/max/.claude/mowism/bin/mow-tools.cjs state-snapshot)
+STATE_SNAP=$(node ~/.claude/mowism/bin/mow-tools.cjs state-snapshot)
 # Extract decisions from state-snapshot JSON: jq '.decisions[] | "\(.phase): \(.summary) - \(.rationale)"'
 ```
 
@@ -132,7 +132,7 @@ Write to: {phase_dir}/{phase_num}-RESEARCH.md
 
 ```
 Task(
-  prompt="First, read /home/max/.claude/agents/mow-phase-researcher.md for your role and instructions.\n\n" + research_prompt,
+  prompt="First, read ~/.claude/agents/mow-phase-researcher.md for your role and instructions.\n\n" + research_prompt,
   subagent_type="general-purpose",
   model="{researcher_model}",
   description="Research Phase {phase}"
@@ -222,7 +222,7 @@ Output consumed by /mow:execute-phase. Plans need:
 
 ```
 Task(
-  prompt="First, read /home/max/.claude/agents/mow-planner.md for your role and instructions.\n\n" + filled_prompt,
+  prompt="First, read ~/.claude/agents/mow-planner.md for your role and instructions.\n\n" + filled_prompt,
   subagent_type="general-purpose",
   model="{planner_model}",
   description="Plan Phase {phase}"
@@ -326,7 +326,7 @@ Return what changed.
 
 ```
 Task(
-  prompt="First, read /home/max/.claude/agents/mow-planner.md for your role and instructions.\n\n" + revision_prompt,
+  prompt="First, read ~/.claude/agents/mow-planner.md for your role and instructions.\n\n" + revision_prompt,
   subagent_type="general-purpose",
   model="{planner_model}",
   description="Revise Phase {phase} plans"
@@ -352,7 +352,7 @@ Check for auto-advance trigger:
 1. Parse `--auto` flag from $ARGUMENTS
 2. Read `workflow.auto_advance` from config:
    ```bash
-   AUTO_CFG=$(node /home/max/.claude/mowism/bin/mow-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
+   AUTO_CFG=$(node ~/.claude/mowism/bin/mow-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
    ```
 
 **If `--auto` flag present OR `AUTO_CFG` is true:**

@@ -20,10 +20,10 @@ Output ONLY the reference content below. Do NOT add:
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/help.md
+@~/.claude/mowism/workflows/help.md
 </execution_context>
 
 <process>
-Output the complete MOW command reference from @/home/max/.claude/mowism/workflows/help.md.
+Output the complete MOW command reference from @~/.claude/mowism/workflows/help.md.
 Display the reference content directly — no additions or modifications.
 </process>

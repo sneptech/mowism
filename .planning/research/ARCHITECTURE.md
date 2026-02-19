@@ -595,7 +595,7 @@ Understanding the dependency chain is critical for phasing the roadmap. Componen
 - [WorkTrunk Documentation](https://worktrunk.dev/) -- wt CLI commands, hooks, configuration
 - [WorkTrunk Tips & Patterns](https://worktrunk.dev/tips-patterns/) -- Multi-agent patterns, state markers, dev server isolation
 - [WorkTrunk GitHub](https://github.com/max-sixty/worktrunk) -- Source code and README
-- [GSD get-shit-done source](file:///home/max/.claude/get-shit-done/) -- Existing workflow architecture being forked
+- [GSD get-shit-done source](file://~/.claude/get-shit-done/) -- Existing workflow architecture being forked
 - [ccswarm](https://github.com/nwiizo/ccswarm) -- Reference multi-agent orchestration with worktree isolation
 - [Git Worktrees for Parallel AI Agents (Upsun)](https://devcenter.upsun.com/posts/git-worktrees-for-parallel-ai-coding-agents/) -- Patterns and challenges
 - [From Tasks to Swarms (alexop.dev)](https://alexop.dev/posts/from-tasks-to-swarms-agent-teams-in-claude-code/) -- Agent Teams vs Task tool comparison

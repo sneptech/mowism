@@ -155,7 +155,7 @@ This is a fork-and-rename operation. There are no library choices or alternative
 **What:** GSD uses a two-layer architecture: lightweight command files (`~/.claude/commands/gsd/*.md`) that reference heavier workflow files (`~/.claude/get-shit-done/workflows/*.md`). Commands define the slash command metadata (name, description, allowed tools) and `@`-reference the workflow file for actual logic.
 
 **Why this matters for rebranding:**
-- Command files contain: `name: gsd:*`, `@/home/max/.claude/get-shit-done/...` paths, occasional `/gsd:*` references in descriptions
+- Command files contain: `name: gsd:*`, `@~/.claude/get-shit-done/...` paths, occasional `/gsd:*` references in descriptions
 - Workflow files contain: `gsd-tools.cjs` invocations, `/gsd:*` command references, `GSD ►` banner text, `get-shit-done` paths, agent type references like `gsd-executor`
 - Both layers must be rebranded for the system to work
 
@@ -163,15 +163,15 @@ This is a fork-and-rename operation. There are no library choices or alternative
 ```
 # Before (gsd)
 name: gsd:execute-phase
-@/home/max/.claude/get-shit-done/workflows/execute-phase.md
-@/home/max/.claude/get-shit-done/references/ui-brand.md
-node /home/max/.claude/get-shit-done/bin/gsd-tools.cjs
+@~/.claude/get-shit-done/workflows/execute-phase.md
+@~/.claude/get-shit-done/references/ui-brand.md
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs
 
 # After (mow)
 name: mow:execute-phase
-@/home/max/.claude/mowism/workflows/execute-phase.md
-@/home/max/.claude/mowism/references/ui-brand.md
-node /home/max/.claude/mowism/bin/mow-tools.cjs
+@~/.claude/mowism/workflows/execute-phase.md
+@~/.claude/mowism/references/ui-brand.md
+node ~/.claude/mowism/bin/mow-tools.cjs
 ```
 
 ### Pattern 3: String Replacement Categories
@@ -182,7 +182,7 @@ node /home/max/.claude/mowism/bin/mow-tools.cjs
 
 | Category | Pattern | Replacement | Count | Example |
 |----------|---------|-------------|-------|---------|
-| 1. Absolute paths | `/home/max/.claude/get-shit-done/` | `/home/max/.claude/mowism/` | ~186 | `@/home/max/.claude/get-shit-done/workflows/...` |
+| 1. Absolute paths | `~/.claude/get-shit-done/` | `~/.claude/mowism/` | ~186 | `@~/.claude/get-shit-done/workflows/...` |
 | 2. Config paths | `~/.gsd/` or `.gsd/` | `~/.mowism/` or `.mowism/` | 3 | `~/.gsd/brave_api_key`, `~/.gsd/defaults.json` |
 | 3. Branch templates | `gsd/phase-` and `gsd/{milestone}` | `mow/phase-` and `mow/{milestone}` | 4 | `gsd/phase-{phase}-{slug}` |
 | 4. Command names | `/gsd:` | `/mow:` | ~200 | `/gsd:execute-phase` |
@@ -216,12 +216,12 @@ node /home/max/.claude/mowism/bin/mow-tools.cjs
 **What goes wrong:** Replacing `gsd` with `mow` in a string that already contains `mow` from a previous replacement, or replacing a substring of a longer match.
 **Why it happens:** Unordered or overlapping regex patterns. For example, replacing `gsd-tools` first produces `mow-tools`, then a later `gsd` replacement has nothing left to match in that string (benign case) — but replacing `gsd` first and then `get-shit-done` never matches (harmful case because the path is now `get-shit-done` with `gsd` replaced inside it, producing garbage).
 **How to avoid:** Process replacements in order of specificity: longest/most-specific patterns first. Replace `get-shit-done` and full paths before replacing `gsd` as a standalone token.
-**Warning signs:** Paths that look like `/home/max/.claude/mowism/` but with `get-shit-done` still in them, or agent names like `mow-mow-executor`.
+**Warning signs:** Paths that look like `~/.claude/mowism/` but with `get-shit-done` still in them, or agent names like `mow-mow-executor`.
 
 ### Pitfall 2: Hardcoded User Home Path
-**What goes wrong:** The GSD commands hardcode `/home/max/.claude/get-shit-done/` as absolute paths. Forking these files directly embeds a specific user's home directory.
+**What goes wrong:** The GSD commands hardcode `~/.claude/get-shit-done/` as absolute paths. Forking these files directly embeds a specific user's home directory.
 **Why it happens:** GSD uses `@` references with absolute paths because Claude Code's `@` syntax requires them.
-**How to avoid:** In the Mowism fork, replace `/home/max/.claude/get-shit-done/` with `/home/max/.claude/mowism/` in the repo files. For future distribution (Phase 3), the install script will need to resolve the actual home directory. For now, the fork is for the user's own system, so hardcoded paths work.
+**How to avoid:** In the Mowism fork, replace `~/.claude/get-shit-done/` with `~/.claude/mowism/` in the repo files. For future distribution (Phase 3), the install script will need to resolve the actual home directory. For now, the fork is for the user's own system, so hardcoded paths work.
 **Warning signs:** Commands that reference `~` instead of the full path (Claude Code `@` syntax requires absolute paths, not `~`).
 
 ### Pitfall 3: Agent Name Mismatch
@@ -274,12 +274,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 <execution_context>
-@/home/max/.claude/get-shit-done/workflows/execute-phase.md
-@/home/max/.claude/get-shit-done/references/ui-brand.md
+@~/.claude/get-shit-done/workflows/execute-phase.md
+@~/.claude/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the execute-phase workflow from @/home/max/.claude/get-shit-done/workflows/execute-phase.md end-to-end.
+Execute the execute-phase workflow from @~/.claude/get-shit-done/workflows/execute-phase.md end-to-end.
 </process>
 ```
 
@@ -301,12 +301,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 <execution_context>
-@/home/max/.claude/mowism/workflows/execute-phase.md
-@/home/max/.claude/mowism/references/ui-brand.md
+@~/.claude/mowism/workflows/execute-phase.md
+@~/.claude/mowism/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the execute-phase workflow from @/home/max/.claude/mowism/workflows/execute-phase.md end-to-end.
+Execute the execute-phase workflow from @~/.claude/mowism/workflows/execute-phase.md end-to-end.
 </process>
 ```
 
@@ -530,7 +530,7 @@ Specific considerations:
 ### String Replacement Strategy
 **Recommendation:** Literal string replacement, not regex. Process in specificity order:
 
-1. `/home/max/.claude/get-shit-done/` → `/home/max/.claude/mowism/` (full paths)
+1. `~/.claude/get-shit-done/` → `~/.claude/mowism/` (full paths)
 2. `get-shit-done` → `mowism` (any remaining path fragments)
 3. `~/.gsd/` → `~/.mowism/` (config paths)
 4. `.gsd/` → `.mowism/` (config paths without tilde)
@@ -617,9 +617,9 @@ Specific considerations:
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/home/max/.claude/get-shit-done/` — Direct examination of all 56 GSD files, string counting, path analysis
-- `/home/max/.claude/commands/gsd/` — Direct examination of all 31 command registration files
-- `/home/max/.claude/agents/gsd-*.md` — Direct examination of all 11 agent definition files
+- `~/.claude/get-shit-done/` — Direct examination of all 56 GSD files, string counting, path analysis
+- `~/.claude/commands/gsd/` — Direct examination of all 31 command registration files
+- `~/.claude/agents/gsd-*.md` — Direct examination of all 11 agent definition files
 - `/home/max/git/ai-agent-tools-and-tips/SKILLS.md` — Complete quality skill specifications
 - `/home/max/git/ai-agent-tools-and-tips/RECOMMENDED-WORKFLOW-CHAIN.md` — Quality skill execution order
 - `/home/max/git/mowism/.planning/` — Direct examination of existing project planning files

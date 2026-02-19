@@ -24,7 +24,7 @@ Check for local patches directory:
 
 ```bash
 # Global install (path templated at install time)
-PATCHES_DIR=/home/max/.claude/mow-local-patches
+PATCHES_DIR=~/.claude/mow-local-patches
 # Local install fallback
 if [ ! -d "$PATCHES_DIR" ]; then
   PATCHES_DIR=./.claude/mow-local-patches

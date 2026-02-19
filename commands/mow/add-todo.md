@@ -30,11 +30,11 @@ Routes to the add-todo workflow which handles:
 
 <execution_context>
 @.planning/STATE.md
-@/home/max/.claude/mowism/workflows/add-todo.md
+@~/.claude/mowism/workflows/add-todo.md
 </execution_context>
 
 <process>
-**Follow the add-todo workflow** from `@/home/max/.claude/mowism/workflows/add-todo.md`.
+**Follow the add-todo workflow** from `@~/.claude/mowism/workflows/add-todo.md`.
 
 The workflow handles all logic including:
 1. Directory ensuring

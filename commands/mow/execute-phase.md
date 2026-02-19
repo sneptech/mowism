@@ -29,8 +29,8 @@ Context budget: ~15% orchestrator, 100% fresh per subagent.
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/execute-phase.md
-@/home/max/.claude/mowism/references/ui-brand.md
+@~/.claude/mowism/workflows/execute-phase.md
+@~/.claude/mowism/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -44,6 +44,6 @@ Phase: $ARGUMENTS
 </context>
 
 <process>
-Execute the execute-phase workflow from @/home/max/.claude/mowism/workflows/execute-phase.md end-to-end.
+Execute the execute-phase workflow from @~/.claude/mowism/workflows/execute-phase.md end-to-end.
 Preserve all workflow gates (wave execution, checkpoint handling, verification, state updates, routing).
 </process>

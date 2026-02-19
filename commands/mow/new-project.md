@@ -36,14 +36,14 @@ Initialize a new project through unified flow: questioning → research (optiona
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/new-project.md
-@/home/max/.claude/mowism/references/questioning.md
-@/home/max/.claude/mowism/references/ui-brand.md
-@/home/max/.claude/mowism/templates/project.md
-@/home/max/.claude/mowism/templates/requirements.md
+@~/.claude/mowism/workflows/new-project.md
+@~/.claude/mowism/references/questioning.md
+@~/.claude/mowism/references/ui-brand.md
+@~/.claude/mowism/templates/project.md
+@~/.claude/mowism/templates/requirements.md
 </execution_context>
 
 <process>
-Execute the new-project workflow from @/home/max/.claude/mowism/workflows/new-project.md end-to-end.
+Execute the new-project workflow from @~/.claude/mowism/workflows/new-project.md end-to-end.
 Preserve all workflow gates (validation, approvals, commits, routing).
 </process>

@@ -59,7 +59,7 @@ score: 14/14 must-haves verified
 | `bin/mow-tools.cjs cmdInit*` | `checkWorkTrunk()` via `requireWorkTrunk()` | First call in every cmdInit | WIRED | 12 `requireWorkTrunk()` calls confirmed; 13th is definition |
 | `~/.claude/mowism/workflows/progress.md` | `mow-tools.cjs worktree status` | node invocation in report step | WIRED | Found at line 143 of progress.md |
 | `commands/mow/worktree-status.md` | `mow-tools.cjs worktree status` | node invocation for detailed view | WIRED | Found in process step |
-| `commands/mow/refine-phase.md` | `~/.claude/mowism/workflows/refine-phase.md` | `@`-reference in execution_context | WIRED | `@/home/max/.claude/mowism/workflows/refine-phase.md` present |
+| `commands/mow/refine-phase.md` | `~/.claude/mowism/workflows/refine-phase.md` | `@`-reference in execution_context | WIRED | `@~/.claude/mowism/workflows/refine-phase.md` present |
 | `~/.claude/mowism/workflows/refine-phase.md` | quality skill commands | `Task()` calls referencing /scope-check, /change-summary, etc. | WIRED | 22 `Task(` occurrences; scope-check, change-summary, verify-work, update-claude-md, simplify, dead-code-sweep, grill-me, prove-it all referenced in prompts |
 | `~/.claude/mowism/workflows/execute-phase.md` | `mow-tools.cjs worktree claim` | node invocation in initialize step | WIRED | Found at line 33 |
 | `~/.claude/mowism/workflows/execute-phase.md` | `mow-tools.cjs worktree update-plan` | node invocation in plan execution loop | WIRED | Found at line 112 |
@@ -96,7 +96,7 @@ No blockers or warnings found. Specific checks:
 - No `TODO/FIXME/PLACEHOLDER` comments in key Phase 2 files
 - No empty handler stubs (`return null`, `=> {}`) in worktree subcommand implementations
 - No console.log-only implementations
-- No broken `@`-references: `commands/mow/refine-phase.md` references `@/home/max/.claude/mowism/workflows/refine-phase.md` which exists; `commands/mow/worktree-status.md` references `node /home/max/.claude/mowism/bin/mow-tools.cjs worktree status` which is implemented
+- No broken `@`-references: `commands/mow/refine-phase.md` references `@~/.claude/mowism/workflows/refine-phase.md` which exists; `commands/mow/worktree-status.md` references `node ~/.claude/mowism/bin/mow-tools.cjs worktree status` which is implemented
 
 ### Human Verification Required
 

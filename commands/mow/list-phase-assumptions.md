@@ -23,7 +23,7 @@ Output: Conversational output only (no file creation) - ends with "What do you t
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/list-phase-assumptions.md
+@~/.claude/mowism/workflows/list-phase-assumptions.md
 </execution_context>
 
 <context>

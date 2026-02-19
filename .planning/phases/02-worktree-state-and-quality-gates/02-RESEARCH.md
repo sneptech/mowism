@@ -556,10 +556,10 @@ In practice, merge conflicts should be rare because:
 - `wt list --format=json` -- Direct execution showing structured JSON output fields
 - `wt config show` -- Direct examination of current configuration state
 - `/home/max/git/mowism/bin/mow-tools.cjs` -- Direct examination of existing init, state, and config patterns
-- `/home/max/.claude/mowism/workflows/execute-phase.md` -- Existing wave-based parallel execution pattern
-- `/home/max/.claude/mowism/workflows/diagnose-issues.md` -- Existing parallel Task() spawning with result collection
-- `/home/max/.claude/mowism/workflows/verify-work.md` -- Existing UAT and verification workflow
-- `/home/max/.claude/mowism/workflows/progress.md` -- Existing progress display and routing workflow
+- `~/.claude/mowism/workflows/execute-phase.md` -- Existing wave-based parallel execution pattern
+- `~/.claude/mowism/workflows/diagnose-issues.md` -- Existing parallel Task() spawning with result collection
+- `~/.claude/mowism/workflows/verify-work.md` -- Existing UAT and verification workflow
+- `~/.claude/mowism/workflows/progress.md` -- Existing progress display and routing workflow
 - `/home/max/git/ai-agent-tools-and-tips/RECOMMENDED-WORKFLOW-CHAIN.md` -- Quality chain staging order and execution pattern
 - `/home/max/git/mowism/commands/*.md` -- All 7 quality skill command files (scope-check, simplify, dead-code-sweep, prove-it, grill-me, change-summary, update-claude-md)
 - `/home/max/git/mowism/.planning/STATE.md` -- Current STATE.md structure and sections

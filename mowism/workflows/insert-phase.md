@@ -34,7 +34,7 @@ Validate first argument is an integer.
 Load phase operation context:
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init phase-op "${after_phase}")
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init phase-op "${after_phase}")
 ```
 
 Check `roadmap_exists` from init JSON. If false:
@@ -48,7 +48,7 @@ Exit.
 **Delegate the phase insertion to mow-tools:**
 
 ```bash
-RESULT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs phase insert "${after_phase}" "${description}")
+RESULT=$(node ~/.claude/mowism/bin/mow-tools.cjs phase insert "${after_phase}" "${description}")
 ```
 
 The CLI handles:

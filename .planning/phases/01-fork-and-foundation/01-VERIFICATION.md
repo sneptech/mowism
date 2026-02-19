@@ -69,12 +69,12 @@ re_verification: false
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `~/.claude/mowism/workflows/execute-phase.md` | Contains "mow-tools.cjs" | VERIFIED | References `node /home/max/.claude/mowism/bin/mow-tools.cjs`; spawns `mow-executor` |
+| `~/.claude/mowism/workflows/execute-phase.md` | Contains "mow-tools.cjs" | VERIFIED | References `node ~/.claude/mowism/bin/mow-tools.cjs`; spawns `mow-executor` |
 | `~/.claude/mowism/workflows/execute-plan.md` | Contains "mow-executor" | VERIFIED | Present, uses mow-executor agent type |
 | `~/.claude/mowism/workflows/new-project.md` | Contains "/mow:" | VERIFIED | References `/mow:new-project` and other `/mow:*` commands |
 | `~/.claude/mowism/workflows/plan-phase.md` | Contains "mow-planner" | VERIFIED | Spawns `mow-planner` and `mow-plan-checker` agents |
 | All 32 workflow files | 32 total | VERIFIED | Exactly 32 files in `~/.claude/mowism/workflows/` |
-| `~/.claude/mowism/workflows/update.md` | Uses git pull, not npx | VERIFIED | Contains `cd /home/max/.claude/mowism && git pull` |
+| `~/.claude/mowism/workflows/update.md` | Uses git pull, not npx | VERIFIED | Contains `cd ~/.claude/mowism && git pull` |
 
 ### Plan 05 (CORE-01 partial, CORE-06): Commands and migrate
 
@@ -96,9 +96,9 @@ re_verification: false
 |------|----|-----|--------|---------|
 | `~/.claude/mowism/bin/mow-tools.cjs` | model profile table | `mow-*` agent name keys | VERIFIED | 31 occurrences of mow-* agent names; model-profiles.md in references shows all 11 agents with mow- prefix |
 | `~/.claude/mowism/bin/mow-tools.cjs` | `~/.mowism/` config dir | config directory paths | VERIFIED | 4 `.mowism` path references; branch templates use `mow/phase-` |
-| `~/.claude/mowism/workflows/*.md` | `mow-tools.cjs` | node invocations | VERIFIED | 28 workflow files reference `node /home/max/.claude/mowism/bin/mow-tools.cjs` |
+| `~/.claude/mowism/workflows/*.md` | `mow-tools.cjs` | node invocations | VERIFIED | 28 workflow files reference `node ~/.claude/mowism/bin/mow-tools.cjs` |
 | `~/.claude/mowism/workflows/*.md` | `~/.claude/agents/mow-*.md` | subagent type references | VERIFIED | 7 workflow files reference mow-executor/mow-planner/mow-verifier |
-| `~/.claude/commands/mow/*.md` | `~/.claude/mowism/workflows/*.md` | @ file references | VERIFIED | 26 command files reference `@/home/max/.claude/mowism/workflows/`; zero broken @ references found |
+| `~/.claude/commands/mow/*.md` | `~/.claude/mowism/workflows/*.md` | @ file references | VERIFIED | 26 command files reference `@~/.claude/mowism/workflows/`; zero broken @ references found |
 | `~/.claude/commands/mow/migrate.md` | `.planning/` | backup-then-replace logic | VERIFIED | Contains backup step, 23 replacement rules, verification grep, and `git commit` step |
 | `~/.claude/mowism/templates/config.json` | branch naming | branch template strings | VERIFIED | `mow/phase-{phase}-{slug}` and `mow/{milestone}-{slug}` |
 | `~/.claude/mowism/references/ui-brand.md` | Mowism brand | MOW branding | VERIFIED | Uses `MOW ▶` prefix in visual patterns |

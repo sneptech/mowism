@@ -28,8 +28,8 @@ Context budget: ~15% orchestrator, 100% fresh per subagent.
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/refine-phase.md
-@/home/max/.claude/mowism/references/ui-brand.md
+@~/.claude/mowism/workflows/refine-phase.md
+@~/.claude/mowism/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -40,6 +40,6 @@ Phase: $ARGUMENTS
 </context>
 
 <process>
-Execute the refine-phase workflow from @/home/max/.claude/mowism/workflows/refine-phase.md end-to-end.
+Execute the refine-phase workflow from @~/.claude/mowism/workflows/refine-phase.md end-to-end.
 Preserve all workflow gates (tier selection, chain execution, resilience handling, result reporting).
 </process>

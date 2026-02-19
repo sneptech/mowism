@@ -25,7 +25,7 @@ One command creates all fix phases — no manual `/mow:add-phase` per gap.
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/plan-milestone-gaps.md
+@~/.claude/mowism/workflows/plan-milestone-gaps.md
 </execution_context>
 
 <context>
@@ -42,6 +42,6 @@ Glob: .planning/v*-MILESTONE-AUDIT.md (use most recent)
 </context>
 
 <process>
-Execute the plan-milestone-gaps workflow from @/home/max/.claude/mowism/workflows/plan-milestone-gaps.md end-to-end.
+Execute the plan-milestone-gaps workflow from @~/.claude/mowism/workflows/plan-milestone-gaps.md end-to-end.
 Preserve all workflow gates (audit loading, prioritization, phase grouping, user confirmation, roadmap updates).
 </process>

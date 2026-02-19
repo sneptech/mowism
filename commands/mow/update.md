@@ -25,11 +25,11 @@ Routes to the update workflow which handles:
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/update.md
+@~/.claude/mowism/workflows/update.md
 </execution_context>
 
 <process>
-**Follow the update workflow** from `@/home/max/.claude/mowism/workflows/update.md`.
+**Follow the update workflow** from `@~/.claude/mowism/workflows/update.md`.
 
 The workflow handles all logic including:
 1. Installed version detection (local/global)

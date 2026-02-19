@@ -33,7 +33,7 @@ Quick mode is the same system with a shorter path:
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/quick.md
+@~/.claude/mowism/workflows/quick.md
 </execution_context>
 
 <context>
@@ -42,6 +42,6 @@ $ARGUMENTS
 </context>
 
 <process>
-Execute the quick workflow from @/home/max/.claude/mowism/workflows/quick.md end-to-end.
+Execute the quick workflow from @~/.claude/mowism/workflows/quick.md end-to-end.
 Preserve all workflow gates (validation, task description, planning, execution, state updates, commits).
 </process>

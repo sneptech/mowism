@@ -76,7 +76,7 @@ Apply replacements in specificity order to ALL files in `.planning/`. Process ea
 
 **Replacement table (apply in this exact order):**
 
-1. `/home/max/.claude/get-shit-done/` -> `/home/max/.claude/mowism/`
+1. `~/.claude/get-shit-done/` -> `~/.claude/mowism/`
 2. `get-shit-done` -> `mowism`
 3. `~/.gsd/` -> `~/.mowism/`
 4. `.gsd/` -> `.mowism/`

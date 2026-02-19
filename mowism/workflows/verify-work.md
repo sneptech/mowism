@@ -15,7 +15,7 @@ No Pass/Fail buttons. No severity questions. Just: "Here's what should happen. D
 </philosophy>
 
 <template>
-@/home/max/.claude/mowism/templates/UAT.md
+@~/.claude/mowism/templates/UAT.md
 </template>
 
 <process>
@@ -24,7 +24,7 @@ No Pass/Fail buttons. No severity questions. Just: "Here's what should happen. D
 If $ARGUMENTS contains a phase number, load context:
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init verify-work "${PHASE_ARG}")
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init verify-work "${PHASE_ARG}")
 ```
 
 Parse JSON for: `planner_model`, `checker_model`, `commit_docs`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `has_verification`.
@@ -292,7 +292,7 @@ Clear Current Test section:
 
 Commit the UAT file:
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "test({phase_num}): complete UAT - {passed} passed, {issues} issues" --files ".planning/phases/XX-name/{phase_num}-UAT.md"
+node ~/.claude/mowism/bin/mow-tools.cjs commit "test({phase_num}): complete UAT - {passed} passed, {issues} issues" --files ".planning/phases/XX-name/{phase_num}-UAT.md"
 ```
 
 Present summary:
@@ -334,7 +334,7 @@ Spawning parallel debug agents to investigate each issue.
 ```
 
 - Load diagnose-issues workflow
-- Follow @/home/max/.claude/mowism/workflows/diagnose-issues.md
+- Follow @~/.claude/mowism/workflows/diagnose-issues.md
 - Spawn parallel debug agents for each issue
 - Collect root causes
 - Update UAT.md with root causes

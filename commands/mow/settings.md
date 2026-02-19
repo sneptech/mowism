@@ -26,11 +26,11 @@ Routes to the settings workflow which handles:
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/settings.md
+@~/.claude/mowism/workflows/settings.md
 </execution_context>
 
 <process>
-**Follow the settings workflow** from `@/home/max/.claude/mowism/workflows/settings.md`.
+**Follow the settings workflow** from `@~/.claude/mowism/workflows/settings.md`.
 
 The workflow handles all logic including:
 1. Config file creation with defaults if missing

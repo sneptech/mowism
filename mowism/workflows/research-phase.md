@@ -8,17 +8,17 @@ Standalone research command. For most workflows, use `/mow:plan-phase` which int
 
 ## Step 0: Resolve Model Profile
 
-@/home/max/.claude/mowism/references/model-profile-resolution.md
+@~/.claude/mowism/references/model-profile-resolution.md
 
 Resolve model for:
 - `mow-phase-researcher`
 
 ## Step 1: Normalize and Validate Phase
 
-@/home/max/.claude/mowism/references/phase-argument-parsing.md
+@~/.claude/mowism/references/phase-argument-parsing.md
 
 ```bash
-PHASE_INFO=$(node /home/max/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE}")
+PHASE_INFO=$(node ~/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE}")
 ```
 
 If `found` is false: Error and exit.
@@ -39,7 +39,7 @@ echo "$PHASE_INFO" | jq -r '.section'
 cat .planning/REQUIREMENTS.md 2>/dev/null
 cat .planning/phases/${PHASE}-*/*-CONTEXT.md 2>/dev/null
 # Decisions from state-snapshot (structured JSON)
-node /home/max/.claude/mowism/bin/mow-tools.cjs state-snapshot | jq '.decisions'
+node ~/.claude/mowism/bin/mow-tools.cjs state-snapshot | jq '.decisions'
 ```
 
 ## Step 4: Spawn Researcher

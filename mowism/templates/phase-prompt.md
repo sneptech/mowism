@@ -38,10 +38,10 @@ Output: [What artifacts will be created]
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/execute-plan.md
-@/home/max/.claude/mowism/templates/summary.md
+@~/.claude/mowism/workflows/execute-plan.md
+@~/.claude/mowism/templates/summary.md
 [If plan contains checkpoint tasks (type="checkpoint:*"), add:]
-@/home/max/.claude/mowism/references/checkpoints.md
+@~/.claude/mowism/references/checkpoints.md
 </execution_context>
 
 <context>
@@ -76,7 +76,7 @@ Output: [What artifacts will be created]
   <done>[Acceptance criteria]</done>
 </task>
 
-<!-- For checkpoint task examples and patterns, see @/home/max/.claude/mowism/references/checkpoints.md -->
+<!-- For checkpoint task examples and patterns, see @~/.claude/mowism/references/checkpoints.md -->
 <!-- Key rule: Claude starts dev server BEFORE human-verify checkpoints. User only visits URLs. -->
 
 <task type="checkpoint:decision" gate="blocking">
@@ -270,7 +270,7 @@ TDD features get dedicated plans with `type: tdd`.
 → Yes: Create a TDD plan
 → No: Standard task in standard plan
 
-See `/home/max/.claude/mowism/references/tdd.md` for TDD plan structure.
+See `~/.claude/mowism/references/tdd.md` for TDD plan structure.
 
 ---
 
@@ -374,9 +374,9 @@ Output: Working dashboard component.
 </objective>
 
 <execution_context>
-@/home/max/.claude/mowism/workflows/execute-plan.md
-@/home/max/.claude/mowism/templates/summary.md
-@/home/max/.claude/mowism/references/checkpoints.md
+@~/.claude/mowism/workflows/execute-plan.md
+@~/.claude/mowism/templates/summary.md
+@~/.claude/mowism/references/checkpoints.md
 </execution_context>
 
 <context>
@@ -499,7 +499,7 @@ user_setup:
 
 **Result:** Execute-plan generates `{phase}-USER-SETUP.md` with checklist for the user.
 
-See `/home/max/.claude/mowism/templates/user-setup.md` for full schema and examples
+See `~/.claude/mowism/templates/user-setup.md` for full schema and examples
 
 ---
 
@@ -566,4 +566,4 @@ Task completion ≠ Goal achievement. A task "create chat component" can complet
 5. Gaps found → fix plans created → execute → re-verify
 6. All must_haves pass → phase complete
 
-See `/home/max/.claude/mowism/workflows/verify-phase.md` for verification logic.
+See `~/.claude/mowism/workflows/verify-phase.md` for verification logic.

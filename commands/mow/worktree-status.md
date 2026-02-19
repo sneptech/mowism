@@ -19,7 +19,7 @@ Show detailed worktree assignment information: which worktrees are claiming whic
 </objective>
 
 <process>
-1. Run `node /home/max/.claude/mowism/bin/mow-tools.cjs worktree status` to get JSON array
+1. Run `node ~/.claude/mowism/bin/mow-tools.cjs worktree status` to get JSON array
 2. If empty: "No active worktree assignments."
 3. If non-empty: render a detailed table with ALL columns:
    ```

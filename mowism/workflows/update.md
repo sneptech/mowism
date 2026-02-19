@@ -13,12 +13,12 @@ Detect the Mowism installation:
 
 ```bash
 # Check if the Mowism repo directory exists
-if [ -d /home/max/.claude/mowism/.git ]; then
+if [ -d ~/.claude/mowism/.git ]; then
   echo "GIT_REPO"
-  cd /home/max/.claude/mowism && git rev-parse --short HEAD
-elif [ -f /home/max/.claude/mowism/VERSION ]; then
+  cd ~/.claude/mowism && git rev-parse --short HEAD
+elif [ -f ~/.claude/mowism/VERSION ]; then
   echo "INSTALLED"
-  cat /home/max/.claude/mowism/VERSION
+  cat ~/.claude/mowism/VERSION
 else
   echo "NOT_FOUND"
 fi
@@ -33,11 +33,11 @@ Parse output:
 ```
 ## MOW Update
 
-**Installation not found** at `/home/max/.claude/mowism/`
+**Installation not found** at `~/.claude/mowism/`
 
 To install Mowism:
 ```bash
-git clone <mowism-repo-url> /home/max/.claude/mowism
+git clone <mowism-repo-url> ~/.claude/mowism
 ```
 
 Exit.
@@ -50,7 +50,7 @@ Exit.
 
 Your installation is not a git checkout. To enable updates:
 1. Back up your current installation
-2. Clone the Mowism repository to `/home/max/.claude/mowism/`
+2. Clone the Mowism repository to `~/.claude/mowism/`
 3. Your configuration in `.planning/` is separate and will be preserved
 ```
 
@@ -61,7 +61,7 @@ Exit.
 If git repo detected, check for remote changes:
 
 ```bash
-cd /home/max/.claude/mowism
+cd ~/.claude/mowism
 git fetch origin 2>/dev/null
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "unknown")
@@ -93,7 +93,7 @@ Exit.
 **If updates available**, show what's new BEFORE updating:
 
 ```bash
-cd /home/max/.claude/mowism
+cd ~/.claude/mowism
 git log --oneline HEAD..@{u}
 ```
 
@@ -125,7 +125,7 @@ Use AskUserQuestion:
 Pull the latest changes:
 
 ```bash
-cd /home/max/.claude/mowism && git pull
+cd ~/.claude/mowism && git pull
 ```
 
 Capture output. If pull fails (merge conflict, etc.), show error and advise manual resolution.

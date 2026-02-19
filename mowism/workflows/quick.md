@@ -43,7 +43,7 @@ If `$FULL_MODE`:
 **Step 2: Initialize**
 
 ```bash
-INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init quick "$DESCRIPTION")
+INIT=$(node ~/.claude/mowism/bin/mow-tools.cjs init quick "$DESCRIPTION")
 ```
 
 Parse JSON for: `planner_model`, `executor_model`, `checker_model`, `verifier_model`, `commit_docs`, `next_num`, `slug`, `date`, `timestamp`, `quick_dir`, `task_dir`, `roadmap_exists`, `planning_exists`.
@@ -221,7 +221,7 @@ Return what changed.
 
 ```
 Task(
-  prompt="First, read /home/max/.claude/agents/mow-planner.md for your role and instructions.\n\n" + revision_prompt,
+  prompt="First, read ~/.claude/agents/mow-planner.md for your role and instructions.\n\n" + revision_prompt,
   subagent_type="general-purpose",
   model="{planner_model}",
   description="Revise quick plan: ${DESCRIPTION}"
@@ -383,7 +383,7 @@ Build file list:
 - If `$FULL_MODE` and verification file exists: `${QUICK_DIR}/${next_num}-VERIFICATION.md`
 
 ```bash
-node /home/max/.claude/mowism/bin/mow-tools.cjs commit "docs(quick-${next_num}): ${DESCRIPTION}" --files ${file_list}
+node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(quick-${next_num}): ${DESCRIPTION}" --files ${file_list}
 ```
 
 Get final commit hash:
