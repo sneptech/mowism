@@ -88,9 +88,9 @@ Plans:
   4. Zero occurrences of `~/.claude/` in any workflow, command, or agent file distributed to users
 **Plans:** 3 plans
 Plans:
-- [ ] 04-01-PLAN.md -- Replace hardcoded ~/.claude/ paths with portable ~/.claude/ across all 107 files
-- [ ] 04-02-PLAN.md -- Fix checkAgentTeams() env var mismatch + delete stale mowism/bin/ directory + add tests
-- [ ] 04-03-PLAN.md -- End-to-end portability validation sweep (all requirements)
+- [x] 04-01-PLAN.md -- Replace hardcoded ~/.claude/ paths with portable ~/.claude/ across all 107 files
+- [x] 04-02-PLAN.md -- Fix checkAgentTeams() env var mismatch + delete stale mowism/bin/ directory + add tests
+- [x] 04-03-PLAN.md -- End-to-end portability validation sweep (all requirements)
 
 ### Phase 5: Fix Update Workflow
 **Goal**: `/mow:update` works correctly after `install.sh` installation, and `reapply-patches` handles missing patches gracefully
@@ -103,7 +103,7 @@ Plans:
   3. `update.md` contains no stale references to future tooling planned for earlier phases
 **Plans:** 1/1 plans complete
 Plans:
-- [ ] 05-01-PLAN.md -- Rewrite update workflow with dual-path support + fix stale references in command/help files
+- [x] 05-01-PLAN.md -- Rewrite update workflow with dual-path support + fix stale references in command/help files
 
 ### Phase 6: Cleanup Orphaned Workflows
 **Goal**: Remove dead code and fix stale metadata so the codebase matches its documented state
@@ -114,7 +114,9 @@ Plans:
   1. `discovery-phase.md` either removed or documented as standalone (no false "called from plan-phase.md" claim)
   2. `verify-phase.md` either removed or documented as standalone (no false "executed by execute-phase.md" claim)
   3. ROADMAP.md Phase 4 plan checkboxes are `[x]` and progress table shows `3/3 | Complete`
+**Plans:** 1 plan
 Plans:
+- [ ] 06-01-PLAN.md -- Archive orphaned workflows + fix stale references and ROADMAP metadata
 
 ## Progress
 
@@ -128,4 +130,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
 | 4. Distribution Portability | 3/3 | Complete    | 2026-02-19 |
 | 5. Fix Update Workflow | 1/1 | Complete    | 2026-02-19 |
-| 6. Cleanup Orphaned Workflows | 0/0 | Not Started | — |
+| 6. Cleanup Orphaned Workflows | 0/1 | Not Started | — |
