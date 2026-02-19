@@ -48,8 +48,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Agent Teams
 
-- [ ] **TEAM-01**: `/mow:new-project` offers option to spawn Agent Teams setup with lead orchestrator
-- [ ] **TEAM-02**: `/mow:resume-work` offers option to re-spawn Agent Teams from persisted `.planning/` state
+- [x] **TEAM-01**: `/mow:new-project` offers option to spawn Agent Teams setup with lead orchestrator
+- [x] **TEAM-02**: `/mow:resume-work` offers option to re-spawn Agent Teams from persisted `.planning/` state
 - [x] **TEAM-03**: Lead orchestrator tracks overall project state while human hops between individual sessions
 - [x] **TEAM-04**: Without Agent Teams env var, Mowism still works but gives a prominent nudge with exact instructions (where to set it, what to run) explaining the user is missing the most powerful parallelism feature
 - [x] **TEAM-05**: STATE.md tracks agent team status (active teammates, assigned worktrees, current tasks)
@@ -133,8 +133,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | GATE-07 | Phase 2 | Complete |
 | GATE-08 | Phase 2 | Complete |
 | GATE-09 | Phase 2 | Complete |
-| TEAM-01 | Phase 3 | Pending |
-| TEAM-02 | Phase 3 | Pending |
+| TEAM-01 | Phase 3 | Complete |
+| TEAM-02 | Phase 3 | Complete |
 | TEAM-03 | Phase 3 | Complete |
 | TEAM-04 | Phase 3 | Complete |
 | TEAM-05 | Phase 3 | Complete |

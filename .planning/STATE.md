@@ -29,15 +29,16 @@ Progress: [████████--] 83% (5/6 plans in Phase 3)
 |-------|-------|-------|----------|
 | 01-fork-and-foundation | 6 | 23min | 4min |
 | 02-worktree-state-and-quality-gates | 5 | 16min | 3min |
-| 03-agent-teams-and-distribution | 4 | 5min | 1min |
+| 03-agent-teams-and-distribution | 5 | 8min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 02-05 (3min), 03-01 (4min), 03-02 (3min), 03-04 (2min)
+- Last 5 plans: 03-01 (4min), 03-02 (3min), 03-04 (2min), 03-05 (3min)
 - Trend: Steady
 
 *Updated after each plan completion*
 | Phase 03 P01 | 4min | 2 tasks | 2 files |
 | Phase 03 P04 | 2min | 2 tasks | 2 files |
+| Phase 03 P05 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,9 @@ Recent decisions affecting current work:
 - [Phase 03]: Agent Teams detection checks process.env first, falls back to ~/.claude/settings.json
 - [Phase 03]: Team status section inserted before Session Continuity in STATE.md
 - [Phase 03]: Nudge dismiss merges into existing config.json rather than overwriting
+- [03-05]: New projects always show prominent nudge regardless of dismiss state
+- [03-05]: Resume-project shows lighter tooltip (not full nudge) since new-project already nudged
+- [03-05]: Execute-phase shows prominent nudge when not dismissed, lighter tooltip when dismissed
 
 ### Pending Todos
 
@@ -105,5 +109,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 03-04-PLAN.md
-Resume file: .planning/phases/03-agent-teams-and-distribution/03-04-SUMMARY.md
+Stopped at: Completed 03-05-PLAN.md
+Resume file: .planning/phases/03-agent-teams-and-distribution/03-05-SUMMARY.md
