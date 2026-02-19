@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
 - [x] **Phase 4: Distribution Portability** - Fix hardcoded paths, env var mismatch, and stale files so Mowism works on any machine
 - [x] **Phase 5: Fix Update Workflow** - Make `/mow:update` work after `install.sh` installation and fix broken `reapply-patches` references
-- [ ] **Phase 6: Cleanup Orphaned Workflows** - Remove dead workflow files and fix stale ROADMAP metadata
+- [x] **Phase 6: Cleanup Orphaned Workflows** - Remove dead workflow files and fix stale ROADMAP metadata
 
 ## Phase Details
 
@@ -114,9 +114,9 @@ Plans:
   1. `discovery-phase.md` either removed or documented as standalone (no false "called from plan-phase.md" claim)
   2. `verify-phase.md` either removed or documented as standalone (no false "executed by execute-phase.md" claim)
   3. ROADMAP.md Phase 4 plan checkboxes are `[x]` and progress table shows `3/3 | Complete`
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 06-01-PLAN.md -- Archive orphaned workflows + fix stale references and ROADMAP metadata
+- [x] 06-01-PLAN.md -- Archive orphaned workflows + fix stale references and ROADMAP metadata
 
 ## Progress
 
@@ -130,4 +130,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
 | 4. Distribution Portability | 3/3 | Complete    | 2026-02-19 |
 | 5. Fix Update Workflow | 1/1 | Complete    | 2026-02-19 |
-| 6. Cleanup Orphaned Workflows | 0/1 | Not Started | — |
+| 6. Cleanup Orphaned Workflows | 1/1 | Complete    | 2026-02-20 |

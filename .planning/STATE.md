@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** Phase 5: Fix Update Workflow
+**Current focus:** Phase 6: Cleanup Orphaned Workflows
 
 ## Current Position
 
-Phase: 5 of 5 (Fix Update Workflow)
+Phase: 6 of 6 (Cleanup Orphaned Workflows)
 Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-02-20 -- Completed 05-01 (Fix update workflow)
+Last activity: 2026-02-20 -- Completed 06-01 (Archive orphaned workflows + fix stale references)
 
-Progress: [██████████] 100% (1/1 plans in Phase 5)
+Progress: [██████████] 100% (1/1 plans in Phase 6)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: 3min
-- Total execution time: 0.80 hours
+- Total execution time: 0.84 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [██████████] 100% (1/1 plans in Phase 5)
 | 03-agent-teams-and-distribution | 6 | 11min | 2min |
 | 04-distribution-portability | 3 | 6min | 2min |
 | 05-fix-update-workflow | 1 | 2min | 2min |
+| 06-cleanup-orphaned-workflows | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-06 (3min), 04-02 (2min), 04-01 (2min), 04-03 (2min), 05-01 (2min)
+- Last 5 plans: 04-02 (2min), 04-01 (2min), 04-03 (2min), 05-01 (2min), 06-01 (2min)
 - Trend: Steady
 
 *Updated after each plan completion*
@@ -47,6 +48,7 @@ Progress: [██████████] 100% (1/1 plans in Phase 5)
 | Phase 04 P01 | 2min | 2 tasks | 105 files |
 | Phase 04 P03 | 2min | 2 tasks | 0 files |
 | Phase 05 P01 | 2min | 2 tasks | 5 files |
+| Phase 06 P01 | 2min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -108,6 +110,7 @@ Recent decisions affecting current work:
 - [04-03]: All 5 Phase 4 requirements validated PASS -- end-to-end portability confirmed with 103/103 tests passing
 - [05-01]: Update source configurable via .update-source file rather than hardcoded URL
 - [05-01]: INSTALL_SH path uses temp dir clone + re-run install.sh (reuses existing verified installer)
+- [06-01]: Phase 4/5 ROADMAP checkboxes already correct -- no changes needed (plan expected [ ] but found [x])
 
 ### Pending Todos
 
@@ -127,5 +130,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 05-01-PLAN.md (Fix update workflow -- Phase 5 complete)
-Resume file: .planning/phases/05-fix-update-workflow/05-01-SUMMARY.md
+Stopped at: Completed 06-01-PLAN.md (Archive orphaned workflows -- Phase 6 complete)
+Resume file: .planning/phases/06-cleanup-orphaned-workflows/06-01-SUMMARY.md
