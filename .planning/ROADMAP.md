@@ -46,7 +46,13 @@ Plans:
   3. After `/mow:refine-phase` completes, user can read `.planning/phases/VERIFICATION-CHAIN-P{phase}.md` to see all findings, and STATE.md shows the verification result (tier, pass/fail, date)
   4. When WorkTrunk creates a new worktree, it automatically has access to the main worktree's `.planning/` state (no manual setup)
   5. If WorkTrunk (`wt`) is not installed, user gets a clear error message on init explaining what to install and why
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 02-01-PLAN.md -- WorkTrunk dependency check + STATE.md worktree tracking + conflict detection (WKTR-01, WKTR-02, WKTR-03, GATE-07)
+- [ ] 02-02-PLAN.md -- refine-phase command + workflow with minimum tier chain (GATE-01, GATE-02, GATE-03)
+- [ ] 02-03-PLAN.md -- WorkTrunk post-create hook + execute-phase worktree awareness (WKTR-04, WKTR-05)
+- [ ] 02-04-PLAN.md -- Complex/algorithmic tiers + VERIFICATION-CHAIN output + reconciliation (GATE-04, GATE-05, GATE-06, GATE-08, GATE-09)
+- [ ] 02-05-PLAN.md -- End-to-end validation sweep (all requirements)
 
 ### Phase 3: Agent Teams and Distribution
 **Goal**: Users can optionally coordinate multiple Claude Code sessions via Agent Teams, and new users can install Mowism with one command
@@ -68,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fork and Foundation | 6/6 | Complete    | 2026-02-19 |
-| 2. Worktree State and Quality Gates | 0/TBD | Not started | - |
+| 2. Worktree State and Quality Gates | 0/5 | Not started | - |
 | 3. Agent Teams and Distribution | 0/TBD | Not started | - |
