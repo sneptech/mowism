@@ -186,7 +186,8 @@ After installing, run: wt config shell install`);
 
 function checkAgentTeams() {
   // Check shell-level env var first
-  if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') {
+  const envVal = (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || '').toLowerCase();
+  if (envVal === '1' || envVal === 'true') {
     return { enabled: true, source: 'env' };
   }
 
@@ -195,7 +196,10 @@ function checkAgentTeams() {
     const homedir = require('os').homedir();
     const settingsPath = path.join(homedir, '.claude', 'settings.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-    if (settings.env && settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') {
+    const settingsVal = (
+      String(settings.env && settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || '')
+    ).toLowerCase();
+    if (settingsVal === '1' || settingsVal === 'true') {
       return { enabled: true, source: 'settings' };
     }
   } catch {
