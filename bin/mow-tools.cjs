@@ -143,6 +143,34 @@ const MODEL_PROFILES = {
   'mow-integration-checker':  { quality: 'sonnet', balanced: 'sonnet', budget: 'haiku' },
 };
 
+// ─── WorkTrunk Dependency ─────────────────────────────────────────────────────
+
+function checkWorkTrunk() {
+  try {
+    execSync('command wt --version 2>&1', { encoding: 'utf-8', timeout: 5000 });
+    return { installed: true };
+  } catch {
+    return { installed: false };
+  }
+}
+
+function requireWorkTrunk() {
+  const check = checkWorkTrunk();
+  if (!check.installed) {
+    error(`WorkTrunk (wt) is required but not found.
+
+Mowism uses WorkTrunk for git worktree management in multi-agent workflows.
+
+Install via:
+  Arch/CachyOS: yay -S worktrunk
+  macOS:        brew install max-sixty/tap/worktrunk
+  Cargo:        cargo install worktrunk
+  Other:        https://worktrunk.dev
+
+After installing, run: wt config shell install`);
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseIncludeFlag(args) {
@@ -4238,6 +4266,7 @@ function getMilestoneInfo(cwd) {
 }
 
 function cmdInitExecutePhase(cwd, phase, includes, raw) {
+  requireWorkTrunk();
   if (!phase) {
     error('phase required for init execute-phase');
   }
@@ -4310,6 +4339,7 @@ function cmdInitExecutePhase(cwd, phase, includes, raw) {
 }
 
 function cmdInitPlanPhase(cwd, phase, includes, raw) {
+  requireWorkTrunk();
   if (!phase) {
     error('phase required for init plan-phase');
   }
@@ -4406,6 +4436,7 @@ function cmdInitPlanPhase(cwd, phase, includes, raw) {
 }
 
 function cmdInitNewProject(cwd, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
 
   // Detect Brave Search API key availability
@@ -4462,6 +4493,7 @@ function cmdInitNewProject(cwd, raw) {
 }
 
 function cmdInitNewMilestone(cwd, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
@@ -4489,6 +4521,7 @@ function cmdInitNewMilestone(cwd, raw) {
 }
 
 function cmdInitQuick(cwd, description, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
   const now = new Date();
   const slug = description ? generateSlugInternal(description)?.substring(0, 40) : null;
@@ -4538,6 +4571,7 @@ function cmdInitQuick(cwd, description, raw) {
 }
 
 function cmdInitResume(cwd, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
 
   // Check for interrupted agent
@@ -4565,6 +4599,7 @@ function cmdInitResume(cwd, raw) {
 }
 
 function cmdInitVerifyWork(cwd, phase, raw) {
+  requireWorkTrunk();
   if (!phase) {
     error('phase required for init verify-work');
   }
@@ -4594,6 +4629,7 @@ function cmdInitVerifyWork(cwd, phase, raw) {
 }
 
 function cmdInitPhaseOp(cwd, phase, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase);
 
@@ -4647,6 +4683,7 @@ function cmdInitPhaseOp(cwd, phase, raw) {
 }
 
 function cmdInitTodos(cwd, area, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
   const now = new Date();
 
@@ -4706,6 +4743,7 @@ function cmdInitTodos(cwd, area, raw) {
 }
 
 function cmdInitMilestoneOp(cwd, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
@@ -4767,6 +4805,7 @@ function cmdInitMilestoneOp(cwd, raw) {
 }
 
 function cmdInitMapCodebase(cwd, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
 
   // Check for existing codebase maps
@@ -4801,6 +4840,7 @@ function cmdInitMapCodebase(cwd, raw) {
 }
 
 function cmdInitProgress(cwd, includes, raw) {
+  requireWorkTrunk();
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
