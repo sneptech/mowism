@@ -26,13 +26,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Quality Skills
 
-- [ ] **SKIL-01**: `/scope-check` skill forked and registered in Mowism
-- [ ] **SKIL-02**: `/simplify` skill forked and registered in Mowism
-- [ ] **SKIL-03**: `/dead-code-sweep` skill forked and registered in Mowism
-- [ ] **SKIL-04**: `/prove-it` skill forked and registered in Mowism
-- [ ] **SKIL-05**: `/grill-me` skill forked and registered in Mowism
-- [ ] **SKIL-06**: `/change-summary` skill forked and registered in Mowism
-- [ ] **SKIL-07**: `/update-claude-md` skill forked and registered in Mowism
+- [x] **SKIL-01**: `/scope-check` skill forked and registered in Mowism
+- [x] **SKIL-02**: `/simplify` skill forked and registered in Mowism
+- [x] **SKIL-03**: `/dead-code-sweep` skill forked and registered in Mowism
+- [x] **SKIL-04**: `/prove-it` skill forked and registered in Mowism
+- [x] **SKIL-05**: `/grill-me` skill forked and registered in Mowism
+- [x] **SKIL-06**: `/change-summary` skill forked and registered in Mowism
+- [x] **SKIL-07**: `/update-claude-md` skill forked and registered in Mowism
 
 ### Quality Gate
 
@@ -117,13 +117,13 @@ Deferred to future release. Tracked but not in current roadmap.
 | WKTR-03 | Phase 2 | Pending |
 | WKTR-04 | Phase 2 | Pending |
 | WKTR-05 | Phase 2 | Pending |
-| SKIL-01 | Phase 1 | Pending |
-| SKIL-02 | Phase 1 | Pending |
-| SKIL-03 | Phase 1 | Pending |
-| SKIL-04 | Phase 1 | Pending |
-| SKIL-05 | Phase 1 | Pending |
-| SKIL-06 | Phase 1 | Pending |
-| SKIL-07 | Phase 1 | Pending |
+| SKIL-01 | Phase 1 | Complete |
+| SKIL-02 | Phase 1 | Complete |
+| SKIL-03 | Phase 1 | Complete |
+| SKIL-04 | Phase 1 | Complete |
+| SKIL-05 | Phase 1 | Complete |
+| SKIL-06 | Phase 1 | Complete |
+| SKIL-07 | Phase 1 | Complete |
 | GATE-01 | Phase 2 | Pending |
 | GATE-02 | Phase 2 | Pending |
 | GATE-03 | Phase 2 | Pending |
