@@ -12,7 +12,7 @@ Mowism is built in three phases: first, fork GSD and port all existing assets (w
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Fork and Foundation** - Fork GSD, rebrand to `/mow:*`, port all quality skills into the repo
+- [x] **Phase 1: Fork and Foundation** - Fork GSD, rebrand to `/mow:*`, port all quality skills into the repo
 - [ ] **Phase 2: Worktree State and Quality Gates** - Make `.planning/` worktree-aware and build `/mow:refine-phase` with tiered quality checks
 - [ ] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
 
@@ -33,8 +33,8 @@ Plans:
 - [x] 01-02-PLAN.md -- Fork agents, templates, references, VERSION (CORE-03, CORE-04, CORE-05)
 - [x] 01-03-PLAN.md -- Create quality skill commands (SKIL-01 through SKIL-07)
 - [x] 01-04-PLAN.md -- Fork workflows (CORE-01 partial)
-- [ ] 01-05-PLAN.md -- Fork commands and create /mow:migrate (CORE-01 partial, CORE-06)
-- [ ] 01-06-PLAN.md -- Validation sweep and smoke tests (all requirements)
+- [x] 01-05-PLAN.md -- Fork commands and create /mow:migrate (CORE-01 partial, CORE-06)
+- [x] 01-06-PLAN.md -- Validation sweep and smoke tests (all requirements)
 
 ### Phase 2: Worktree State and Quality Gates
 **Goal**: The planning system tracks which worktree is doing what, prevents conflicts, and `/mow:refine-phase` runs automated quality checks with zero manual skill chaining
@@ -67,6 +67,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fork and Foundation | 4/6 | In Progress | - |
+| 1. Fork and Foundation | 6/6 | Complete | 2026-02-19 |
 | 2. Worktree State and Quality Gates | 0/TBD | Not started | - |
 | 3. Agent Teams and Distribution | 0/TBD | Not started | - |
