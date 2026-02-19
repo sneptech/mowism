@@ -23,7 +23,7 @@ Load all context in one call:
 INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init resume)
 ```
 
-Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_exists`, `has_interrupted_agent`, `interrupted_agent_id`, `commit_docs`.
+Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_exists`, `has_interrupted_agent`, `interrupted_agent_id`, `commit_docs`, `agent_teams_enabled`, `agent_teams_nudge_dismissed`.
 
 **If `state_exists` is true:** Proceed to load_state
 **If `state_exists` is false but `roadmap_exists` or `project_exists` is true:** Offer to reconstruct STATE.md
@@ -56,6 +56,62 @@ cat .planning/PROJECT.md
 - **Key Decisions**: Full decision log with outcomes
 - **Constraints**: Hard limits on implementation
 
+</step>
+
+<step name="agent_teams_check">
+**After loading state**, check Agent Teams status from the init JSON.
+
+1. Check `agent_teams_enabled` from init JSON
+2. Check for previous team activity:
+   ```bash
+   TEAM_STATUS=$(node ~/.claude/mowism/bin/mow-tools.cjs team-status --raw 2>/dev/null || echo "{}")
+   ```
+
+**If Agent Teams is enabled AND previous team activity exists in STATE.md (team status is not "inactive"):**
+
+Show team re-spawn offer:
+
+```
+A previous agent team was active for this project.
+Would you like to re-spawn the team to continue parallel execution? (yes/no)
+```
+
+- **If yes:** Read incomplete plans from STATE.md/ROADMAP.md, then spawn a fresh lead orchestrator (Agent Teams has NO session resumption -- must create fresh team):
+  ```
+  Task(
+    subagent_type="mow-team-lead",
+    prompt="
+    <objective>
+    Re-spawn Agent Teams for this project. A previous team session ended.
+    Read ROADMAP.md and STATE.md to determine incomplete plans, then
+    coordinate fresh parallel execution across worktrees.
+    </objective>
+
+    <context>
+    @.planning/ROADMAP.md
+    @.planning/STATE.md
+    @.planning/config.json
+    </context>
+    ",
+    description="Agent Teams re-spawn from resume"
+  )
+  ```
+  After spawning, the lead orchestrator takes over. Exit resume workflow.
+
+- **If no:** Continue with standard resume flow (check_incomplete_work).
+
+**If Agent Teams is NOT enabled AND NOT dismissed (`agent_teams_nudge_dismissed: false`):**
+
+Show lighter tooltip (not the full prominent nudge -- that is reserved for new-project):
+
+```
+Tip: Agent Teams can execute this phase's plans in parallel.
+Enable: export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+Continue to check_incomplete_work.
+
+**If Agent Teams is NOT enabled AND dismissed:** Skip silently, continue to check_incomplete_work.
 </step>
 
 <step name="check_incomplete_work">

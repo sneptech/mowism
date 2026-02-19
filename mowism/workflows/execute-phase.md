@@ -19,7 +19,7 @@ Load all context in one call:
 INIT=$(node /home/max/.claude/mowism/bin/mow-tools.cjs init execute-phase "${PHASE_ARG}")
 ```
 
-Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelization`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `incomplete_plans`, `plan_count`, `incomplete_count`, `state_exists`, `roadmap_exists`.
+Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelization`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `incomplete_plans`, `plan_count`, `incomplete_count`, `state_exists`, `roadmap_exists`, `agent_teams_enabled`, `agent_teams_nudge_dismissed`.
 
 **If `phase_found` is false:** Error — phase directory not found.
 **If `plan_count` is 0:** Error — no plans found in phase.
@@ -33,6 +33,60 @@ When `parallelization` is false, plans within a wave execute sequentially.
 node /home/max/.claude/mowism/bin/mow-tools.cjs worktree claim "${PHASE_NUMBER}"
 ```
 This happens AFTER phase validation (no point claiming a phase that does not exist). If the claim fails (phase already claimed by another worktree), the error message from mow-tools.cjs will halt execution with a clear message.
+</step>
+
+<step name="agent_teams_nudge">
+**After worktree claim**, check Agent Teams status from the init JSON.
+
+**If Agent Teams IS enabled (`agent_teams_enabled: true`):** No nudge needed. The lead orchestrator handles team setup separately when invoked via `/mow:new-project` or `/mow:resume-work`. Continue to handle_branching.
+
+**If Agent Teams is NOT enabled (`agent_teams_enabled: false`):**
+
+Count plans and waves from init JSON (`plan_count`, and derive wave count from plan frontmatter).
+
+- **If not dismissed (`agent_teams_nudge_dismissed: false`):** Show prominent nudge:
+
+  ```
+  ---
+  ## Agent Teams: Parallel Execution
+
+  This phase has {N} plans across {M} waves. With Agent Teams,
+  these plans could execute in parallel across worktrees.
+
+  **To enable Agent Teams:**
+
+  Option A (shell):
+    export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+
+  Option B (settings.json):
+    Add to ~/.claude/settings.json:
+    { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+
+  Then restart Claude Code.
+
+  > Type "don't remind me" to dismiss for this project.
+  ---
+  ```
+
+  - If user says "don't remind me":
+    ```bash
+    node ~/.claude/mowism/bin/mow-tools.cjs config nudge-dismiss
+    ```
+  - Otherwise: continue to handle_branching.
+
+- **If dismissed (`agent_teams_nudge_dismissed: true`):** Show lighter tooltip only:
+
+  ```
+  Tip: Agent Teams can execute this phase's {N} plans in parallel.
+  Enable: export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+  ```
+
+  Continue to handle_branching.
+
+**Per locked decisions:**
+- Prominent nudge at /mow:execute-phase (key moment)
+- Lighter tooltips between phases when nudge is dismissed
+- Persistent per-project dismiss via mow-tools.cjs
 </step>
 
 <step name="handle_branching">
