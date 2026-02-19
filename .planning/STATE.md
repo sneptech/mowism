@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** Phase 4: Distribution and Portability
+**Current focus:** Phase 5: Fix Update Workflow
 
 ## Current Position
 
-Phase: 4 of 4 (Distribution and Portability)
-Plan: 3 of 3 in current phase
+Phase: 5 of 5 (Fix Update Workflow)
+Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-02-19 -- Completed 04-03 (End-to-end portability validation)
+Last activity: 2026-02-20 -- Completed 05-01 (Fix update workflow)
 
-Progress: [██████████] 100% (3/3 plans in Phase 4)
+Progress: [██████████] 100% (1/1 plans in Phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: 3min
-- Total execution time: 0.77 hours
+- Total execution time: 0.80 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [██████████] 100% (3/3 plans in Phase 4)
 | 02-worktree-state-and-quality-gates | 5 | 16min | 3min |
 | 03-agent-teams-and-distribution | 6 | 11min | 2min |
 | 04-distribution-portability | 3 | 6min | 2min |
+| 05-fix-update-workflow | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-05 (3min), 03-03 (7min), 03-06 (3min), 04-02 (2min), 04-03 (2min)
+- Last 5 plans: 03-06 (3min), 04-02 (2min), 04-01 (2min), 04-03 (2min), 05-01 (2min)
 - Trend: Steady
 
 *Updated after each plan completion*
@@ -45,6 +46,7 @@ Progress: [██████████] 100% (3/3 plans in Phase 4)
 | Phase 04 P02 | 2min | 2 tasks | 4 files |
 | Phase 04 P01 | 2min | 2 tasks | 105 files |
 | Phase 04 P03 | 2min | 2 tasks | 0 files |
+| Phase 05 P01 | 2min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -104,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 04-01]: Phase 4 plan files excluded from replacement to preserve documentation context
 - [Phase 04-01]: No tilde-in-double-quotes issues found -- all bash contexts use unquoted paths
 - [04-03]: All 5 Phase 4 requirements validated PASS -- end-to-end portability confirmed with 103/103 tests passing
+- [05-01]: Update source configurable via .update-source file rather than hardcoded URL
+- [05-01]: INSTALL_SH path uses temp dir clone + re-run install.sh (reuses existing verified installer)
 
 ### Pending Todos
 
@@ -123,5 +127,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 04-03-PLAN.md (End-to-end portability validation -- Phase 4 complete)
-Resume file: .planning/phases/04-distribution-portability/04-03-SUMMARY.md
+Stopped at: Completed 05-01-PLAN.md (Fix update workflow -- Phase 5 complete)
+Resume file: .planning/phases/05-fix-update-workflow/05-01-SUMMARY.md
