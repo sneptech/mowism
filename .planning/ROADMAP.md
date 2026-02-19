@@ -27,7 +27,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can run `/scope-check`, `/simplify`, `/dead-code-sweep`, `/prove-it`, `/grill-me`, `/change-summary`, and `/update-claude-md` as registered Mowism skills
   3. User can run `/mow:migrate` on an existing GSD `.planning/` directory and continue working without manual fixup
   4. User never sees "gsd" in any command name, template output, agent definition, or tool reference -- only "mow"
-**Plans**: TBD
+**Plans:** 6 plans
+Plans:
+- [ ] 01-01-PLAN.md -- Fork mow-tools.cjs and test file (CORE-02)
+- [ ] 01-02-PLAN.md -- Fork agents, templates, references, VERSION (CORE-03, CORE-04, CORE-05)
+- [ ] 01-03-PLAN.md -- Create quality skill commands (SKIL-01 through SKIL-07)
+- [ ] 01-04-PLAN.md -- Fork workflows (CORE-01 partial)
+- [ ] 01-05-PLAN.md -- Fork commands and create /mow:migrate (CORE-01 partial, CORE-06)
+- [ ] 01-06-PLAN.md -- Validation sweep and smoke tests (all requirements)
 
 ### Phase 2: Worktree State and Quality Gates
 **Goal**: The planning system tracks which worktree is doing what, prevents conflicts, and `/mow:refine-phase` runs automated quality checks with zero manual skill chaining
@@ -60,6 +67,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fork and Foundation | 0/TBD | Not started | - |
+| 1. Fork and Foundation | 0/6 | Not started | - |
 | 2. Worktree State and Quality Gates | 0/TBD | Not started | - |
 | 3. Agent Teams and Distribution | 0/TBD | Not started | - |
