@@ -566,4 +566,4 @@ Task completion ≠ Goal achievement. A task "create chat component" can complet
 5. Gaps found → fix plans created → execute → re-verify
 6. All must_haves pass → phase complete
 
-See `~/.claude/mowism/workflows/verify-phase.md` for verification logic.
+See the mow-verifier agent definition for verification logic (spawned by execute-phase.md).
