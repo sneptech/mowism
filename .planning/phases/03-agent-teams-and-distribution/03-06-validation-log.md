@@ -94,12 +94,37 @@
 ### Full Test Suite -- PASS
 
 **Evidence:**
-- `node bin/mow-tools.test.cjs` runs all tests
-- All tests pass (existing + Agent Teams tests)
+- `node bin/mow-tools.test.cjs` executed: 100 tests, 22 suites, 0 failures
+- Duration: 4786ms
+- All Agent Teams tests pass: detection, team-status, team-update lifecycle (5 tests)
+- All existing tests pass: history-digest, phases, roadmap, state, worktree, scaffold, etc.
 
 ### Cross-reference Check -- PASS
 
 **Evidence:**
-- Help files reference only commands that exist in commands/mow/
+- 34 help files in help/ directory, 34 command files in commands/mow/
+- 12 agent definitions in agents/mow-*.md
 - install.sh copies all directories that exist in repo (mowism/, agents/, commands/, help/, bin/)
-- README install instructions match actual install.sh location (bin/install.sh)
+- README install instructions reference `./bin/install.sh` which matches actual location
+- `bash -n bin/install.sh` syntax check: PASSED
+
+---
+
+## Summary
+
+| Requirement | Verdict | Key Evidence |
+|---|---|---|
+| TEAM-01 | PASS | new-project.md Step 8.5 with offer/nudge |
+| TEAM-02 | PASS | resume-project.md agent_teams_check step |
+| TEAM-03 | PASS | mow-team-lead.md with all API primitives |
+| TEAM-04 | PASS | Nudge in new-project, execute-phase, resume-project |
+| TEAM-05 | PASS | team-status/team-update full lifecycle tested |
+| DIST-01 | PASS | install.sh syntax valid, copies all dirs |
+| DIST-02 | PASS | help-open.md + 34 help files + ??? in all commands |
+| DIST-03 | PASS | install.sh checks `command -v wt` |
+| DIST-04 | PASS | install.sh checks AGENT_TEAMS env var (optional) |
+| DIST-05 | PASS | README.md with install, quick start, features |
+
+**All 10 Phase 3 requirements: PASS**
+**Full test suite: 100/100 PASS**
+**Cross-references: No broken links found**
