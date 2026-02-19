@@ -39,12 +39,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **GATE-01**: `/mow:refine-phase` command exists and runs between execute-phase and verify-work
 - [x] **GATE-02**: `/mow:refine-phase` presents 3 tier options (minimum, complex, algorithmic) via AskUserQuestion
 - [x] **GATE-03**: Minimum tier runs: scope-check (gate) → change-summary → verify-work → update-claude-md
-- [ ] **GATE-04**: Complex tier runs: scope-check (gate) → simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
-- [ ] **GATE-05**: Algorithmic tier runs: scope-check (gate) → prove-it + simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
-- [ ] **GATE-06**: Quality check subagents write findings to `.planning/phases/VERIFICATION-CHAIN-P{phase}.md`
+- [x] **GATE-04**: Complex tier runs: scope-check (gate) → simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
+- [x] **GATE-05**: Algorithmic tier runs: scope-check (gate) → prove-it + simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
+- [x] **GATE-06**: Quality check subagents write findings to `.planning/phases/VERIFICATION-CHAIN-P{phase}.md`
 - [x] **GATE-07**: STATE.md updated after refine-phase with verification results (date, tier used, pass/fail, blockers)
-- [ ] **GATE-08**: Each quality check within a worktree runs locally; findings summary is accessible to orchestrator
-- [ ] **GATE-09**: Reconciliation step after parallel quality checks synthesizes potentially conflicting recommendations
+- [x] **GATE-08**: Each quality check within a worktree runs locally; findings summary is accessible to orchestrator
+- [x] **GATE-09**: Reconciliation step after parallel quality checks synthesizes potentially conflicting recommendations
 
 ### Agent Teams
 
@@ -127,12 +127,12 @@ Deferred to future release. Tracked but not in current roadmap.
 | GATE-01 | Phase 2 | Complete |
 | GATE-02 | Phase 2 | Complete |
 | GATE-03 | Phase 2 | Complete |
-| GATE-04 | Phase 2 | Pending |
-| GATE-05 | Phase 2 | Pending |
-| GATE-06 | Phase 2 | Pending |
+| GATE-04 | Phase 2 | Complete |
+| GATE-05 | Phase 2 | Complete |
+| GATE-06 | Phase 2 | Complete |
 | GATE-07 | Phase 2 | Complete |
-| GATE-08 | Phase 2 | Pending |
-| GATE-09 | Phase 2 | Pending |
+| GATE-08 | Phase 2 | Complete |
+| GATE-09 | Phase 2 | Complete |
 | TEAM-01 | Phase 3 | Pending |
 | TEAM-02 | Phase 3 | Pending |
 | TEAM-03 | Phase 3 | Pending |
