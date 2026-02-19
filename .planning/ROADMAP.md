@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. User never sees "gsd" in any command name, template output, agent definition, or tool reference -- only "mow"
 **Plans:** 6 plans
 Plans:
-- [ ] 01-01-PLAN.md -- Fork mow-tools.cjs and test file (CORE-02)
+- [x] 01-01-PLAN.md -- Fork mow-tools.cjs and test file (CORE-02)
 - [ ] 01-02-PLAN.md -- Fork agents, templates, references, VERSION (CORE-03, CORE-04, CORE-05)
 - [ ] 01-03-PLAN.md -- Create quality skill commands (SKIL-01 through SKIL-07)
 - [ ] 01-04-PLAN.md -- Fork workflows (CORE-01 partial)
