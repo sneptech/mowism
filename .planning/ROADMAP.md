@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Worktree State and Quality Gates** - Make `.planning/` worktree-aware and build `/mow:refine-phase` with tiered quality checks
 - [x] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
 - [x] **Phase 4: Distribution Portability** - Fix hardcoded paths, env var mismatch, and stale files so Mowism works on any machine
-- [ ] **Phase 5: Fix Update Workflow** - Make `/mow:update` work after `install.sh` installation and fix broken `reapply-patches` references
+- [x] **Phase 5: Fix Update Workflow** - Make `/mow:update` work after `install.sh` installation and fix broken `reapply-patches` references
 - [ ] **Phase 6: Cleanup Orphaned Workflows** - Remove dead workflow files and fix stale ROADMAP metadata
 
 ## Phase Details
@@ -127,5 +127,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | 2. Worktree State and Quality Gates | 5/5 | Complete    | 2026-02-19 |
 | 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
 | 4. Distribution Portability | 3/3 | Complete    | 2026-02-19 |
-| 5. Fix Update Workflow | 0/1 | Not Started | — |
+| 5. Fix Update Workflow | 1/1 | Complete    | 2026-02-20 |
 | 6. Cleanup Orphaned Workflows | 0/0 | Not Started | — |
