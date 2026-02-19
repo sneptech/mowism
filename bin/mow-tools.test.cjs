@@ -2589,6 +2589,51 @@ describe('Agent Teams detection', () => {
     // Restore
     if (original !== undefined) process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = original;
   });
+
+  test('checkAgentTeams returns enabled: true when env var is set to "true"', () => {
+    const original = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = 'true';
+
+    const result = runMowTools('init new-project', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.agent_teams_enabled, true, 'agent_teams_enabled should be true for "true"');
+
+    // Restore
+    if (original !== undefined) process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = original;
+    else delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+  });
+
+  test('checkAgentTeams returns enabled: true when env var is set to "TRUE" (case-insensitive)', () => {
+    const original = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = 'TRUE';
+
+    const result = runMowTools('init new-project', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.agent_teams_enabled, true, 'agent_teams_enabled should be true for "TRUE"');
+
+    // Restore
+    if (original !== undefined) process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = original;
+    else delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+  });
+
+  test('checkAgentTeams returns enabled: true when env var is set to "1"', () => {
+    const original = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+
+    const result = runMowTools('init new-project', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.agent_teams_enabled, true, 'agent_teams_enabled should be true for "1"');
+
+    // Restore
+    if (original !== undefined) process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = original;
+    else delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
