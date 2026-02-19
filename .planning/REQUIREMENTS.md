@@ -36,9 +36,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Quality Gate
 
-- [ ] **GATE-01**: `/mow:refine-phase` command exists and runs between execute-phase and verify-work
-- [ ] **GATE-02**: `/mow:refine-phase` presents 3 tier options (minimum, complex, algorithmic) via AskUserQuestion
-- [ ] **GATE-03**: Minimum tier runs: scope-check (gate) → change-summary → verify-work → update-claude-md
+- [x] **GATE-01**: `/mow:refine-phase` command exists and runs between execute-phase and verify-work
+- [x] **GATE-02**: `/mow:refine-phase` presents 3 tier options (minimum, complex, algorithmic) via AskUserQuestion
+- [x] **GATE-03**: Minimum tier runs: scope-check (gate) → change-summary → verify-work → update-claude-md
 - [ ] **GATE-04**: Complex tier runs: scope-check (gate) → simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
 - [ ] **GATE-05**: Algorithmic tier runs: scope-check (gate) → prove-it + simplify + dead-code-sweep + grill-me in parallel → change-summary → verify-work → update-claude-md
 - [ ] **GATE-06**: Quality check subagents write findings to `.planning/phases/VERIFICATION-CHAIN-P{phase}.md`
@@ -124,9 +124,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | SKIL-05 | Phase 1 | Complete |
 | SKIL-06 | Phase 1 | Complete |
 | SKIL-07 | Phase 1 | Complete |
-| GATE-01 | Phase 2 | Pending |
-| GATE-02 | Phase 2 | Pending |
-| GATE-03 | Phase 2 | Pending |
+| GATE-01 | Phase 2 | Complete |
+| GATE-02 | Phase 2 | Complete |
+| GATE-03 | Phase 2 | Complete |
 | GATE-04 | Phase 2 | Pending |
 | GATE-05 | Phase 2 | Pending |
 | GATE-06 | Phase 2 | Pending |
