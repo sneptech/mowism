@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **TEAM-01**: `/mow:new-project` offers option to spawn Agent Teams setup with lead orchestrator
 - [ ] **TEAM-02**: `/mow:resume-work` offers option to re-spawn Agent Teams from persisted `.planning/` state
 - [ ] **TEAM-03**: Lead orchestrator tracks overall project state while human hops between individual sessions
-- [ ] **TEAM-04**: Agent Teams gracefully degrades to subagent-only mode when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is not enabled
+- [ ] **TEAM-04**: Without Agent Teams env var, Mowism still works but gives a prominent nudge with exact instructions (where to set it, what to run) explaining the user is missing the most powerful parallelism feature
 - [ ] **TEAM-05**: STATE.md tracks agent team status (active teammates, assigned worktrees, current tasks)
 
 ### Distribution
@@ -106,49 +106,49 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | — | Pending |
-| CORE-02 | — | Pending |
-| CORE-03 | — | Pending |
-| CORE-04 | — | Pending |
-| CORE-05 | — | Pending |
-| CORE-06 | — | Pending |
-| WKTR-01 | — | Pending |
-| WKTR-02 | — | Pending |
-| WKTR-03 | — | Pending |
-| WKTR-04 | — | Pending |
-| WKTR-05 | — | Pending |
-| SKIL-01 | — | Pending |
-| SKIL-02 | — | Pending |
-| SKIL-03 | — | Pending |
-| SKIL-04 | — | Pending |
-| SKIL-05 | — | Pending |
-| SKIL-06 | — | Pending |
-| SKIL-07 | — | Pending |
-| GATE-01 | — | Pending |
-| GATE-02 | — | Pending |
-| GATE-03 | — | Pending |
-| GATE-04 | — | Pending |
-| GATE-05 | — | Pending |
-| GATE-06 | — | Pending |
-| GATE-07 | — | Pending |
-| GATE-08 | — | Pending |
-| GATE-09 | — | Pending |
-| TEAM-01 | — | Pending |
-| TEAM-02 | — | Pending |
-| TEAM-03 | — | Pending |
-| TEAM-04 | — | Pending |
-| TEAM-05 | — | Pending |
-| DIST-01 | — | Pending |
-| DIST-02 | — | Pending |
-| DIST-03 | — | Pending |
-| DIST-04 | — | Pending |
-| DIST-05 | — | Pending |
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Pending |
+| CORE-06 | Phase 1 | Pending |
+| WKTR-01 | Phase 2 | Pending |
+| WKTR-02 | Phase 2 | Pending |
+| WKTR-03 | Phase 2 | Pending |
+| WKTR-04 | Phase 2 | Pending |
+| WKTR-05 | Phase 2 | Pending |
+| SKIL-01 | Phase 1 | Pending |
+| SKIL-02 | Phase 1 | Pending |
+| SKIL-03 | Phase 1 | Pending |
+| SKIL-04 | Phase 1 | Pending |
+| SKIL-05 | Phase 1 | Pending |
+| SKIL-06 | Phase 1 | Pending |
+| SKIL-07 | Phase 1 | Pending |
+| GATE-01 | Phase 2 | Pending |
+| GATE-02 | Phase 2 | Pending |
+| GATE-03 | Phase 2 | Pending |
+| GATE-04 | Phase 2 | Pending |
+| GATE-05 | Phase 2 | Pending |
+| GATE-06 | Phase 2 | Pending |
+| GATE-07 | Phase 2 | Pending |
+| GATE-08 | Phase 2 | Pending |
+| GATE-09 | Phase 2 | Pending |
+| TEAM-01 | Phase 3 | Pending |
+| TEAM-02 | Phase 3 | Pending |
+| TEAM-03 | Phase 3 | Pending |
+| TEAM-04 | Phase 3 | Pending |
+| TEAM-05 | Phase 3 | Pending |
+| DIST-01 | Phase 3 | Pending |
+| DIST-02 | Phase 3 | Pending |
+| DIST-03 | Phase 3 | Pending |
+| DIST-04 | Phase 3 | Pending |
+| DIST-05 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 36 total
-- Mapped to phases: 0
-- Unmapped: 36 ⚠️
+- Mapped to phases: 36
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-19 after initial definition*
+*Last updated: 2026-02-19 after roadmap creation*
