@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Core Framework
 
-- [ ] **CORE-01**: All GSD workflows forked and `/gsd:*` commands rebranded to `/mow:*`
+- [x] **CORE-01**: All GSD workflows forked and `/gsd:*` commands rebranded to `/mow:*`
 - [x] **CORE-02**: `gsd-tools.cjs` forked to `mow-tools.cjs` with all internal references updated
 - [x] **CORE-03**: All GSD agent definitions forked with updated references to Mowism paths
 - [x] **CORE-04**: All GSD templates forked with updated branding
@@ -106,7 +106,7 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
 | CORE-02 | Phase 1 | Complete |
 | CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Complete |

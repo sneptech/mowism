@@ -30,9 +30,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 6 plans
 Plans:
 - [x] 01-01-PLAN.md -- Fork mow-tools.cjs and test file (CORE-02)
-- [ ] 01-02-PLAN.md -- Fork agents, templates, references, VERSION (CORE-03, CORE-04, CORE-05)
-- [ ] 01-03-PLAN.md -- Create quality skill commands (SKIL-01 through SKIL-07)
-- [ ] 01-04-PLAN.md -- Fork workflows (CORE-01 partial)
+- [x] 01-02-PLAN.md -- Fork agents, templates, references, VERSION (CORE-03, CORE-04, CORE-05)
+- [x] 01-03-PLAN.md -- Create quality skill commands (SKIL-01 through SKIL-07)
+- [x] 01-04-PLAN.md -- Fork workflows (CORE-01 partial)
 - [ ] 01-05-PLAN.md -- Fork commands and create /mow:migrate (CORE-01 partial, CORE-06)
 - [ ] 01-06-PLAN.md -- Validation sweep and smoke tests (all requirements)
 
@@ -67,6 +67,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fork and Foundation | 3/6 | In Progress | - |
+| 1. Fork and Foundation | 4/6 | In Progress | - |
 | 2. Worktree State and Quality Gates | 0/TBD | Not started | - |
 | 3. Agent Teams and Distribution | 0/TBD | Not started | - |
