@@ -15,6 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Fork and Foundation** - Fork GSD, rebrand to `/mow:*`, port all quality skills into the repo
 - [x] **Phase 2: Worktree State and Quality Gates** - Make `.planning/` worktree-aware and build `/mow:refine-phase` with tiered quality checks
 - [x] **Phase 3: Agent Teams and Distribution** - Add opt-in Agent Teams coordination and package for one-command install
+- [ ] **Phase 4: Distribution Portability** - Fix hardcoded paths, env var mismatch, and stale files so Mowism works on any machine
 
 ## Phase Details
 
@@ -73,6 +74,21 @@ Plans:
 - [x] 03-05-PLAN.md -- Agent Teams integration into new-project, resume-work, execute-phase workflows (TEAM-01, TEAM-02)
 - [x] 03-06-PLAN.md -- End-to-end validation sweep (all requirements)
 
+### Phase 4: Distribution Portability
+**Goal**: All distributed files use portable paths so Mowism installs and runs correctly on any user's machine, not just the developer's
+**Depends on**: Phase 3
+**Requirements**: DIST-04 (fix), DIST-01 (fix), CORE-01 (fix), CORE-03 (fix), TEAM-04 (fix)
+**Gap Closure:** Closes gaps from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. A non-developer user running `install.sh` gets working `/mow:*` commands with no "No such file or directory" errors from hardcoded paths
+  2. `checkAgentTeams()` detects both `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and `=true` — users following install.sh instructions see Agent Teams detected
+  3. No files in the repo under `mowism/bin/` that are stale copies of `bin/` originals
+  4. Zero occurrences of `/home/max/.claude/` in any workflow, command, or agent file distributed to users
+Plans:
+- [ ] 04-01-PLAN.md -- Replace hardcoded paths with portable $HOME/.claude in all source files
+- [ ] 04-02-PLAN.md -- Fix env var mismatch + remove stale mowism/bin/ files
+- [ ] 04-03-PLAN.md -- End-to-end portability validation sweep
+
 ## Progress
 
 **Execution Order:**
@@ -83,3 +99,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | 1. Fork and Foundation | 6/6 | Complete    | 2026-02-19 |
 | 2. Worktree State and Quality Gates | 5/5 | Complete    | 2026-02-19 |
 | 3. Agent Teams and Distribution | 6/6 | Complete    | 2026-02-19 |
+| 4. Distribution Portability | 0/3 | Not Started | — |
