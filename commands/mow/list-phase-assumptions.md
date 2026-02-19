@@ -9,6 +9,12 @@ allowed-tools:
   - Glob
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:list-phase-assumptions ???`):
+1. Extract the command name: `list-phase-assumptions`
+2. Run `/mow:help-open list-phase-assumptions` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Analyze a phase and present Claude's assumptions about technical approach, implementation order, scope boundaries, risk areas, and dependencies.
 

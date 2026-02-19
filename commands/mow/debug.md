@@ -9,6 +9,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:debug ???`):
+1. Extract the command name: `debug`
+2. Run `/mow:help-open debug` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Debug issues using scientific method with subagent isolation.
 

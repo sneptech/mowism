@@ -10,6 +10,13 @@ allowed-tools:
   - Task
   - Write
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:audit-milestone ???`):
+1. Extract the command name: `audit-milestone`
+2. Run `/mow:help-open audit-milestone` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Verify milestone achieved its definition of done. Check requirements coverage, cross-phase integration, and end-to-end flows.
 

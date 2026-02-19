@@ -11,6 +11,13 @@ allowed-tools:
   - Write
   - Task
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:verify-work ???`):
+1. Extract the command name: `verify-work`
+2. Run `/mow:help-open verify-work` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Validate built features through conversational testing with persistent state.
 

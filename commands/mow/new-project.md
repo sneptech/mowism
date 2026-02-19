@@ -9,6 +9,13 @@ allowed-tools:
   - Task
   - AskUserQuestion
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:new-project ???`):
+1. Extract the command name: `new-project`
+2. Run `/mow:help-open new-project` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <context>
 **Flags:**
 - `--auto` — Automatic mode. After config questions, runs research → requirements → roadmap without further interaction. Expects idea document via @ reference.

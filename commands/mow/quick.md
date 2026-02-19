@@ -12,6 +12,13 @@ allowed-tools:
   - Task
   - AskUserQuestion
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:quick ???`):
+1. Extract the command name: `quick`
+2. Run `/mow:help-open quick` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Execute small, ad-hoc tasks with MOW guarantees (atomic commits, STATE.md tracking).
 

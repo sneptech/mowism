@@ -2,6 +2,13 @@
 name: mow:help
 description: Show available MOW commands and usage guide
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:help ???`):
+1. Extract the command name: `help`
+2. Run `/mow:help-open help` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Display the complete MOW command reference.
 

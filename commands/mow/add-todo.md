@@ -9,6 +9,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:add-todo ???`):
+1. Extract the command name: `add-todo`
+2. Run `/mow:help-open add-todo` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Capture an idea, task, or issue that surfaces during a MOW session as a structured todo for later work.
 

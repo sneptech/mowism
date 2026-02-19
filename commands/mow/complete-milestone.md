@@ -9,6 +9,12 @@ allowed-tools:
   - Bash
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:complete-milestone ???`):
+1. Extract the command name: `complete-milestone`
+2. Run `/mow:help-open complete-milestone` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Mark milestone {{version}} complete, archive to milestones/, and update ROADMAP.md and REQUIREMENTS.md.
 

@@ -8,6 +8,12 @@ allowed-tools:
   - Bash
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:set-profile ???`):
+1. Extract the command name: `set-profile`
+2. Run `/mow:help-open set-profile` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Switch the model profile used by MOW agents. Controls which Claude model each agent uses, balancing quality vs token spend.
 

@@ -13,6 +13,13 @@ allowed-tools:
   - WebFetch
   - mcp__context7__*
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:plan-phase ???`):
+1. Extract the command name: `plan-phase`
+2. Run `/mow:help-open plan-phase` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Create executable phase prompts (PLAN.md files) for a roadmap phase with integrated research and verification.
 

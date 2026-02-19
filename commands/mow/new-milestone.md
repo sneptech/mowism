@@ -9,6 +9,13 @@ allowed-tools:
   - Task
   - AskUserQuestion
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:new-milestone ???`):
+1. Extract the command name: `new-milestone`
+2. Run `/mow:help-open new-milestone` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Start a new milestone: questioning → research (optional) → requirements → roadmap.
 

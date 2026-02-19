@@ -9,6 +9,13 @@ allowed-tools:
   - Grep
   - AskUserQuestion
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:plan-milestone-gaps ???`):
+1. Extract the command name: `plan-milestone-gaps`
+2. Run `/mow:help-open plan-milestone-gaps` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Create all phases necessary to close gaps identified by `/mow:audit-milestone`.
 

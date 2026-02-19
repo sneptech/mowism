@@ -8,6 +8,12 @@ allowed-tools:
   - Bash
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:add-phase ???`):
+1. Extract the command name: `add-phase`
+2. Run `/mow:help-open add-phase` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Add a new integer phase to the end of the current milestone in the roadmap.
 

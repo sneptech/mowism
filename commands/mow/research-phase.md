@@ -8,6 +8,12 @@ allowed-tools:
   - Task
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:research-phase ???`):
+1. Extract the command name: `research-phase`
+2. Run `/mow:help-open research-phase` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Research how to implement a phase. Spawns mow-phase-researcher agent with phase context.
 

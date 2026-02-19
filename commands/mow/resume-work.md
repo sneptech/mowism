@@ -9,6 +9,12 @@ allowed-tools:
   - SlashCommand
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:resume-work ???`):
+1. Extract the command name: `resume-work`
+2. Run `/mow:help-open resume-work` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Restore complete project context and resume work seamlessly from previous session.
 

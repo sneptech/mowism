@@ -7,6 +7,12 @@ allowed-tools:
   - Bash
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:pause-work ???`):
+1. Extract the command name: `pause-work`
+2. Run `/mow:help-open pause-work` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Create `.continue-here.md` handoff file to preserve complete work state across sessions.
 

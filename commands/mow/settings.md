@@ -8,6 +8,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:settings ???`):
+1. Extract the command name: `settings`
+2. Run `/mow:help-open settings` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Interactive configuration of MOW workflow agents and model profile via multi-question prompt.
 

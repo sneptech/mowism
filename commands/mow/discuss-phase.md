@@ -12,6 +12,12 @@ allowed-tools:
   - Task
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:discuss-phase ???`):
+1. Extract the command name: `discuss-phase`
+2. Run `/mow:help-open discuss-phase` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Extract implementation decisions that downstream agents need — researcher and planner will use CONTEXT.md to know what to investigate and what choices are locked.
 

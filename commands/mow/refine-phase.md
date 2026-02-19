@@ -12,6 +12,13 @@ allowed-tools:
   - Task
   - AskUserQuestion
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:refine-phase ???`):
+1. Extract the command name: `refine-phase`
+2. Run `/mow:help-open refine-phase` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Run automated quality checks on a completed phase. Presents tier options (Auto, minimum, complex, algorithmic), then orchestrates the quality chain as sequential/parallel Task() subagents.
 

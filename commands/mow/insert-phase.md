@@ -8,6 +8,12 @@ allowed-tools:
   - Bash
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:insert-phase ???`):
+1. Extract the command name: `insert-phase`
+2. Run `/mow:help-open insert-phase` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Insert a decimal phase for urgent work discovered mid-milestone that must be completed between existing integer phases.
 

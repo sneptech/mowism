@@ -3,6 +3,13 @@ name: mow:reapply-patches
 description: Reapply local modifications after a MOW update
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
+
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:reapply-patches ???`):
+1. Extract the command name: `reapply-patches`
+2. Run `/mow:help-open reapply-patches` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 name: mow:reapply-patches
 
 <purpose>

@@ -10,6 +10,12 @@ allowed-tools:
   - Grep
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:migrate ???`):
+1. Extract the command name: `migrate`
+2. Run `/mow:help-open migrate` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 Upgrade an existing GSD `.planning/` directory to Mowism format. This is a safe, recoverable operation: backup first, then in-place replacement, then auto-commit.
 </objective>

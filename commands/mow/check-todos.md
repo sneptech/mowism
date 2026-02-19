@@ -9,6 +9,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+**??? Help Detection:**
+If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:check-todos ???`):
+1. Extract the command name: `check-todos`
+2. Run `/mow:help-open check-todos` to open the help file in the user's editor
+3. Stop here -- do NOT proceed with the normal command execution below
+
 <objective>
 List all pending todos, allow selection, load full context for the selected todo, and route to appropriate action.
 
