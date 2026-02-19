@@ -13,7 +13,7 @@ If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:reapply-patches ???`)
 name: mow:reapply-patches
 
 <purpose>
-After a MOW update wipes and reinstalls files, this command merges user's previously saved local modifications back into the new version. Uses intelligent comparison to handle cases where the upstream file also changed.
+After a MOW update, this command helps merge any previously saved local modifications back into the updated installation. Uses intelligent comparison to handle cases where the upstream file also changed.
 </purpose>
 
 <process>
@@ -37,8 +37,12 @@ Read `backup-meta.json` from the patches directory.
 ```
 No local patches found. Nothing to reapply.
 
-Local patches are automatically saved when you run /mow:update
-after modifying any MOW workflow, command, or agent files.
+To preserve local modifications before updating:
+1. Identify files you have modified in ~/.claude/
+2. Copy them to a safe location before running /mow:update
+3. After updating, manually merge your changes back
+
+Automatic patch detection may be added in a future version.
 ```
 Exit.
 

@@ -1,6 +1,6 @@
 ---
 name: mow:update
-description: Update MOW to latest version with changelog display
+description: Update MOW to latest version
 allowed-tools:
   - Bash
   - AskUserQuestion
@@ -13,14 +13,14 @@ If `$ARGUMENTS` contains "???" (e.g., the user typed `/mow:update ???`):
 3. Stop here -- do NOT proceed with the normal command execution below
 
 <objective>
-Check for MOW updates, install if available, and display what changed.
+Check for MOW updates and install if available.
 
 Routes to the update workflow which handles:
-- Version detection (local vs global installation)
-- npm version checking
-- Changelog fetching and display
-- User confirmation with clean install warning
-- Update execution and cache clearing
+- Installation method detection (git clone vs install.sh)
+- Update source resolution (remote URL or local path)
+- Version comparison
+- User confirmation before updating
+- Update execution (git pull or re-run install.sh)
 - Restart reminder
 </objective>
 
@@ -32,12 +32,10 @@ Routes to the update workflow which handles:
 **Follow the update workflow** from `@~/.claude/mowism/workflows/update.md`.
 
 The workflow handles all logic including:
-1. Installed version detection (local/global)
-2. Latest version checking via npm
-3. Version comparison
-4. Changelog fetching and extraction
-5. Clean install warning display
-6. User confirmation
-7. Update execution
-8. Cache clearing
+1. Installation method detection (git clone vs install.sh)
+2. Update source resolution
+3. Version checking
+4. Change display and user confirmation
+5. Update execution
+6. Post-update restart reminder
 </process>

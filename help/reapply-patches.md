@@ -23,5 +23,5 @@ Reapply local modifications after a MOW update.
 
 ## Related
 
-    /mow:update    Update MOW (creates backups automatically)
+    /mow:update    Update MOW to latest version
     /mow:health    Verify installation after reapplying patches

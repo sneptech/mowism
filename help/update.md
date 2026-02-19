@@ -1,6 +1,6 @@
 # /mow:update
 
-Update MOW to the latest version with changelog display.
+Update MOW to the latest version.
 
 ## Usage
 
@@ -8,12 +8,12 @@ Update MOW to the latest version with changelog display.
 
 ## What Happens
 
-1. Detects installed version (local vs global installation)
-2. Checks for latest version available
-3. Compares versions and shows changelog
-4. Warns about clean install (local modifications backed up)
+1. Detects how Mowism was installed (git clone or install.sh)
+2. Resolves update source (configured URL or local path)
+3. Checks for latest version available
+4. Shows what's new (version comparison, commit log if available)
 5. Asks for confirmation before proceeding
-6. Runs the update and clears caches
+6. Runs the update (git pull or re-run install.sh)
 7. Reminds to restart Claude Code for changes to take effect
 
 ## Examples
