@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can run `/scope-check`, `/simplify`, `/dead-code-sweep`, `/prove-it`, `/grill-me`, `/change-summary`, and `/update-claude-md` as registered Mowism skills
   3. User can run `/mow:migrate` on an existing GSD `.planning/` directory and continue working without manual fixup
   4. User never sees "gsd" in any command name, template output, agent definition, or tool reference -- only "mow"
-**Plans:** 6 plans
+**Plans:** 6/6 plans complete
 Plans:
 - [x] 01-01-PLAN.md -- Fork mow-tools.cjs and test file (CORE-02)
 - [x] 01-02-PLAN.md -- Fork agents, templates, references, VERSION (CORE-03, CORE-04, CORE-05)
@@ -67,6 +67,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fork and Foundation | 6/6 | Complete | 2026-02-19 |
+| 1. Fork and Foundation | 6/6 | Complete    | 2026-02-19 |
 | 2. Worktree State and Quality Gates | 0/TBD | Not started | - |
 | 3. Agent Teams and Distribution | 0/TBD | Not started | - |
