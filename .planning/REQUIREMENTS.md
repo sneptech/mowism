@@ -21,8 +21,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **WKTR-01**: WorkTrunk (`wt` CLI) declared as required dependency; Mowism checks for it on init and errors clearly if missing
 - [x] **WKTR-02**: STATE.md tracks which worktree is executing which phase/plan
 - [x] **WKTR-03**: STATE.md prevents double-execution (two worktrees claiming the same plan)
-- [ ] **WKTR-04**: WorkTrunk post-create hook configures new worktrees with access to main worktree's `.planning/` state
-- [ ] **WKTR-05**: `/mow:execute-phase` is worktree-aware — routes plans to specific worktrees when running in parallel
+- [x] **WKTR-04**: WorkTrunk post-create hook configures new worktrees with access to main worktree's `.planning/` state
+- [x] **WKTR-05**: `/mow:execute-phase` is worktree-aware — routes plans to specific worktrees when running in parallel
 
 ### Quality Skills
 
@@ -115,8 +115,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | WKTR-01 | Phase 2 | Complete |
 | WKTR-02 | Phase 2 | Complete |
 | WKTR-03 | Phase 2 | Complete |
-| WKTR-04 | Phase 2 | Pending |
-| WKTR-05 | Phase 2 | Pending |
+| WKTR-04 | Phase 2 | Complete |
+| WKTR-05 | Phase 2 | Complete |
 | SKIL-01 | Phase 1 | Complete |
 | SKIL-02 | Phase 1 | Complete |
 | SKIL-03 | Phase 1 | Complete |
