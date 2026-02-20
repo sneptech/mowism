@@ -3323,6 +3323,38 @@ function parseDependsOn(raw) {
     .map(m => m.match(/\d+(?:\.\d+)?/)[0]);
 }
 
+function topoGenerations(nodes, edges) {
+  const inDeg = new Map();
+  const adj = new Map();
+  for (const n of nodes) { inDeg.set(n, 0); adj.set(n, []); }
+  for (const [from, to] of edges) {
+    adj.get(from).push(to);
+    inDeg.set(to, (inDeg.get(to) || 0) + 1);
+  }
+  let queue = [...nodes].filter(n => inDeg.get(n) === 0);
+  const generations = [];
+  let processed = 0;
+  while (queue.length > 0) {
+    generations.push([...queue]);
+    processed += queue.length;
+    const next = [];
+    for (const n of queue) {
+      for (const nb of adj.get(n)) {
+        inDeg.set(nb, inDeg.get(nb) - 1);
+        if (inDeg.get(nb) === 0) next.push(nb);
+      }
+    }
+    queue = next;
+  }
+  if (processed !== nodes.length) {
+    const cycleNodes = [...inDeg.entries()]
+      .filter(([, deg]) => deg > 0)
+      .map(([n]) => n);
+    throw new Error(`Cycle detected involving: ${cycleNodes.join(', ')}`);
+  }
+  return generations;
+}
+
 function cmdRoadmapAnalyze(cwd, raw) {
   const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
 
@@ -3449,6 +3481,177 @@ function cmdRoadmapAnalyze(cwd, raw) {
   };
 
   output(result, raw);
+}
+
+// ─── DAG Analysis ─────────────────────────────────────────────────────────────
+
+function cmdRoadmapAnalyzeDag(cwd, raw) {
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+
+  if (!fs.existsSync(roadmapPath)) {
+    output({ error: 'ROADMAP.md not found' }, raw);
+    return;
+  }
+
+  const content = fs.readFileSync(roadmapPath, 'utf-8');
+  const phasesDir = path.join(cwd, '.planning', 'phases');
+
+  // Extract all phase headings (same parsing as cmdRoadmapAnalyze)
+  const phasePattern = /#{2,4}\s*Phase\s+(\d+(?:\.\d+)?)\s*:\s*([^\n]+)/gi;
+  const phases = [];
+  let match;
+
+  while ((match = phasePattern.exec(content)) !== null) {
+    const phaseNum = match[1];
+    const phaseName = match[2].replace(/\(INSERTED\)/i, '').trim();
+
+    const sectionStart = match.index;
+    const restOfContent = content.slice(sectionStart);
+    const nextHeader = restOfContent.match(/\n#{2,4}\s+Phase\s+\d/i);
+    const sectionEnd = nextHeader ? sectionStart + nextHeader.index : content.length;
+    const section = content.slice(sectionStart, sectionEnd);
+
+    const dependsMatch = section.match(/\*\*Depends on(?::\*\*|\*\*:)\s*([^\n]+)/i);
+    const depends_on = dependsMatch ? dependsMatch[1].trim() : null;
+
+    // Check completion on disk
+    const normalized = normalizePhaseName(phaseNum);
+    let diskStatus = 'no_directory';
+    let planCount = 0;
+    let summaryCount = 0;
+
+    try {
+      const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
+      const dirs = entries.filter(e => e.isDirectory()).map(e => e.name);
+      const dirMatch = dirs.find(d => d.startsWith(normalized + '-') || d === normalized);
+
+      if (dirMatch) {
+        const phaseFiles = fs.readdirSync(path.join(phasesDir, dirMatch));
+        planCount = phaseFiles.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md').length;
+        summaryCount = phaseFiles.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md').length;
+
+        if (summaryCount >= planCount && planCount > 0) diskStatus = 'complete';
+        else if (summaryCount > 0) diskStatus = 'partial';
+        else if (planCount > 0) diskStatus = 'planned';
+        else diskStatus = 'empty';
+      }
+    } catch {}
+
+    phases.push({
+      number: phaseNum,
+      name: phaseName,
+      depends_on_raw: depends_on,
+      depends_on_parsed: parseDependsOn(depends_on),
+      disk_status: diskStatus,
+    });
+  }
+
+  // Build nodes and edges
+  const nodes = phases.map(p => p.number);
+  const edges = [];
+  const missingRefs = [];
+
+  for (const phase of phases) {
+    for (const dep of phase.depends_on_parsed) {
+      if (!nodes.includes(dep)) {
+        missingRefs.push({ phase: phase.number, references: dep });
+        continue; // Treat missing ref as satisfied
+      }
+      edges.push([dep, phase.number]);
+    }
+  }
+
+  // Run topological sort
+  let waves, cycleError;
+  try {
+    const generations = topoGenerations(nodes, edges);
+    waves = generations.map((gen, i) => ({ wave: i + 1, phases: gen }));
+    cycleError = null;
+  } catch (e) {
+    waves = null;
+    cycleError = e.message;
+  }
+
+  // Determine ready and blocked phases
+  const completedPhases = phases.filter(p => p.disk_status === 'complete').map(p => p.number);
+  const ready = [];
+  const blocked = [];
+
+  for (const phase of phases) {
+    if (completedPhases.includes(phase.number)) continue;
+    const unmetDeps = phase.depends_on_parsed.filter(d => !completedPhases.includes(d) && nodes.includes(d));
+    if (unmetDeps.length === 0) {
+      ready.push(phase.number);
+    } else {
+      blocked.push({ phase: phase.number, waiting_on: unmetDeps });
+    }
+  }
+
+  // Build depended_by reverse edges
+  const dependedBy = new Map();
+  for (const phase of phases) {
+    dependedBy.set(phase.number, []);
+  }
+  for (const [from, to] of edges) {
+    dependedBy.get(from).push(to);
+  }
+
+  const result = {
+    phases: phases.map(p => ({
+      number: p.number,
+      name: p.name,
+      depends_on: p.depends_on_parsed,
+      depended_by: dependedBy.get(p.number) || [],
+      disk_status: p.disk_status,
+    })),
+    waves,
+    ready,
+    blocked,
+    completed: completedPhases,
+    validation: {
+      is_dag: cycleError === null,
+      cycle_error: cycleError,
+      missing_refs: missingRefs,
+      fully_sequential: waves ? waves.every(w => w.phases.length === 1) : null,
+    },
+  };
+
+  if (raw) {
+    output(result, raw);
+  } else {
+    // Human-readable text visualization
+    let text = 'DAG Analysis:\n\n';
+    if (waves) {
+      for (const w of waves) {
+        const phaseLabels = w.phases.map(pn => {
+          const p = phases.find(pp => pp.number === pn);
+          const status = completedPhases.includes(pn) ? ' (complete)' : '';
+          return `Phase ${pn}${status}`;
+        });
+        text += `Wave ${w.wave}: ${phaseLabels.join(', ')}\n`;
+      }
+    } else {
+      text += 'ERROR: ' + cycleError + '\n';
+    }
+
+    if (ready.length > 0) {
+      text += `\nReady to execute: ${ready.map(p => 'Phase ' + p).join(', ')}\n`;
+    }
+    if (blocked.length > 0) {
+      const blockedStr = blocked.map(b =>
+        `Phase ${b.phase} (waiting on ${b.waiting_on.map(w => 'Phase ' + w).join(', ')})`
+      ).join(', ');
+      text += `Blocked: ${blockedStr}\n`;
+    }
+    if (missingRefs.length > 0) {
+      text += `\nWarnings:\n`;
+      for (const mr of missingRefs) {
+        text += `  Phase ${mr.phase} references non-existent Phase ${mr.references}\n`;
+      }
+    }
+
+    console.log(text.trim());
+  }
 }
 
 // ─── Phase Add ────────────────────────────────────────────────────────────────
@@ -6757,10 +6960,12 @@ async function main() {
         cmdRoadmapGetPhase(cwd, args[2], raw);
       } else if (subcommand === 'analyze') {
         cmdRoadmapAnalyze(cwd, raw);
+      } else if (subcommand === 'analyze-dag') {
+        cmdRoadmapAnalyzeDag(cwd, raw);
       } else if (subcommand === 'update-plan-progress') {
         cmdRoadmapUpdatePlanProgress(cwd, args[2], raw);
       } else {
-        error('Unknown roadmap subcommand. Available: get-phase, analyze, update-plan-progress');
+        error('Unknown roadmap subcommand. Available: get-phase, analyze, analyze-dag, update-plan-progress');
       }
       break;
     }
