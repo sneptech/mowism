@@ -89,6 +89,33 @@ Count plans and waves from init JSON (`plan_count`, and derive wave count from p
 - Persistent per-project dismiss via mow-tools.cjs
 </step>
 
+<step name="multi_phase_check">
+**Check for multi-phase invocation context:**
+
+Multi-phase mode is triggered when:
+1. The `$ARGUMENTS` contain `--multi-phase` flag, OR
+2. The invocation comes from a phase worker (detected by STATUS.md existence AND the current worktree being in `.worktrees/`)
+
+**If multi-phase mode AND this is the main worktree (not a phase worker):**
+- This means the user wants to execute multiple phases in parallel
+- Delegate to the team lead orchestrator rather than running plans directly:
+  ```
+  Read and follow agents/mow-team-lead.md multi_phase_flow
+  Present DAG analysis, let user select phases, spawn workers.
+  ```
+  After the team lead completes (all workers done + close-shop), return to offer_next.
+
+**If this is a phase worker's worktree (.worktrees/pNN):**
+- This is a normal single-phase execution inside a worktree
+- Continue with the standard execute_waves flow
+- But use the multi-agent state protocol (STATUS.md writes, skip STATE.md)
+- The `multi_agent_detection` in init_context already handles this via STATUS.md existence
+
+**If neither multi-phase flag nor worker worktree:**
+- Standard single-phase execution (existing behavior, unchanged)
+- Continue to handle_branching
+</step>
+
 <step name="handle_branching">
 Check `branching_strategy` from init:
 
@@ -238,6 +265,15 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 6. **Execute checkpoint plans between waves** — see `<checkpoint_handling>`.
 
 7. **Proceed to next wave.**
+
+**Pause-work signal support:**
+
+If the worker receives a pause signal (from lead or user), it:
+1. Finishes the current executor subagent (waits for it to complete or saves its state)
+2. Updates STATUS.md with current progress
+3. Stashes any uncommitted changes: `git stash push -m "mow-pause: phase {X} plan {Y}"`
+4. Writes checkpoint file: `node ~/.claude/mowism/bin/mow-tools.cjs template fill checkpoint --phase {X} --plan {Y} --reason "pause-signal"`
+5. Exits cleanly
 </step>
 
 <step name="checkpoint_handling">
@@ -425,7 +461,15 @@ Gap closure cycle: `/mow:plan-phase {X} --gaps` reads VERIFICATION.md → create
 </step>
 
 <step name="update_roadmap">
-**Mark phase complete and update all tracking files:**
+**If executing inside a phase worktree (.worktrees/pNN):**
+Skip ROADMAP.md and REQUIREMENTS.md updates. The lead handles these after merging
+the phase branch. Only commit the VERIFICATION.md and phase-specific files:
+```bash
+node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complete phase execution" --files .planning/phases/{phase_dir}/*-VERIFICATION.md .planning/phases/{phase_dir}/*-STATUS.md
+```
+Then skip to offer_next.
+
+**Standard (main worktree) flow -- mark phase complete and update all tracking files:**
 
 ```bash
 COMPLETION=$(node ~/.claude/mowism/bin/mow-tools.cjs phase complete "${PHASE_NUMBER}")
@@ -453,6 +497,10 @@ node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complete phase 
 </step>
 
 <step name="offer_next">
+
+**If executing inside a phase worktree (.worktrees/pNN):**
+Skip roadmap update, skip auto-advance, skip transition. The phase worker agent handles
+phase-complete signaling. Return control to the phase worker.
 
 **Exception:** If `gaps_found`, the `verify_phase_goal` step already presents the gap-closure path (`/mow:plan-phase {X} --gaps`). No additional routing needed — skip auto-advance.
 
