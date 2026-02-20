@@ -6,14 +6,14 @@ Coordinated multi-agent workflows for Claude Code with worktree-aware state and 
 
 Mowism is a workflow framework that lets multiple Claude Code agents work in parallel across git worktrees with shared state, quality checks, and optional Agent Teams coordination. Each agent knows what the others are doing through worktree-aware state tracking, preventing conflicts and enabling true parallel development.
 
-It grew from a fork of [GSD](https://github.com/coleam00/gsd), redesigned around parallel multi-agent workflows and WorkTrunk-based worktree management. Where GSD focuses on single-agent productivity, Mowism adds the coordination layer: worktree claims, state synchronization, tiered quality gates, and Agent Teams integration.
+It grew from a fork of [GSD](https://github.com/gsd-build/get-shit-done), redesigned around parallel multi-agent workflows and WorkTrunk-based worktree management. Where GSD focuses on single-agent productivity, Mowism adds the coordination layer: worktree claims, state synchronization, tiered quality gates, and Agent Teams integration.
 
 The result is a system where you can have one agent implementing features in one worktree while another runs quality checks in another, all sharing a coherent view of project state through `.planning/STATE.md`.
 
 ## Install
 
 ```bash
-git clone https://github.com/maxkreischer/mowism.git
+git clone https://github.com/sneptech/mowism.git
 cd mowism
 ./bin/install.sh
 ```
@@ -100,4 +100,4 @@ Run `/mow:help` for the full list, or append `???` to any command for detailed h
 
 ## License and Attribution
 
-Mowism is a fork of [GSD (Get Shit Done)](https://github.com/coleam00/gsd) by Cole Medin. The original GSD framework provides single-agent workflow automation for Claude Code. Mowism extends it with multi-agent coordination, worktree-aware state, and quality gates.
+Mowism is a fork of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) by [TÂCHES](https://github.com/glittercowboy). The original GSD framework provides meta-prompting, context engineering, and spec-driven development for Claude Code. Mowism extends it with multi-agent coordination, worktree-aware state, and quality gates.
