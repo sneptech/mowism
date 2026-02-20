@@ -40,6 +40,7 @@ Progress: [################....] 80% (v1.0: 22/22 plans complete; v1.1: 9/TBD)
 | Phase 08 P03 | 3min | 2 tasks | 2 files |
 | Phase 09 P01 | 5min | 2 tasks | 4 files |
 | Phase 09 P03 | 3min | 2 tasks | 4 files |
+| Phase 09 P02 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Research context: `.planning/research/SUMMARY.md`
 - [Phase 09]: Worktree create uses direct git worktree add (not WorkTrunk wt) per research Pitfall 5
 - [Phase 09]: Help file placed in help/ directory matching existing convention (not mowism/help/ which does not exist)
 - [Phase 09]: Worker worktrees skip ROADMAP.md and REQUIREMENTS.md updates to avoid merge conflicts -- lead handles post-merge
+- [Phase 09]: Create all phase tasks upfront with full DAG dependencies (not incrementally by wave)
+- [Phase 09]: Phase workers spawned NOT in background -- need terminal access for discuss-phase user interaction
+- [Phase 09]: Merge conflicts delegate to focused subagent with minimal context -- keeps lead and worker context lean
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 09-03-PLAN.md
+Stopped at: Completed 09-02-PLAN.md
 Resume: Phase 9 all 3 plans complete -- ready for phase verification
-Context: Phase 9 complete -- worktree lifecycle (Plan 01), team lead orchestrator (Plan 02), close-shop workflow and multi-phase execute-phase awareness (Plan 03). Full multi-phase execution engine infrastructure built.
+Context: Phase 9 complete -- worktree lifecycle (Plan 01), team lead & phase worker agent definitions (Plan 02), close-shop workflow and multi-phase execute-phase awareness (Plan 03). Full multi-phase execution engine infrastructure built.
