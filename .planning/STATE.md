@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.1 Phase 11 complete (README Overhaul) -- milestone ready for completion
+**Current focus:** v1.1 Phase 12 complete (Audit Gap Closure) -- milestone ready for completion
 
 ## Current Position
 
 Milestone: v1.1 Multi-Agent UX & Documentation
-Phase: 11 of 11 (README Overhaul)
-Plan: 3 of 3
+Phase: 12 of 12 (Audit Gap Closure)
+Plan: 1 of 1
 Status: Complete
-Last activity: 2026-02-20 -- Completed 11-03 (configuration, security, troubleshooting)
+Last activity: 2026-02-20 -- Completed 12-01 (audit gap closure fixes)
 
-Progress: [####################] 100% (v1.0: 22/22 plans complete; v1.1: 16/16)
+Progress: [####################] 100% (v1.0: 22/22 plans complete; v1.1: 17/17)
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Progress: [####################] 100% (v1.0: 22/22 plans complete; v1.1: 16/16)
 | Phase 11 P11-01 | 3min | 2 tasks | 1 files |
 | Phase 11 P11-02 | 3min | 2 tasks | 1 files |
 | Phase 11 P03 | 2min | 2 tasks | 1 files |
+| Phase 12 P12-01 | 2min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,6 @@ Research context: `.planning/research/SUMMARY.md`
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 11-03-PLAN.md (final plan of Phase 11)
-Resume: v1.1 milestone complete -- all 16/16 plans across 5 phases done. Run /mow:complete-milestone to archive.
-Context: Phase 11 (README Overhaul) complete -- all 3 plans executed. README has lifecycle narrative, 35 commands reference, brownfield entry, configuration (9 settings + model profiles), security, troubleshooting, directory structure, common workflows, and license. All DOC-01 through DOC-04 requirements satisfied. v1.1 milestone ready for completion.
+Stopped at: Completed 12-01-PLAN.md (only plan of Phase 12)
+Resume: v1.1 milestone complete -- all 17/17 plans across 6 phases done. Run /mow:complete-milestone to archive.
+Context: Phase 12 (Audit Gap Closure) complete -- 1 plan executed. SendMessage recipient standardized to "lead", requirements-completed added to all SUMMARY template variants and extraction function, stale "34 commands" updated to "35" in ROADMAP.md and PROJECT.md. Requirements STATE-03, FEED-01, DOC-02 satisfied.

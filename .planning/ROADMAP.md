@@ -38,7 +38,7 @@ Phases 7 and 8 can execute in parallel (different file domains, no data dependen
 - [x] **Phase 9: Multi-Phase Execution Engine** - Concurrent phase workers across worktrees via Agent Teams (completed 2026-02-20)
 - [x] **Phase 10: Live Feedback and Visual Differentiation** - Structured milestone messages, color-coded terminals, input routing (completed 2026-02-20)
 - [x] **Phase 11: README Overhaul** - Lifecycle narrative, all 35 commands, brownfield entry, config/security/troubleshooting (completed 2026-02-20)
-- [ ] **Phase 12: Audit Gap Closure** - Standardize SendMessage recipient, add requirements_completed to SUMMARY template, fix stale counts
+- [x] **Phase 12: Audit Gap Closure** - Standardize SendMessage recipient, add requirements_completed to SUMMARY template, fix stale counts (completed 2026-02-20)
 
 ## Phase Details
 
@@ -155,4 +155,4 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 9. Multi-Phase Execution Engine | v1.1 | Complete    | 2026-02-20 | - |
 | 10. Live Feedback and Visual Differentiation | 3/3 | Complete    | 2026-02-20 | - |
 | 11. README Overhaul | 3/3 | Complete    | 2026-02-20 | - |
-| 12. Audit Gap Closure | v1.1 | 0/1 | Planned | - |
+| 12. Audit Gap Closure | 1/1 | Complete   | 2026-02-20 | - |
