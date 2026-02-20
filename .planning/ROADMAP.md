@@ -99,7 +99,12 @@ Plans:
   2. Orchestrator displays phase-level progress summary aggregated from worker messages (O(phases) not O(tasks))
   3. Each terminal session displays a color-coded ANSI banner at startup -- red background for orchestrator, rotating bright colors for workers -- visible at a glance
   4. When a worker hits a permission prompt or needs user input, the orchestrator shows which worker needs attention including phase name, input type, and which terminal/color to switch to
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 10-01-PLAN.md -- ANSI 256-color helpers, message schema v2 (5 new checkpoint types), banner/progress bar renderers
+- [ ] 10-02-PLAN.md -- Dashboard renderer (summary table, event log, pinned notifications, NDJSON event storage)
+- [ ] 10-03-PLAN.md -- Agent integration (team lead dashboard wiring, phase worker banners/milestones/input routing)
 
 ### Phase 11: README Overhaul
 **Goal**: A new user can understand, install, and use Mowism from the README alone
@@ -128,5 +133,5 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 7. State Coherence Foundation | v1.1 | 4/4 | Complete | 2026-02-20 |
 | 8. DAG-Based Phase Scheduling | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 9. Multi-Phase Execution Engine | v1.1 | Complete    | 2026-02-20 | - |
-| 10. Live Feedback and Visual Differentiation | v1.1 | 0/TBD | Not started | - |
+| 10. Live Feedback and Visual Differentiation | v1.1 | 0/3 | Planned | - |
 | 11. README Overhaul | v1.1 | 0/TBD | Not started | - |
