@@ -900,6 +900,15 @@ function cmdConfigSet(cwd, keyPath, value, raw) {
   }
 }
 
+// Built-in defaults for keys that may not be in config.json yet
+const CONFIG_DEFAULTS = {
+  multi_phase: {
+    circuit_breaker_threshold: 2,
+    merge_timing: 'batch',
+    worktree_metadata_push: false,
+  },
+};
+
 function cmdConfigGet(cwd, keyPath, raw) {
   const configPath = path.join(cwd, '.planning', 'config.json');
 
@@ -924,13 +933,27 @@ function cmdConfigGet(cwd, keyPath, raw) {
   let current = config;
   for (const key of keys) {
     if (current === undefined || current === null || typeof current !== 'object') {
-      error(`Key not found: ${keyPath}`);
+      current = undefined;
+      break;
     }
     current = current[key];
   }
 
+  // Fall back to built-in defaults if not found in config
   if (current === undefined) {
-    error(`Key not found: ${keyPath}`);
+    let fallback = CONFIG_DEFAULTS;
+    for (const key of keys) {
+      if (fallback === undefined || fallback === null || typeof fallback !== 'object') {
+        fallback = undefined;
+        break;
+      }
+      fallback = fallback[key];
+    }
+    if (fallback !== undefined) {
+      current = fallback;
+    } else {
+      error(`Key not found: ${keyPath}`);
+    }
   }
 
   output(current, raw, String(current));
@@ -2110,7 +2133,7 @@ function cmdTemplateSelect(cwd, planPath, raw) {
 }
 
 function cmdTemplateFill(cwd, templateType, options, raw) {
-  if (!templateType) { error('template type required: summary, plan, or verification'); }
+  if (!templateType) { error('template type required: summary, plan, verification, or checkpoint'); }
   if (!options.phase) { error('--phase required'); }
 
   const phaseInfo = findPhaseInternal(cwd, options.phase);
@@ -2257,8 +2280,47 @@ function cmdTemplateFill(cwd, templateType, options, raw) {
       fileName = `${padded}-VERIFICATION.md`;
       break;
     }
+    case 'checkpoint': {
+      // Read checkpoint template from disk
+      const homedir = require('os').homedir();
+      const repoTemplatePath = path.join(cwd, 'mowism', 'templates', 'checkpoint.md');
+      const installTemplatePath = path.join(homedir, '.claude', 'mowism', 'templates', 'checkpoint.md');
+      let templatePath = null;
+      if (fs.existsSync(repoTemplatePath)) {
+        templatePath = repoTemplatePath;
+      } else if (fs.existsSync(installTemplatePath)) {
+        templatePath = installTemplatePath;
+      }
+      if (!templatePath) {
+        error('checkpoint.md template not found in mowism/templates/ or ~/.claude/mowism/templates/');
+      }
+
+      let templateContent = fs.readFileSync(templatePath, 'utf-8');
+      const timestamp = new Date().toISOString();
+      const workerName = options.worker || 'unknown';
+      const worktreePath = options.worktree || '.worktrees/p' + padded;
+      const status = options.status || 'failed';
+      const reason = options.reason || 'error';
+
+      // Replace placeholders
+      templateContent = templateContent.replace(/\{phase\}/g, `${padded}-${phaseSlug}`);
+      templateContent = templateContent.replace(/\{plan\}/g, planNum);
+      templateContent = templateContent.replace(/\{status\}/g, status);
+      templateContent = templateContent.replace(/\{worker-name\}/g, workerName);
+      templateContent = templateContent.replace(/\{worktree-path\}/g, worktreePath);
+      templateContent = templateContent.replace(/\{timestamp\}/g, timestamp);
+      templateContent = templateContent.replace(/\{reason\}/g, reason);
+      templateContent = templateContent.replace(/\{circuit_breaker_hit\}/g, 'false');
+
+      // Replace plan-id with the full plan identifier
+      templateContent = templateContent.replace(/\{plan-id\}/g, `${padded}-${planNum}`);
+
+      // Output the filled template (don't write to disk -- caller decides)
+      output({ filled: true, content: templateContent, template: 'checkpoint' }, raw, templateContent);
+      return;
+    }
     default:
-      error(`Unknown template type: ${templateType}. Available: summary, plan, verification`);
+      error(`Unknown template type: ${templateType}. Available: summary, plan, verification, checkpoint`);
       return;
   }
 
@@ -7111,6 +7173,10 @@ async function main() {
         const typeIdx = args.indexOf('--type');
         const waveIdx = args.indexOf('--wave');
         const fieldsIdx = args.indexOf('--fields');
+        const statusIdx = args.indexOf('--status');
+        const workerIdx = args.indexOf('--worker');
+        const worktreeIdx = args.indexOf('--worktree');
+        const reasonIdx = args.indexOf('--reason');
         cmdTemplateFill(cwd, templateType, {
           phase: phaseIdx !== -1 ? args[phaseIdx + 1] : null,
           plan: planIdx !== -1 ? args[planIdx + 1] : null,
@@ -7118,6 +7184,10 @@ async function main() {
           type: typeIdx !== -1 ? args[typeIdx + 1] : 'execute',
           wave: waveIdx !== -1 ? args[waveIdx + 1] : '1',
           fields: fieldsIdx !== -1 ? JSON.parse(args[fieldsIdx + 1]) : {},
+          status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+          worker: workerIdx !== -1 ? args[workerIdx + 1] : null,
+          worktree: worktreeIdx !== -1 ? args[worktreeIdx + 1] : null,
+          reason: reasonIdx !== -1 ? args[reasonIdx + 1] : null,
         }, raw);
       } else {
         error('Unknown template subcommand. Available: select, fill');
