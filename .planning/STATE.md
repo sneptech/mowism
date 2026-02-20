@@ -95,7 +95,8 @@ Research context: `.planning/research/SUMMARY.md`
 
 ### Pending Todos
 
-None -- all captured as v1.1 requirements.
+6 pending todos (5 from v1.1 scoping + 1 new):
+- **Full-lifecycle multi-agent workers** — workers should run discuss → research → plan → execute → refine, not just execution (`.planning/todos/pending/2026-02-20-full-lifecycle-multi-agent-workers.md`)
 
 ### Blockers/Concerns
 
