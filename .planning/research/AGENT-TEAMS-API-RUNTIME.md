@@ -7,15 +7,57 @@
 
 ## Executive Summary
 
-**Agent Teams tools are NOT available in spawned subagent sessions**, even when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set in the environment. The executor agent -- spawned by the GSD orchestrator via the `Task()` tool -- has access only to standard Claude Code tools (Read, Write, Edit, Bash, Grep, Glob). The Agent Teams tools (Teammate, Task with team_name parameter, TaskCreate, TaskUpdate, TaskList) do not appear in the tool list.
+**Agent Teams tools were NOT available in this executor session.** The initial conclusion was that "only top-level interactive sessions get AT tools." This was an **over-generalization**. The actual constraint is:
 
-This is itself a critical finding: **Agent Teams tools are only available in the top-level interactive Claude Code session, not in subagent sessions spawned via Task()**. This means:
+**Tool availability is determined by agent type, not by session hierarchy.** Each `subagent_type` has a fixed tool list. The `gsd-executor` type (used for this test) has only: Read, Write, Edit, Bash, Grep, Glob. It was never going to have AT tools regardless of the env var.
 
-1. The GSD/Mowism executor agent cannot directly use Agent Teams tools
-2. Only the team-lead (the top-level interactive session) can create teams, send messages, and manage tasks
-3. Workers spawned as teammates CAN use Agent Teams tools (they are registered team members), but general subagents spawned via `Task()` without `team_name` do NOT get these tools
+Agent types that DO have AT tools:
+- `mow-team-lead` — has TeamCreate, SendMessage, Task, TaskCreate, TaskUpdate, TaskList
+- `general-purpose` — has ALL tools including AT tools
+- Top-level interactive sessions — have ALL tools
 
-**Consequence for testing:** None of the 8 questions could be runtime-tested in this session. Each question is documented below with the attempted approach, the actual result, and the conclusion.
+Agent types that do NOT have AT tools:
+- `gsd-executor` / `mow-executor` — Read, Write, Edit, Bash, Grep, Glob only
+- `gsd-planner` / `mow-planner` — limited tool set, no AT tools
+
+**This means nested agent hierarchies ARE possible:**
+```
+User's interactive session (all tools)
+  └─ Phase Worker (general-purpose teammate — all tools, CAN spawn children)
+      ├─ Wave Executor 1 (mow-executor — leaf node, does work)
+      └─ Wave Executor 2 (mow-executor — leaf node, does work)
+```
+
+Each Phase Worker can spawn its own sub-executors because `general-purpose` includes the `Task` tool. The executors are leaf nodes that can't spawn further children.
+
+**Corrected implications:**
+1. The executor agent cannot use AT tools — **correct, but this is by design** (executors are leaf workers)
+2. "Only top-level sessions get AT tools" — **WRONG**. Any agent type whose tool list includes AT tools gets them
+3. Teammates spawned as `general-purpose` or `mow-team-lead` CAN orchestrate their own sub-hierarchies
+
+**Consequence for testing:** None of the 8 questions could be runtime-tested in this session because the executor agent type lacks AT tools. The tests need to be run from a session with AT tools (interactive session, or a `general-purpose`/`mow-team-lead` agent).
+
+## Architectural Risk: Coordinator Context Window Exhaustion
+
+**Risk:** The coordinator (team lead) receives messages from every teammate — inbox messages, idle notifications (automatic after every turn), TaskList results. With N teammates, context fills proportionally:
+
+| Teammates | Estimated coordinator context load |
+|-----------|-----------------------------------|
+| 2-3 | Manageable — fits in 200k window comfortably |
+| 4-6 | Moderate — auto-compression may trigger, losing earlier phase context |
+| 7+ | High — coordinator may lose track of phase states after compression |
+
+**Why this matters:** Claude Code auto-compresses prior messages as context approaches limits. Compression is lossy — the coordinator may forget decisions, phase states, or dependency relationships from earlier in the session. For a multi-phase parallel run lasting 30+ minutes with many messages flowing in, the coordinator could:
+1. Spend most of its context on idle notifications and status chatter rather than coordination logic
+2. Lose track of which phases are at what state after compression
+3. Make inconsistent decisions based on incomplete compressed history
+
+**Mitigations (must be designed into v1.1):**
+1. **Structured state on disk** — STATE.md, task list, phase status files. The coordinator can re-read these after compression to restore awareness
+2. **Minimize message noise** — Workers should send milestone messages only (task claimed, task complete, error, blocked), not progress chatter. Idle notifications are automatic and unavoidable but are brief
+3. **Compact message format** — Short structured messages, not verbose narratives. File paths as references, not inline content
+4. **Periodic state sync** — The coordinator should periodically re-read STATE.md and TaskList to rebuild awareness rather than relying solely on message history
+5. **Phase worker autonomy** — Phase workers (if `general-purpose`) can manage their own waves independently, only messaging the coordinator at phase-level transitions. This reduces coordinator message volume from O(tasks) to O(phases)
 
 ## Environment Verification
 
@@ -238,24 +280,35 @@ No teams directory exists because no team has ever been created on this machine 
 
 ---
 
-## Meta-Finding: Agent Teams Tool Availability
+## Meta-Finding: Agent Teams Tool Availability (CORRECTED)
 
-The most significant finding from this runtime test session is not any individual question answer, but the **discovery that Agent Teams tools have restricted availability**:
+The initial conclusion ("AT tools only available in top-level sessions") was an **over-generalization**. The actual model:
 
-| Session Type | Agent Teams Tools Available | Evidence |
-|---|---|---|
-| Top-level interactive Claude Code | ASSUMED yes (when env var set) | Not tested in this session |
-| Task()-spawned subagent (no team_name) | NO | This session -- tools not in tool list despite env var set |
-| Task()-spawned teammate (with team_name) | ASSUMED yes (registered team member) | Not tested |
-| Background subagent | NO | This session -- running in background, no AT tools |
+**Tool availability is per agent type, not per session hierarchy.** Each `subagent_type` passed to `Task()` determines which tools the spawned agent gets. The env var enables AT tools system-wide, but each agent only sees tools in its type's declared tool list.
 
-**This has major implications for Mowism's architecture:**
+| Agent Type | Has AT Tools | Has Task (can spawn children) | Evidence |
+|---|---|---|---|
+| Top-level interactive session | Yes | Yes | All tools available by default |
+| `mow-team-lead` | Yes (TeamCreate, SendMessage, TaskCreate, etc.) | Yes | Declared in agent type definition |
+| `general-purpose` | Yes (all tools) | Yes | Has access to all tools |
+| `mow-executor` / `gsd-executor` | **No** | **No** | This session — only Read/Write/Edit/Bash/Grep/Glob |
+| `mow-planner` / `gsd-planner` | **No** | **No** | Limited tool set per agent type |
 
-1. **The GSD executor agent CANNOT be the one creating teams or managing teammates.** Only the top-level session (the user's interactive Claude Code) or the team-lead agent (if it's the top-level session) can do this.
+**Corrected implications for Mowism's architecture:**
 
-2. **The current `mow-team-lead.md` agent design is correct:** it assumes the lead IS the top-level session, which is the only context where Agent Teams tools would be available.
+1. **Executors are leaf nodes by design.** They don't need AT tools — they execute plans, not coordinate agents. This is correct.
 
-3. **Testing Agent Teams requires the USER to manually run tests in their interactive Claude Code session**, not a spawned subagent. The plan's approach of testing from within a Task()-spawned executor was architecturally impossible.
+2. **Phase-level orchestrators CAN be subagents.** If spawned as `general-purpose` or `mow-team-lead`, a phase worker has full AT tools and `Task` — it can spawn its own wave executors. This enables nested hierarchies:
+   ```
+   User session or Team Lead
+     ├─ Phase Worker 1 (general-purpose) — spawns wave executors
+     ├─ Phase Worker 2 (general-purpose) — spawns wave executors
+     └─ Phase Worker 3 (general-purpose) — spawns wave executors
+   ```
+
+3. **Testing AT tools requires an agent type with AT tools.** The `gsd-executor` type was the wrong choice. Using `general-purpose` or running from the interactive session would work.
+
+**Context window exhaustion risk:** With nested hierarchies, the coordinator receives messages from N phase workers plus idle notifications. See "Architectural Risk: Coordinator Context Window Exhaustion" section above for analysis and mitigations.
 
 ## Cleanup
 
@@ -287,6 +340,6 @@ Alternatively, a Mowism workflow modification could:
 | Q6: In-process vs background vs tmux | PARTIALLY VERIFIED | MEDIUM | Background mode is invisible, no user interaction |
 | Q7: Message size limits | INCONCLUSIVE | -- | Tools not available in subagent |
 | Q8: Team config persistence | INCONCLUSIVE | -- | No teams directory exists |
-| META: Tool availability | VERIFIED | HIGH | AT tools not in Task()-spawned subagents |
+| META: Tool availability | CORRECTED | HIGH | AT tools are per-agent-type, not per-session-level. Executors lack them by design; general-purpose and team-lead types have them. Nested hierarchies are possible. |
 
-**Overall:** 0/8 questions fully answered, 2/8 partially answered, 6/8 inconclusive due to tool unavailability. The meta-finding about tool availability is itself a valuable result that informs v1.1 architecture.
+**Overall:** 0/8 questions fully answered, 2/8 partially answered, 6/8 inconclusive due to executor agent type lacking AT tools (not a fundamental session-level restriction). The corrected meta-finding about agent-type-based tool availability and the context window exhaustion risk analysis are the primary value from this test session.

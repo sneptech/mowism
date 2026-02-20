@@ -247,6 +247,16 @@ The v1.0 research estimates a 5-person team uses ~800k tokens vs ~200k for solo 
 
 **Design implication:** Phase-level parallelism must consider the token cost trade-off. For a typical Mowism project with 3-6 plans per phase, running 3-6 concurrent workers is the sweet spot. Beyond 6-8 workers, coordination overhead and token costs likely outweigh parallelism benefits. The nudge system should communicate this trade-off. The team-lead should only offer teams when there are 3+ independent plans (already enforced in mow-team-lead.md constraints).
 
+**Coordinator context window exhaustion risk (added 2026-02-20):** The coordinator receives inbox messages and automatic idle notifications from every teammate. With N phase workers, each sending milestone messages plus automatic idle notifications after every turn, the coordinator's 200k context fills proportionally. Claude Code auto-compresses prior messages as context approaches limits, but compression is lossy — the coordinator may lose earlier decisions, phase states, or dependency context. This is a greater risk than raw token cost for multi-phase parallel runs lasting 30+ minutes.
+
+Mitigations for v1.1 design:
+1. **State on disk, not in context** — STATE.md, task list, phase status files. Coordinator re-reads after compression
+2. **Minimize message noise** — Workers send milestone messages only (claimed, complete, error, blocked), not progress chatter
+3. **Phase worker autonomy** — Phase workers (if `general-purpose`) manage their own waves independently, messaging coordinator only at phase-level transitions. Reduces coordinator message volume from O(tasks) to O(phases)
+4. **Periodic state sync** — Coordinator re-reads STATE.md and TaskList periodically rather than relying on message history alone
+
+See `AGENT-TEAMS-API-RUNTIME.md` "Architectural Risk" section for full analysis.
+
 ## 8. Stability and Experimental Status
 
 **Confidence:** VERIFIED (env var gating confirmed on local machine)
@@ -303,7 +313,7 @@ Agent Teams is gated behind `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. The "EXPER
 | Each teammate gets full 200k context window | ASSUMED | Architecture docs | Consistent with independent Claude Code instances |
 | **Workers inherit lead's cwd** | **PARTIALLY VERIFIED** | **Runtime test Q4** | **Task()-spawned subagent confirmed at `/home/max/git/mowism` (lead's cwd)** |
 | **Workers inherit parent env vars** | **PARTIALLY VERIFIED** | **Runtime test Q4** | **`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` visible in subagent session** |
-| **Agent Teams tools NOT available in Task() subagents** | **VERIFIED** | **Runtime test META** | **Only top-level interactive sessions get AT tools; critical architectural constraint** |
+| **AT tool availability is per-agent-type, not per-session-level** | **CORRECTED** | **Runtime test META (corrected)** | **Executor types lack AT tools by design. `general-purpose` and `mow-team-lead` types HAVE AT tools and can orchestrate sub-hierarchies. Nested agent spawning is possible.** |
 | **Background mode is invisible to user** | **VERIFIED** | **Runtime test Q6** | **No visible terminal, output returned to spawner only** |
 
 ## v1.1 Design Decision Matrix
@@ -381,7 +391,7 @@ This document IS the deliverable. The 8 research questions are answered with con
 
 ## Open Questions (Partially Resolved)
 
-Runtime testing attempted 2026-02-20. **Key blocker:** Agent Teams tools are NOT available in Task()-spawned subagent sessions, even with env var set. Only top-level interactive Claude Code sessions get these tools. See `AGENT-TEAMS-API-RUNTIME.md` for full results.
+Runtime testing attempted 2026-02-20. **Key blocker:** The test was run via a `gsd-executor` agent type, which lacks AT tools by design (executors are leaf workers with Read/Write/Edit/Bash/Grep/Glob only). This is NOT a session-level restriction — `general-purpose` and `mow-team-lead` agent types DO have AT tools and could run these tests. See `AGENT-TEAMS-API-RUNTIME.md` for full results and corrected analysis.
 
 ### Resolved (Partially)
 

@@ -48,7 +48,7 @@ Last activity: 2026-02-20 - Completed quick task 2: Runtime test Agent Teams API
 
 Full v1.0 decision log in PROJECT.md Key Decisions table.
 - [Phase quick-1]: Agent Teams: messages string-based, no streaming worker output, permission prompts session-local, terminal control outside scope. All 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations.
-- [Phase quick-2]: Agent Teams tools NOT available in Task()-spawned subagent sessions. Only top-level interactive sessions get AT tools. Workers inherit cwd and env vars. Background mode is invisible to user. 6/8 open questions still require interactive session testing.
+- [Phase quick-2]: AT tool availability is per-agent-type, not per-session-level (initial conclusion was over-generalized). Executor types lack AT tools by design; `general-purpose` and `mow-team-lead` types HAVE them and can orchestrate sub-hierarchies. Nested agent spawning confirmed possible. Workers inherit cwd and env vars. Background mode is invisible to user. Context window exhaustion identified as risk for coordinators with many teammates. 6/8 open questions still require testing from a session with AT tools.
 
 ### Pending Todos
 
@@ -66,7 +66,7 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 ### Blockers/Concerns
 
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
-- ~~Agent Teams API capabilities are UNVERIFIED~~ → RESEARCHED (quick task 1) + RUNTIME TESTED (quick task 2). All 4 v1.1 features PARTIALLY FEASIBLE. 2/8 open questions partially answered, 6/8 still need interactive session testing. Key discovery: AT tools only available in top-level sessions. See `.planning/research/AGENT-TEAMS-API.md` and `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
+- ~~Agent Teams API capabilities are UNVERIFIED~~ → RESEARCHED (quick task 1) + RUNTIME TESTED (quick task 2). All 4 v1.1 features PARTIALLY FEASIBLE. 2/8 open questions partially answered, 6/8 still need testing from a session with AT tools. Key discovery: AT tool availability is per-agent-type (executor types lack them, general-purpose/team-lead types have them). Nested agent hierarchies are possible. Context window exhaustion is a risk for coordinators. See `.planning/research/AGENT-TEAMS-API.md` and `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
 
 ### Quick Tasks Completed
 
@@ -108,6 +108,6 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Quick task 2 (Agent Teams API runtime testing) complete. Key finding: Agent Teams tools only available in top-level interactive sessions, not in Task()-spawned subagents. 6/8 open questions still need interactive testing.
-Resume: Either (a) run remaining 6 AT tests manually in interactive session, or (b) continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`. The 6 open questions have defensive design recommendations that allow v1.1 design to proceed without full verification.
-Context: Agent Teams API researched (quick-1) and runtime tested (quick-2). Meta-finding: AT tools are session-type restricted (top-level only). Workers inherit cwd/env vars, background mode is invisible. 2/8 questions partially answered, 6/8 inconclusive with defensive recommendations. Lifecycle walkthrough paused at plan-phase. 3 remaining multi-agent todos unblocked for scoping.
+Stopped at: Quick task 2 runtime test results corrected. Over-generalization fixed: AT tool availability is per-agent-type, not per-session-level. Context window exhaustion risk documented for coordinators.
+Resume: Either (a) run remaining 6 AT tests from a session with AT tools (interactive or general-purpose agent), or (b) continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`. The 6 open questions have defensive design recommendations that allow v1.1 design to proceed without full verification.
+Context: Agent Teams API researched (quick-1) and runtime tested (quick-2, corrected). Nested agent hierarchies confirmed possible (general-purpose/team-lead types have AT tools + Task). Context window exhaustion identified as coordinator risk with mitigations documented. Workers inherit cwd/env vars, background mode invisible. 2/8 questions partially answered, 6/8 need testing from AT-equipped session. Lifecycle walkthrough paused at plan-phase. 3 remaining multi-agent todos unblocked for scoping.
