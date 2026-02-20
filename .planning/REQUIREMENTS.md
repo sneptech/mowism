@@ -22,9 +22,9 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Multi-Phase Execution
 
-- [ ] **EXEC-01**: Team lead can execute multiple independent phases simultaneously across worktrees
+- [x] **EXEC-01**: Team lead can execute multiple independent phases simultaneously across worktrees
 - [ ] **EXEC-02**: Phase workers are `general-purpose` teammates that independently orchestrate their own wave executors via Task()
-- [ ] **EXEC-03**: Phase-level task dependencies in Agent Teams task list reflect the DAG from ROADMAP.md
+- [x] **EXEC-03**: Phase-level task dependencies in Agent Teams task list reflect the DAG from ROADMAP.md
 
 ### Live Feedback
 
@@ -75,9 +75,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | DAG-01 | Phase 8 | Complete |
 | DAG-02 | Phase 8 | Complete |
 | DAG-03 | Phase 8 | Complete |
-| EXEC-01 | Phase 9 | Pending |
+| EXEC-01 | Phase 9 | Complete |
 | EXEC-02 | Phase 9 | Pending |
-| EXEC-03 | Phase 9 | Pending |
+| EXEC-03 | Phase 9 | Complete |
 | FEED-01 | Phase 10 | Pending |
 | FEED-02 | Phase 10 | Pending |
 | FEED-03 | Phase 10 | Pending |
