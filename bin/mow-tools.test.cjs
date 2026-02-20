@@ -4216,3 +4216,192 @@ describe('caution stripe test', () => {
     assert.ok(proc.stdout.includes('CRITICAL ERROR'), 'should contain error text');
   });
 });
+
+// --- Phase 10: Dashboard Tests ---
+
+describe('dashboard event storage tests', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('dashboard event add creates NDJSON file and appends event with correct fields', () => {
+    const result = runMowTools('dashboard event add --type task_claimed --phase 10 --detail "Test event" --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const event = JSON.parse(result.output);
+    assert.strictEqual(event.type, 'task_claimed');
+    assert.strictEqual(event.phase, '10');
+    assert.strictEqual(event.detail, 'Test event');
+    assert.ok(event.ts, 'should have timestamp');
+
+    // Verify NDJSON file exists
+    const ndjsonPath = path.join(tmpDir, '.planning', 'dashboard-events.ndjson');
+    assert.ok(fs.existsSync(ndjsonPath), 'NDJSON file should exist');
+    const lines = fs.readFileSync(ndjsonPath, 'utf-8').trim().split('\n');
+    assert.strictEqual(lines.length, 1, 'should have 1 event line');
+    const parsed = JSON.parse(lines[0]);
+    assert.strictEqual(parsed.type, 'task_claimed');
+  });
+
+  test('dashboard event add auto-prunes when exceeding 100 events', () => {
+    // Add 101 events
+    for (let i = 0; i < 101; i++) {
+      runMowTools(`dashboard event add --type task_claimed --phase 10 --detail "Event ${i}" --raw`, tmpDir);
+    }
+
+    const ndjsonPath = path.join(tmpDir, '.planning', 'dashboard-events.ndjson');
+    const lines = fs.readFileSync(ndjsonPath, 'utf-8').trim().split('\n').filter(l => l.trim());
+    assert.strictEqual(lines.length, 50, 'should auto-prune to 50 events after exceeding 100');
+  });
+
+  test('dashboard event add --type input_needed auto-pins notification', () => {
+    runMowTools('dashboard event add --type input_needed --phase 10 --detail "permission_prompt" --raw', tmpDir);
+
+    const stateResult = runMowTools('dashboard state --raw', tmpDir);
+    assert.ok(stateResult.success, `Command failed: ${stateResult.error}`);
+    const state = JSON.parse(stateResult.output);
+    assert.strictEqual(state.pinned.length, 1, 'should have 1 pinned notification');
+    assert.strictEqual(state.pinned[0].type, 'input_needed');
+    assert.strictEqual(state.pinned[0].phase, '10');
+  });
+
+  test('dashboard event add --type error auto-pins notification', () => {
+    runMowTools('dashboard event add --type error --phase 10 --detail "Build failed" --raw', tmpDir);
+
+    const stateResult = runMowTools('dashboard state --raw', tmpDir);
+    assert.ok(stateResult.success, `Command failed: ${stateResult.error}`);
+    const state = JSON.parse(stateResult.output);
+    assert.strictEqual(state.pinned.length, 1, 'should have 1 pinned notification');
+    assert.strictEqual(state.pinned[0].type, 'error');
+    assert.strictEqual(state.pinned[0].detail, 'Build failed');
+  });
+
+  test('dashboard event add for a phase with pinned notification auto-dismisses the pin', () => {
+    // Pin an input_needed notification
+    runMowTools('dashboard event add --type input_needed --phase 10 --detail "permission_prompt" --raw', tmpDir);
+
+    // Verify it was pinned
+    let stateResult = runMowTools('dashboard state --raw', tmpDir);
+    let state = JSON.parse(stateResult.output);
+    assert.strictEqual(state.pinned.length, 1, 'should have 1 pinned');
+
+    // Add a non-input_needed, non-error event for the same phase -> auto-dismiss
+    runMowTools('dashboard event add --type task_claimed --phase 10 --detail "Worker resumed" --raw', tmpDir);
+
+    stateResult = runMowTools('dashboard state --raw', tmpDir);
+    state = JSON.parse(stateResult.output);
+    assert.strictEqual(state.pinned.length, 0, 'pinned should be auto-dismissed after normal event for same phase');
+  });
+});
+
+describe('dashboard render tests', () => {
+  const { spawnSync } = require('child_process');
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('dashboard render --raw with no active phases returns JSON with phases: 0', () => {
+    // Create STATE.md without Active Phases section
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# Project State\n\n## Current Position\n\nNothing here.\n', 'utf-8');
+
+    const result = runMowTools('dashboard render --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.strictEqual(data.phases, 0, 'should have phases: 0');
+  });
+
+  test('dashboard render --raw after adding events returns JSON with correct event count', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# Project State\n\n## Current Position\n\n', 'utf-8');
+
+    runMowTools('dashboard event add --type task_claimed --phase 10 --detail "Event 1" --raw', tmpDir);
+    runMowTools('dashboard event add --type commit_made --phase 10 --detail "Event 2" --raw', tmpDir);
+    runMowTools('dashboard event add --type plan_complete --phase 10 --detail "Event 3" --raw', tmpDir);
+
+    const result = runMowTools('dashboard render --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.strictEqual(data.events, 3, 'should have 3 events');
+  });
+
+  test('dashboard render with FORCE_COLOR=1 produces output containing ANSI escape codes', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# Project State\n\n## Current Position\n\n', 'utf-8');
+    runMowTools('dashboard event add --type task_claimed --phase 10 --detail "Colorful event" --raw', tmpDir);
+
+    const proc = spawnSync('node', [TOOLS_PATH, 'dashboard', 'render'], {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, FORCE_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    assert.ok(proc.stdout.includes('\x1b['), 'should contain ANSI escape codes');
+  });
+
+  test('dashboard render with NO_COLOR=1 produces output with no ANSI escape codes', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# Project State\n\n## Current Position\n\n', 'utf-8');
+    runMowTools('dashboard event add --type task_claimed --phase 10 --detail "Plain event" --raw', tmpDir);
+
+    const proc = spawnSync('node', [TOOLS_PATH, 'dashboard', 'render'], {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    assert.ok(!proc.stdout.includes('\x1b['), 'should NOT contain ANSI escape codes');
+    assert.ok(proc.stdout.includes('Plain event'), 'should contain event text');
+  });
+});
+
+describe('dashboard state management tests', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('dashboard state --raw returns JSON with pinned array', () => {
+    const result = runMowTools('dashboard state --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const state = JSON.parse(result.output);
+    assert.ok(Array.isArray(state.pinned), 'should have pinned array');
+    assert.strictEqual(state.pinned.length, 0, 'should start with empty pinned');
+    assert.strictEqual(state.last_line_count, 0, 'should start with 0 line count');
+  });
+
+  test('dashboard clear removes both NDJSON and state files', () => {
+    // Create events and state (input_needed writes to state file via auto-pin)
+    runMowTools('dashboard event add --type input_needed --phase 10 --detail "Test" --raw', tmpDir);
+
+    // Verify files exist
+    const ndjsonPath = path.join(tmpDir, '.planning', 'dashboard-events.ndjson');
+    const statePath = path.join(tmpDir, '.planning', 'dashboard-state.json');
+    assert.ok(fs.existsSync(ndjsonPath), 'NDJSON should exist before clear');
+    assert.ok(fs.existsSync(statePath), 'State should exist before clear');
+
+    // Clear
+    const result = runMowTools('dashboard clear --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.strictEqual(data.cleared, true);
+
+    // Verify files removed
+    assert.ok(!fs.existsSync(ndjsonPath), 'NDJSON should be removed after clear');
+    assert.ok(!fs.existsSync(statePath), 'State should be removed after clear');
+  });
+});
