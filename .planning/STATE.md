@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.1 Phase 10 complete (Live Feedback & Visual Differentiation)
+**Current focus:** v1.1 Phase 11 in progress (README Overhaul)
 
 ## Current Position
 
 Milestone: v1.1 Multi-Agent UX & Documentation
-Phase: 10 of 11 (Live Feedback & Visual Differentiation)
-Plan: 3 of 3
-Status: Phase Complete
-Last activity: 2026-02-20 -- Completed 10-03 (orchestrator & worker agent integration)
+Phase: 11 of 11 (README Overhaul)
+Plan: 1 of 3
+Status: In Progress
+Last activity: 2026-02-20 -- Completed 11-01 (README scaffold, lifecycle, brownfield)
 
-Progress: [##################..] 90% (v1.0: 22/22 plans complete; v1.1: 13/TBD)
+Progress: [##################..] 93% (v1.0: 22/22 plans complete; v1.1: 14/16)
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Progress: [##################..] 90% (v1.0: 22/22 plans complete; v1.1: 13/TBD)
 | Phase 10 P10-01 | 6min | 3 tasks | 2 files |
 | Phase 10 P10-02 | 5min | 2 tasks | 2 files |
 | Phase 10 P10-03 | 4min | 2 tasks | 2 files |
+| Phase 11 P11-01 | 3min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,10 @@ Research context: `.planning/research/SUMMARY.md`
 - [Phase 10]: Dashboard is the notification mechanism -- lead does not manually notify user on input_needed
 - [Phase 10]: input_needed replaces blocker for granular input routing; blocker kept as fallback
 - [Phase 10]: Permission prompt context uses echo above Bash command since prompt itself cannot be modified
+- [Phase 11]: Lifecycle uses numbered walkthrough with exact command names, not abstract descriptions
+- [Phase 11]: Multi-agent presented as opt-in after single-agent default (progressive disclosure)
+- [Phase 11]: Brownfield is a top-level section, not nested under lifecycle
+- [Phase 11]: ASCII flow diagram chosen over Mermaid for universal compatibility
 
 ### Pending Todos
 
@@ -104,6 +109,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 10-03-PLAN.md (Phase 10 complete)
-Resume: Phase 11 (README overhaul)
-Context: Phase 10 complete -- all 3 plans shipped: visual primitives (schema v2, banners, progress bars), dashboard renderer (NDJSON event log, pinned notifications), and agent integration (team lead dashboard rendering, worker 11 checkpoint types, input routing). Ready for Phase 11.
+Stopped at: Completed 11-01-PLAN.md
+Resume: Phase 11 Plan 02 (commands reference)
+Context: Plan 11-01 complete -- README rewritten from scratch with opening, install, requirements, quick start, lifecycle narrative (8 stages single-agent + multi-agent parallel), and brownfield entry. Placeholder comments mark where Plans 02 (commands reference) and 03 (config/security/troubleshooting) will insert their sections.
