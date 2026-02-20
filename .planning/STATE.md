@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.1 Phase 11 in progress (README Overhaul)
+**Current focus:** v1.1 Phase 11 complete (README Overhaul) -- milestone ready for completion
 
 ## Current Position
 
 Milestone: v1.1 Multi-Agent UX & Documentation
 Phase: 11 of 11 (README Overhaul)
-Plan: 2 of 3
-Status: In Progress
-Last activity: 2026-02-20 -- Completed 11-02 (commands reference, quality skills)
+Plan: 3 of 3
+Status: Complete
+Last activity: 2026-02-20 -- Completed 11-03 (configuration, security, troubleshooting)
 
-Progress: [##################..] 95% (v1.0: 22/22 plans complete; v1.1: 15/16)
+Progress: [####################] 100% (v1.0: 22/22 plans complete; v1.1: 16/16)
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Progress: [##################..] 95% (v1.0: 22/22 plans complete; v1.1: 15/16)
 | Phase 10 P10-03 | 4min | 2 tasks | 2 files |
 | Phase 11 P11-01 | 3min | 2 tasks | 1 files |
 | Phase 11 P11-02 | 3min | 2 tasks | 1 files |
+| Phase 11 P03 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ Research context: `.planning/research/SUMMARY.md`
 - [Phase 11]: ASCII flow diagram chosen over Mermaid for universal compatibility
 - [Phase 11]: Descriptions sourced from YAML frontmatter in commands/mow/*.md, not help.md
 - [Phase 11]: join-discord excluded from README: exists in help.md but has no file in commands/mow/
+- [Phase 11]: 14 agent definitions counted from actual agents/ directory (not 11 as plan specified)
+- [Phase 11]: Multi-agent section corrected to describe full-lifecycle workers during human verification
 
 ### Pending Todos
 
@@ -113,6 +116,6 @@ Research context: `.planning/research/SUMMARY.md`
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 11-02-PLAN.md
-Resume: Phase 11 Plan 03 (config/security/troubleshooting)
-Context: Plan 11-02 complete -- README now has full command reference: 35 /mow:* commands in 12 categorized tables, 7 quality skills, usage examples for 9 categories, ??? help system documented. Plan 03 placeholder remains for config/security/troubleshooting section.
+Stopped at: Completed 11-03-PLAN.md (final plan of Phase 11)
+Resume: v1.1 milestone complete -- all 16/16 plans across 5 phases done. Run /mow:complete-milestone to archive.
+Context: Phase 11 (README Overhaul) complete -- all 3 plans executed. README has lifecycle narrative, 35 commands reference, brownfield entry, configuration (9 settings + model profiles), security, troubleshooting, directory structure, common workflows, and license. All DOC-01 through DOC-04 requirements satisfied. v1.1 milestone ready for completion.

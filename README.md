@@ -2,13 +2,17 @@
 
 Coordinated multi-agent workflows for Claude Code -- plan, execute, and ship with parallel agents across git worktrees.
 
+## ! IMPORTANT !
+This project is currently in early testing, do not entrust this to production work yet without accepting the risk something screw up! Let my naive self experiment, iterate, and step on the rakes so you need not.
+*(last edited: 2026-02-20)*
+
 ## What is Mowism
 
 Mowism is a meta-prompting framework for Claude Code that plans and executes project work in phases. You describe what you want to build, and Mowism breaks it into researched requirements, a phased roadmap, and detailed execution plans -- then runs them with per-task commits, quality gates, and state tracking. When you're ready, it can parallelize execution across git worktrees using Claude Code's Agent Teams.
 
 What makes it different: worktree-aware state so multiple agents never conflict, DAG-based phase scheduling so independent phases run simultaneously, tiered quality gates that scale verification depth to code complexity, and live agent feedback with color-coded terminals so you always know what each worker is doing.
 
-Mowism is a permanent fork of [GSD](https://github.com/gsd-build/get-shit-done) by [TACHES](https://github.com/glittercowboy). Where GSD focuses on single-agent productivity, Mowism adds the coordination layer: multi-agent orchestration, worktree state synchronization, DAG scheduling, and automated quality verification. The two projects have fully diverged.
+Mowism is a permanent fork of [GSD](https://github.com/gsd-build/get-shit-done) by [TACHES](https://github.com/glittercowboy). Where GSD focuses on single-agent productivity, Mowism adds the coordination layer: multi-agent orchestration, worktree state synchronization, DAG scheduling, and automated quality verification.
 
 ## Install
 
@@ -36,10 +40,9 @@ After installing, open Claude Code in any project directory and run:
 
 ```
 /mow:new-project           # Research + requirements + roadmap
-/clear
-/mow:plan-phase 1          # Create execution plans
-/clear
-/mow:execute-phase 1       # Execute all plans
+
+# or if it's an existing project, run this first:
+/mow:map-codebase
 ```
 
 This initializes a `.planning/` directory with your project state, creates phased execution plans, and runs them. Use `/clear` between commands to keep context fresh.
@@ -78,7 +81,7 @@ Breaks the phase into 2-3 detailed task plans with dependency waves. Each plan g
 
 Executes plans wave by wave -- independent plans within each wave run in parallel via subagents. Each plan executor commits per-task, handles deviations automatically (bug fixes, missing validation, blocking issues), and produces a `XX-NN-SUMMARY.md` documenting what was built and any deviations from the plan.
 
-**6. Refine a phase** -- `/mow:refine-phase N`
+**6. Refine a completed phase** -- `/mow:refine-phase N`
 
 Runs tiered quality gates scaled to code complexity:
 
@@ -106,7 +109,7 @@ new-project -> [discuss] -> [research] -> plan-phase -> execute-phase -> refine-
 
 ### Multi-Agent Parallel Execution
 
-When you're ready to parallelize, Mowism can run independent phases simultaneously across git worktrees using Claude Code's Agent Teams.
+When you're ready to parallelize, Mowism can run independent phases simultaneously across git worktrees using Claude Code's Agent Teams. This isn't just parallel execution -- workers handle the *full* lifecycle (discuss, research, plan, execute, refine) for their assigned phases.
 
 **Enable Agent Teams:**
 
@@ -114,9 +117,9 @@ When you're ready to parallelize, Mowism can run independent phases simultaneous
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
 
-**DAG-based scheduling:** Phases in the roadmap declare `depends_on` dependencies. Mowism analyzes the dependency graph and identifies which phases can run in parallel -- phases with no unmet dependencies execute simultaneously rather than waiting in a linear chain.
+**DAG-based scheduling:** Phases in the roadmap declare `depends_on` dependencies. Mowism analyzes the dependency graph and identifies which phases can run in parallel -- phases with no unmet dependencies start simultaneously rather than waiting in a linear chain.
 
-**How it works:** When you run `/mow:execute-phase`, Mowism detects Agent Teams and spawns a team lead. The lead analyzes the DAG, creates workers for independent phases, and assigns each worker its own git worktree. Workers execute their phases autonomously -- planning, executing, and refining without manual intervention.
+**How it works:** After `new-project` creates the roadmap (or after you resume from a checkpoint), Mowism spawns a team lead that reads the DAG and creates workers for independent phases. Each worker gets its own git worktree and handles the full lifecycle for its phase autonomously -- discussing, researching, planning, executing, and refining without waiting for other phases. Phases with unmet dependencies stay queued until their prerequisites complete, then new workers pick them up.
 
 **Live feedback:** Workers send structured progress messages to the team lead. A dashboard in the orchestrator terminal shows:
 
@@ -130,7 +133,7 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 ## Brownfield Projects
 
-Already have a codebase? Start here instead of the Quick Start.
+What if you already have a codebase? 
 
 ```
 /mow:map-codebase           # Analyze existing code
@@ -396,26 +399,12 @@ Mowism installs files into `~/.claude/`:
 - `~/.claude/mowism/` -- workflows, references, templates, tools
 - `~/.claude/settings.local.json` -- Claude Code permission grants
 
-All files are plain Markdown and JavaScript. No compiled binaries. No network calls except Claude Code's own API.
-
 ### Environment Variables
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | No | unset | Set to `1` to enable multi-agent parallel execution |
 | `VISUAL` / `EDITOR` | No | system default | Used by `???` help system to open help files |
-
-No API keys are stored or managed by Mowism. Claude Code handles its own authentication.
-
-### Permissions Model
-
-Mowism operates within Claude Code's permission system. The `.claude/settings.local.json` file grants:
-
-- File read/write access to project directories
-- Bash execution for Node.js (mow-tools.cjs) and git operations
-- No network access beyond Claude Code's own API
-
-Review permissions with: `cat .claude/settings.local.json`
 
 ### Private Planning Mode
 
@@ -426,16 +415,6 @@ To keep planning artifacts out of git:
 3. Optionally set `planning.search_gitignored: true` if you want project-wide searches to include planning files
 
 ## Troubleshooting
-
-### Install Issues
-
-| Problem | Cause | Fix |
-|---|---|---|
-| `install.sh: command not found` | Wrong directory | `cd mowism && ./bin/install.sh` |
-| "Node.js not found" warning | Node.js not installed | Install from [nodejs.org](https://nodejs.org) |
-| "WorkTrunk not found" warning | WorkTrunk (`wt` CLI) not installed | See [WorkTrunk install docs](https://github.com/nicholasgasior/worktrunk) |
-
-The installer never blocks on missing dependencies -- it reports what's missing and continues.
 
 ### Common Runtime Issues
 
@@ -552,7 +531,8 @@ The installer never blocks on missing dependencies -- it reports what's missing 
 
 ```
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
-/mow:execute-phase 3       # DAG scheduler runs independent plans in parallel
+# Team lead reads DAG, spawns workers for independent phases
+# Each worker handles full lifecycle: discuss → plan → execute → refine
 # Workers appear in separate terminals with color-coded banners
 # Orchestrator terminal shows live dashboard
 /mow:close-shop            # Graceful shutdown when done
@@ -560,6 +540,6 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 ## License and Attribution
 
-Mowism is a permanent fork of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) by [TACHES](https://github.com/glittercowboy). The original GSD framework provides meta-prompting, context engineering, and spec-driven development for Claude Code. Mowism extends it with multi-agent coordination, worktree-aware state, DAG scheduling, and quality gates. The two projects have fully diverged.
+Mowism is a permanent fork of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) by [TACHES](https://github.com/glittercowboy). The original GSD framework provides meta-prompting, context engineering, and spec-driven development for Claude Code. Mowism extends it with multi-agent coordination, worktree-aware state, DAG scheduling, and quality gates.
 
-Quality skills derived from practices by Andrej Karpathy and Boris Cherny.
+Quality skills derived from practices tweeted by Andrej Karpathy and Boris Cherny.
