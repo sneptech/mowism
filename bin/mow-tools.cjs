@@ -71,6 +71,23 @@
  *     --name <n> --status <s> --task <t>
  *   team-update --action stop          Stop team (remove section from STATE.md)
  *
+ * Message Protocol:
+ *   message format <type>              Format a structured JSON message
+ *     --phase N --plan M [--commit h]  Fields vary by event type
+ *     [--summary] [--raw]              Include summary string, raw output
+ *   message parse <json>               Validate and parse a JSON message
+ *     [--raw]                          Raw output mode
+ *   Event types: plan_started, plan_complete, phase_complete,
+ *                error, blocker, state_change, ack
+ *
+ * Chat Logs:
+ *   chat-log append --from <id>        Append message to peer chat log
+ *     --to <id> --msg <text>           NDJSON storage, 500-char limit
+ *   chat-log read --from <id>          Read all entries from chat log
+ *     --to <id> [--raw]
+ *   chat-log prune --from <id>         Keep only last N entries
+ *     --to <id> [--keep N]             Default: 200
+ *
  * Scaffolding:
  *   scaffold context --phase <N>       Create CONTEXT.md template
  *   scaffold uat --phase <N>           Create UAT.md template
@@ -153,6 +170,25 @@ const MODEL_PROFILES = {
   'mow-plan-checker':         { quality: 'sonnet', balanced: 'sonnet', budget: 'haiku' },
   'mow-integration-checker':  { quality: 'sonnet', balanced: 'sonnet', budget: 'haiku' },
 };
+
+// ─── Message Protocol Schema ─────────────────────────────────────────────────
+
+const MESSAGE_SCHEMA_VERSION = 1;
+
+const MESSAGE_REQUIRED_FIELDS = {
+  plan_started: ['phase', 'plan'],
+  plan_complete: ['phase', 'plan', 'commit', 'duration_min'],
+  phase_complete: ['phase', 'plans_completed', 'total_duration_min'],
+  error: ['phase', 'plan', 'error'],
+  blocker: ['phase', 'plan', 'blocker', 'action'],
+  state_change: ['phase', 'plan', 'from_state', 'to_state'],
+  ack: ['ref_type', 'ref_plan'],
+};
+
+// VERBOSE VERSION (milestones + state transitions -- default)
+const ENABLED_EVENTS = ['plan_started', 'plan_complete', 'phase_complete', 'error', 'blocker', 'state_change', 'ack'];
+// LEAN VERSION (milestones only -- uncomment to switch)
+// const ENABLED_EVENTS = ['plan_complete', 'phase_complete', 'error', 'blocker', 'ack'];
 
 // ─── WorkTrunk Dependency ─────────────────────────────────────────────────────
 
@@ -1622,6 +1658,192 @@ function cmdStateRecordSession(cwd, options, raw) {
   } else {
     output({ recorded: false, reason: 'No session fields found in STATE.md' }, raw, 'false');
   }
+}
+
+// ─── Message Protocol Commands ───────────────────────────────────────────────
+
+function cmdMessageSummary(type, fields) {
+  const phase = fields.phase || '?';
+  const plan = fields.plan || '?';
+  switch (type) {
+    case 'plan_started':
+      return `Phase ${phase}: plan ${plan} started`;
+    case 'plan_complete':
+      return `Phase ${phase}: plan ${plan} complete (${fields.duration_min || '?'}min)`;
+    case 'phase_complete':
+      return `Phase ${phase}: all plans complete`;
+    case 'error':
+      return `Phase ${phase}: error in ${plan}`;
+    case 'blocker':
+      return `Phase ${phase}: blocker in ${plan} (${fields.action || '?'})`;
+    case 'state_change':
+      return `Phase ${phase}: ${plan} ${fields.to_state || '?'}`;
+    case 'ack':
+      return `Ack: ${fields.ref_type || '?'} ${fields.ref_plan || '?'}`;
+    default:
+      return `Phase ${phase}: ${type}`;
+  }
+}
+
+function cmdMessageFormat(type, fields, raw, includeSummary) {
+  if (!type) {
+    error('Event type required. Available: ' + Object.keys(MESSAGE_REQUIRED_FIELDS).join(', '));
+  }
+  if (!MESSAGE_REQUIRED_FIELDS[type]) {
+    error(`Unknown event type: ${type}. Available: ${Object.keys(MESSAGE_REQUIRED_FIELDS).join(', ')}`);
+  }
+
+  const required = MESSAGE_REQUIRED_FIELDS[type];
+  const missing = required.filter(f => fields[f] === undefined || fields[f] === null);
+  if (missing.length > 0) {
+    error(`Missing required fields for ${type}: ${missing.join(', ')}`);
+  }
+
+  const msg = {
+    v: MESSAGE_SCHEMA_VERSION,
+    type,
+    ts: new Date().toISOString(),
+    ...fields,
+  };
+
+  if (includeSummary) {
+    msg.summary = cmdMessageSummary(type, fields);
+  }
+
+  const json = JSON.stringify(msg);
+  if (json.length > 1024) {
+    process.stderr.write(`Warning: Message exceeds 1KB (${json.length} bytes)\n`);
+  }
+
+  if (raw) {
+    process.stdout.write(json);
+    process.exit(0);
+  } else {
+    output({ message: json, size: json.length, type }, false);
+  }
+}
+
+function cmdMessageParse(jsonString, raw) {
+  if (!jsonString) {
+    error('JSON string required for message parse');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch (e) {
+    const result = { valid: false, error: 'Invalid JSON: ' + e.message };
+    output(result, raw, JSON.stringify(result));
+    return;
+  }
+
+  const warnings = [];
+
+  // Check schema version
+  if (parsed.v === undefined || parsed.v === null) {
+    warnings.push('Missing schema version');
+  } else if (typeof parsed.v !== 'number') {
+    warnings.push('Schema version is not a number');
+  } else if (parsed.v > MESSAGE_SCHEMA_VERSION) {
+    warnings.push(`Unknown schema version ${parsed.v}, attempting parse`);
+  }
+
+  // Check type
+  if (!parsed.type) {
+    const result = { valid: false, error: 'Missing type field', warnings };
+    output(result, raw, JSON.stringify(result));
+    return;
+  }
+
+  if (!MESSAGE_REQUIRED_FIELDS[parsed.type]) {
+    const result = { valid: false, error: `Unknown event type: ${parsed.type}`, warnings };
+    output(result, raw, JSON.stringify(result));
+    return;
+  }
+
+  // Validate required fields
+  const required = MESSAGE_REQUIRED_FIELDS[parsed.type];
+  const missing = required.filter(f => parsed[f] === undefined || parsed[f] === null);
+  if (missing.length > 0) {
+    const result = { valid: false, error: `Missing required fields for ${parsed.type}: ${missing.join(', ')}`, warnings };
+    output(result, raw, JSON.stringify(result));
+    return;
+  }
+
+  const result = { valid: true, ...parsed };
+  if (warnings.length > 0) {
+    result.warnings = warnings;
+  }
+  output(result, raw, JSON.stringify(result));
+}
+
+// ─── Chat Log Commands ──────────────────────────────────────────────────────
+
+function chatLogResolvePath(cwd, from, to) {
+  const sorted = [from, to].sort();
+  const filename = `${sorted[0]}-to-${sorted[1]}.ndjson`;
+  return path.join(cwd, '.planning', 'chat-logs', filename);
+}
+
+function cmdChatLogAppend(cwd, from, to, message, raw) {
+  if (!from) { error('--from required for chat-log append'); }
+  if (!to) { error('--to required for chat-log append'); }
+  if (!message) { error('--msg required for chat-log append'); }
+
+  const dir = path.join(cwd, '.planning', 'chat-logs');
+  fs.mkdirSync(dir, { recursive: true });
+
+  const filePath = chatLogResolvePath(cwd, from, to);
+  const entry = {
+    from,
+    to,
+    ts: new Date().toISOString(),
+    msg: message.slice(0, 500),
+  };
+
+  const line = JSON.stringify(entry) + '\n';
+  fs.appendFileSync(filePath, line);
+
+  output({ appended: true, path: filePath, entry_size: line.length }, raw, JSON.stringify({ appended: true, path: filePath, entry_size: line.length }));
+}
+
+function cmdChatLogRead(cwd, from, to, raw) {
+  if (!from) { error('--from required for chat-log read'); }
+  if (!to) { error('--to required for chat-log read'); }
+
+  const filePath = chatLogResolvePath(cwd, from, to);
+  if (!fs.existsSync(filePath)) {
+    output([], raw, '[]');
+    return;
+  }
+
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.trim().split('\n').filter(l => l.trim());
+  const entries = lines.map(line => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
+
+  output(entries, raw, JSON.stringify(entries));
+}
+
+function cmdChatLogPrune(cwd, from, to, keep, raw) {
+  if (!from) { error('--from required for chat-log prune'); }
+  if (!to) { error('--to required for chat-log prune'); }
+
+  const filePath = chatLogResolvePath(cwd, from, to);
+  if (!fs.existsSync(filePath)) {
+    output({ pruned: false, reason: 'File not found' }, raw, JSON.stringify({ pruned: false, reason: 'File not found' }));
+    return;
+  }
+
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.trim().split('\n').filter(l => l.trim());
+  const before = lines.length;
+  const kept = lines.slice(-keep);
+  fs.writeFileSync(filePath, kept.join('\n') + '\n', 'utf-8');
+
+  const result = { pruned: true, before, after: kept.length };
+  output(result, raw, JSON.stringify(result));
 }
 
 function cmdResolveModel(cwd, agentType, raw) {
@@ -5663,6 +5885,168 @@ function cmdTeamUpdate(cwd, options, raw) {
   }
 }
 
+// ─── Active Phases Table ──────────────────────────────────────────────────────
+
+function parseActivePhasesTable(content) {
+  const rows = [];
+  const sectionMatch = content.match(
+    /## Active Phases\n[\s\S]*?\n\|[^\n]+\n\|[-|\s]+\n([\s\S]*?)(?=\n\*\*Next unblockable|\n## |\n$|$)/
+  );
+  if (!sectionMatch) return rows;
+  const tableBody = sectionMatch[1].trim();
+  if (!tableBody) return rows;
+  for (const line of tableBody.split('\n')) {
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    if (cells.length >= 6) {
+      rows.push({
+        phase: cells[0],
+        name: cells[1],
+        status: cells[2],
+        worker: cells[3],
+        plans: cells[4],
+        last_update: cells[5],
+      });
+    }
+  }
+  return rows;
+}
+
+function writeActivePhasesTable(content, rows, nextUnblockable) {
+  const header = `## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|`;
+
+  const tableRows = rows.map(r =>
+    `| ${r.phase} | ${r.name} | ${r.status} | ${r.worker} | ${r.plans} | ${r.last_update} |`
+  ).join('\n');
+
+  const metaLine = `\n**Next unblockable:** ${nextUnblockable || '--'}`;
+
+  const newSection = header + (tableRows ? '\n' + tableRows : '') + '\n' + metaLine;
+
+  // Replace existing section
+  const sectionPattern = /## Active Phases\n[\s\S]*?(?=\n## |\n$|$)/;
+  if (sectionPattern.test(content)) {
+    return content.replace(sectionPattern, newSection);
+  }
+
+  // Insert before Performance Metrics or at end
+  const metricsPattern = /\n## Performance Metrics/;
+  if (metricsPattern.test(content)) {
+    return content.replace(metricsPattern, '\n' + newSection + '\n\n## Performance Metrics');
+  }
+
+  return content.trimEnd() + '\n\n' + newSection + '\n';
+}
+
+function computeNextUnblockable(rows) {
+  // Find blocked phases and determine which will be unblocked first
+  const blockedRows = rows.filter(r => r.status.startsWith('blocked'));
+  if (blockedRows.length === 0) return '--';
+
+  const completedPhases = new Set(
+    rows.filter(r => r.status === 'complete').map(r => r.phase)
+  );
+
+  let bestCandidate = null;
+  let fewestRemaining = Infinity;
+
+  for (const row of blockedRows) {
+    // Parse blocked dependencies: "blocked (7,8)" -> ["7", "8"]
+    const depMatch = row.status.match(/blocked\s*\(([^)]+)\)/);
+    if (!depMatch) continue;
+    const deps = depMatch[1].split(',').map(d => d.trim());
+    const remaining = deps.filter(d => !completedPhases.has(d)).length;
+    if (remaining < fewestRemaining) {
+      fewestRemaining = remaining;
+      bestCandidate = row;
+    }
+  }
+
+  if (bestCandidate && fewestRemaining === 0) {
+    return `Phase ${bestCandidate.phase} (${bestCandidate.name}) -- ready to unblock`;
+  } else if (bestCandidate) {
+    return `Phase ${bestCandidate.phase} (${bestCandidate.name}) -- ${fewestRemaining} dep(s) remaining`;
+  }
+
+  return '--';
+}
+
+function cmdStateActivePhases(cwd, raw) {
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) {
+    output([], raw);
+    return;
+  }
+
+  const content = fs.readFileSync(statePath, 'utf-8');
+
+  if (!content.includes('## Active Phases')) {
+    output({ warning: 'No Active Phases section found in STATE.md', rows: [] }, raw);
+    return;
+  }
+
+  const rows = parseActivePhasesTable(content);
+  output(rows, raw);
+}
+
+function cmdStateUpdatePhaseRow(cwd, phase, options, raw) {
+  if (!phase) { error('phase number required for update-phase-row'); }
+
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { error('STATE.md not found'); }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+
+  if (!content.includes('## Active Phases')) {
+    error('No Active Phases section found in STATE.md. Add the section first.');
+  }
+
+  const rows = parseActivePhasesTable(content);
+  const existingIdx = rows.findIndex(r => r.phase === String(phase));
+  const fieldsChanged = [];
+  const timestamp = new Date().toISOString();
+
+  if (existingIdx !== -1) {
+    // Update existing row
+    const row = rows[existingIdx];
+    if (options.status !== null && options.status !== undefined) { row.status = options.status; fieldsChanged.push('status'); }
+    if (options.worker !== null && options.worker !== undefined) { row.worker = options.worker; fieldsChanged.push('worker'); }
+    if (options.plans !== null && options.plans !== undefined) { row.plans = options.plans; fieldsChanged.push('plans'); }
+    if (options.name !== null && options.name !== undefined) { row.name = options.name; fieldsChanged.push('name'); }
+    if (options.last_update !== null && options.last_update !== undefined) {
+      row.last_update = options.last_update;
+    } else {
+      row.last_update = timestamp;
+    }
+    fieldsChanged.push('last_update');
+  } else {
+    // Insert new row -- require at minimum name and status
+    if (!options.name || !options.status) {
+      error(`Phase ${phase} not found in Active Phases table. To insert a new row, provide --name and --status.`);
+    }
+    rows.push({
+      phase: String(phase),
+      name: options.name,
+      status: options.status,
+      worker: options.worker || '--',
+      plans: options.plans || '0/0',
+      last_update: options.last_update || timestamp,
+    });
+    fieldsChanged.push('name', 'status', 'worker', 'plans', 'last_update');
+    // Sort rows by phase number
+    rows.sort((a, b) => parseInt(a.phase) - parseInt(b.phase));
+  }
+
+  const nextUnblockable = computeNextUnblockable(rows);
+  content = writeActivePhasesTable(content, rows, nextUnblockable);
+  fs.writeFileSync(statePath, content, 'utf-8');
+
+  output({ updated: true, phase: String(phase), fields_changed: fieldsChanged }, raw);
+}
+
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -5675,7 +6059,7 @@ async function main() {
   const cwd = process.cwd();
 
   if (!command) {
-    error('Usage: mow-tools <command> [args] [--raw]\nCommands: state, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, init');
+    error('Usage: mow-tools <command> [args] [--raw]\nCommands: state, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, message, chat-log, init');
   }
 
   switch (command) {
@@ -5733,6 +6117,22 @@ async function main() {
         cmdStateRecordSession(cwd, {
           stopped_at: stoppedIdx !== -1 ? args[stoppedIdx + 1] : null,
           resume_file: resumeIdx !== -1 ? args[resumeIdx + 1] : 'None',
+        }, raw);
+      } else if (subcommand === 'active-phases') {
+        cmdStateActivePhases(cwd, raw);
+      } else if (subcommand === 'update-phase-row') {
+        const phase = args[2];
+        const statusIdx = args.indexOf('--status');
+        const workerIdx = args.indexOf('--worker');
+        const plansIdx = args.indexOf('--plans');
+        const lastUpdateIdx = args.indexOf('--last-update');
+        const nameIdx = args.indexOf('--name');
+        cmdStateUpdatePhaseRow(cwd, phase, {
+          status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+          worker: workerIdx !== -1 ? args[workerIdx + 1] : null,
+          plans: plansIdx !== -1 ? args[plansIdx + 1] : null,
+          last_update: lastUpdateIdx !== -1 ? args[lastUpdateIdx + 1] : null,
+          name: nameIdx !== -1 ? args[nameIdx + 1] : null,
         }, raw);
       } else {
         cmdStateLoad(cwd, raw);
@@ -6131,6 +6531,61 @@ async function main() {
         limit: limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : 10,
         freshness: freshnessIdx !== -1 ? args[freshnessIdx + 1] : null,
       }, raw);
+      break;
+    }
+
+    case 'message': {
+      const subcommand = args[1];
+      if (subcommand === 'format') {
+        const type = args[2];
+        // Collect all --key value pairs as fields
+        const fields = {};
+        for (let i = 3; i < args.length; i++) {
+          if (args[i].startsWith('--') && args[i] !== '--raw' && args[i] !== '--summary') {
+            const key = args[i].replace(/^--/, '').replace(/-/g, '_');
+            fields[key] = args[i + 1];
+            i++; // skip value
+          }
+        }
+        const includeSummary = args.includes('--summary');
+        cmdMessageFormat(type, fields, raw, includeSummary);
+      } else if (subcommand === 'parse') {
+        cmdMessageParse(args[2], raw);
+      } else {
+        error('Unknown message subcommand. Available: format, parse');
+      }
+      break;
+    }
+
+    case 'chat-log': {
+      const subcommand = args[1];
+      const fromIdx = args.indexOf('--from');
+      const toIdx = args.indexOf('--to');
+      if (subcommand === 'append') {
+        const msgIdx = args.indexOf('--msg');
+        cmdChatLogAppend(cwd,
+          fromIdx !== -1 ? args[fromIdx + 1] : null,
+          toIdx !== -1 ? args[toIdx + 1] : null,
+          msgIdx !== -1 ? args[msgIdx + 1] : null,
+          raw
+        );
+      } else if (subcommand === 'read') {
+        cmdChatLogRead(cwd,
+          fromIdx !== -1 ? args[fromIdx + 1] : null,
+          toIdx !== -1 ? args[toIdx + 1] : null,
+          raw
+        );
+      } else if (subcommand === 'prune') {
+        const keepIdx = args.indexOf('--keep');
+        cmdChatLogPrune(cwd,
+          fromIdx !== -1 ? args[fromIdx + 1] : null,
+          toIdx !== -1 ? args[toIdx + 1] : null,
+          keepIdx !== -1 ? parseInt(args[keepIdx + 1], 10) : 200,
+          raw
+        );
+      } else {
+        error('Unknown chat-log subcommand. Available: append, read, prune');
+      }
       break;
     }
 
