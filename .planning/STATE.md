@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 Milestone: v1.1 Multi-Agent UX & Documentation
 Phase: 8 of 11 (DAG-Based Phase Scheduling)
-Plan: 2 of 3
+Plan: 3 of 3
 Status: In progress
-Last activity: 2026-02-20 -- Completed 08-01 (Regex fix and parseDependsOn)
+Last activity: 2026-02-20 -- Completed 08-02 (DAG analysis via topological sort)
 
-Progress: [############........] 62% (v1.0: 22/22 plans complete; v1.1: 5/TBD)
+Progress: [#############.......] 65% (v1.0: 22/22 plans complete; v1.1: 6/TBD)
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [############........] 62% (v1.0: 22/22 plans complete; v1.1: 5/TBD)
 | 06-cleanup-orphaned-workflows | 1 | 2min | 2min |
 | 07-state-coherence-foundation | 4 | 20min | 5min |
 | Phase 08 P01 | 8min | 2 tasks | 2 files |
+| Phase 08 P02 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -59,6 +60,8 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 Research context: `.planning/research/SUMMARY.md`
 - [Phase 07]: Convention-based STATUS.md discovery over explicit links in STATE.md
 - [Phase 08]: Used regex alternation (?:**:|:**) instead of optional quantifiers for dual-format markdown field matching
+- [Phase 08]: Duplicated phase parsing in cmdRoadmapAnalyzeDag rather than refactoring shared helper -- avoids breaking existing consumers
+- [Phase 08]: Missing dependency references treated as satisfied (warning only) -- more useful for real-world roadmaps
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 08-01-PLAN.md
-Resume: .planning/phases/08-dag-based-phase-scheduling/08-02-PLAN.md
-Context: Plan 08-01 complete -- fixed regex format mismatch bug, added parseDependsOn() and depends_on_parsed field. Next: execute 08-02 (DAG analysis agent).
+Stopped at: Completed 08-02-PLAN.md
+Resume: .planning/phases/08-dag-based-phase-scheduling/08-03-PLAN.md
+Context: Plan 08-02 complete -- topoGenerations() and roadmap analyze-dag implemented with TDD (7 tests). Next: execute 08-03 (DAG agent integration).

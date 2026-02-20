@@ -121,7 +121,7 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 5. Fix Update Workflow | v1.0 | 1/1 | Complete | 2026-02-19 |
 | 6. Cleanup Orphaned Workflows | v1.0 | 1/1 | Complete | 2026-02-20 |
 | 7. State Coherence Foundation | 3/4 | Complete    | 2026-02-20 | - |
-| 8. DAG-Based Phase Scheduling | v1.1 | 0/TBD | Not started | - |
+| 8. DAG-Based Phase Scheduling | 2/3 | In Progress|  | - |
 | 9. Multi-Phase Execution Engine | v1.1 | 0/TBD | Not started | - |
 | 10. Live Feedback and Visual Differentiation | v1.1 | 0/TBD | Not started | - |
 | 11. README Overhaul | v1.1 | 0/TBD | Not started | - |
