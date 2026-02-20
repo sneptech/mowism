@@ -1,7 +1,8 @@
 # Agent Teams API -- Runtime Capabilities and Constraints
 
 **Researched:** 2026-02-20
-**Confidence:** MEDIUM (mix of verified and assumed; several critical questions require runtime testing)
+**Runtime verification:** See `AGENT-TEAMS-API-RUNTIME.md` for test results (2026-02-20) -- Agent Teams tools unavailable in subagent sessions; 2/8 questions partially answered, 6/8 inconclusive
+**Confidence:** MEDIUM (mix of verified and assumed; most runtime questions remain open due to tool availability constraint)
 **Purpose:** Reference document for v1.1 multi-agent UX design decisions
 **Supersedes:** Agent Teams sections of `.planning/milestones/v1.0-phases/03-agent-teams-and-distribution/03-RESEARCH.md`
 
@@ -11,7 +12,7 @@ Agent Teams is Claude Code's experimental multi-agent coordination feature, gate
 
 ## 1. Inbox Message Format
 
-**Confidence:** ASSUMED
+**Confidence:** ASSUMED (runtime test INCONCLUSIVE -- Q1, Q7: Agent Teams tools not available in subagent sessions)
 
 **Findings:**
 
@@ -34,7 +35,7 @@ The key question is whether the message string can contain structured data (JSON
 
 ## 2. Worker Output Visibility
 
-**Confidence:** ASSUMED
+**Confidence:** ASSUMED (runtime test INCONCLUSIVE -- Q3: Agent Teams tools not available in subagent sessions)
 
 **Findings:**
 
@@ -57,7 +58,7 @@ There is no mechanism for the lead to "subscribe" to a worker's tool call stream
 
 ## 3. Permission/Input Proxying
 
-**Confidence:** ASSUMED
+**Confidence:** ASSUMED (runtime test Q6 PARTIALLY VERIFIED: background mode confirmed as invisible/no user interaction)
 
 **Findings:**
 
@@ -79,7 +80,7 @@ This is a fundamental architectural boundary: Agent Teams handles inter-agent co
 
 ## 4. Terminal Spawning and Control
 
-**Confidence:** ASSUMED
+**Confidence:** PARTIALLY VERIFIED (Q4: workers inherit cwd and env vars; Q6: background mode is invisible to user)
 
 **Findings:**
 
@@ -101,9 +102,11 @@ Terminal customization (color badges, status banners) would need to be implement
 
 **What remains unverified:**
 - Whether workers spawned in tmux mode can have their pane title set via Agent Teams
-- Whether the lead can pass environment variables to workers at spawn time (e.g., `MOW_AGENT_COLOR=green`)
+- ~~Whether the lead can pass environment variables to workers at spawn time~~ **PARTIALLY VERIFIED:** Workers inherit parent process env vars (confirmed: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` visible in Task()-spawned subagent). Custom spawn-time env vars untested.
 - Whether in-process mode allows any visual differentiation between teammates beyond the cycling mechanism
 - The exact tmux pane management behavior
+
+**Runtime test findings (Q4):** Task()-spawned subagents inherit the lead's cwd (`/home/max/git/mowism`) and environment variables. See `AGENT-TEAMS-API-RUNTIME.md` Q4.
 
 **Design implication:** Color-coded terminal badges are a SHELL-LEVEL concern, not an Agent Teams concern. Implementation options:
 1. **tmux pane titles/colors** -- Set pane-specific environment variables and use shell prompt customization. Requires tmux.
@@ -180,7 +183,7 @@ These directories are created by the `Task()` tool (subagent spawning), not just
 
 ## 6. Teammate Operations
 
-**Confidence:** ASSUMED (from v1.0 research and gist sources)
+**Confidence:** ASSUMED (from v1.0 research and gist sources; runtime test Q5 INCONCLUSIVE -- tools not available in subagent)
 
 **Findings:**
 
@@ -256,11 +259,11 @@ Agent Teams is gated behind `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. The "EXPER
 2. **No stability guarantees** -- features may be added, removed, or behavior-changed
 3. **Known limitations** that may not be documented
 
-**Local machine status:**
-- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is NOT set in the environment
-- `~/.claude/settings.json` does NOT have it in the `env` block
-- `~/.claude/teams/` directory does NOT exist (Agent Teams has never been used on this machine)
-- `~/.claude/tasks/` EXISTS with 31 task directories (from regular Task/subagent usage, not Agent Teams)
+**Local machine status (updated 2026-02-20):**
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` IS set in the environment (confirmed in runtime test session)
+- `~/.claude/teams/` directory does NOT exist (no team has been successfully created yet)
+- `~/.claude/tasks/` EXISTS with 31+ task directories (from regular Task/subagent usage, not Agent Teams)
+- **Key finding:** Despite env var being set, Agent Teams tools (Teammate, TaskCreate, etc.) are NOT available in Task()-spawned subagent sessions -- only in top-level interactive sessions
 
 **Known issues from v1.0 research:**
 - No session resumption for teammates (`/resume` and `/rewind` don't restore them)
@@ -284,20 +287,24 @@ Agent Teams is gated behind `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. The "EXPER
 | Claim | Status | Source | Notes |
 |-------|--------|--------|-------|
 | Agent Teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | VERIFIED | Local env check, v1.0 research | Confirmed by absence of `~/.claude/teams/` when not set |
-| Messages are string-based (not typed objects) | ASSUMED | v1.0 research, community gist | Reasonable inference from LLM-to-LLM communication design |
-| JSON can be embedded in messages | ASSUMED | String flexibility | Works in theory; needs runtime testing for edge cases |
+| Messages are string-based (not typed objects) | ASSUMED | v1.0 research, community gist | Runtime test Q1/Q7 INCONCLUSIVE (tools not available in subagent) |
+| JSON can be embedded in messages | ASSUMED | String flexibility | Runtime test Q7 INCONCLUSIVE (tools not available in subagent) |
 | Lead does NOT get streaming worker output | ASSUMED | v1.0 research, architecture docs | Consistent with message-based design; no evidence of streaming API |
-| Permission prompts stay in worker's session | ASSUMED | Architecture boundary inference | No evidence of permission proxying in any source |
+| Permission prompts stay in worker's session | ASSUMED | Architecture boundary inference | Runtime test Q6 partial: background mode confirmed as invisible/no user interaction |
 | TaskCreate accepts subject + description | VERIFIED | Tool definitions in mow-team-lead.md | Listed in agent's `tools` frontmatter |
 | Task IDs are UUIDs | VERIFIED | Local `~/.claude/tasks/` directory listing | 31 UUID-named directories found |
-| addBlockedBy creates task dependencies | ASSUMED | v1.0 research, community gist | Documented but not runtime-tested |
-| Auto-unblocking on dependency completion | ASSUMED | v1.0 research | Critical for wave execution; needs runtime verification |
+| addBlockedBy creates task dependencies | ASSUMED | v1.0 research, community gist | Runtime test Q2 INCONCLUSIVE (tools not available in subagent) |
+| Auto-unblocking on dependency completion | ASSUMED | v1.0 research | Runtime test Q2 INCONCLUSIVE; defensive unblocking recommended |
 | Max ~5-8 teammates practical limit | ASSUMED | Community experience, token cost math | No hard limit documented |
 | No session resumption for teammates | ASSUMED | v1.0 research (documented as official limitation) | Not directly verified but consistently documented |
-| `~/.claude/teams/{name}/config.json` stores team config | ASSUMED | v1.0 research | Can't verify without enabling Agent Teams |
+| `~/.claude/teams/{name}/config.json` stores team config | ASSUMED | v1.0 research | Runtime test Q8 INCONCLUSIVE; no teams dir exists despite env var set |
 | Workers inherit project context (CLAUDE.md, skills, MCP) | ASSUMED | v1.0 research | Not directly tested |
-| Teammate operations: spawnTeam, write, broadcast, requestShutdown, approveShutdown, cleanup | ASSUMED | v1.0 research, community gist | Complete list unverified |
+| Teammate operations: spawnTeam, write, broadcast, requestShutdown, approveShutdown, cleanup | ASSUMED | v1.0 research, community gist | Runtime test Q5 INCONCLUSIVE (tools not available in subagent) |
 | Each teammate gets full 200k context window | ASSUMED | Architecture docs | Consistent with independent Claude Code instances |
+| **Workers inherit lead's cwd** | **PARTIALLY VERIFIED** | **Runtime test Q4** | **Task()-spawned subagent confirmed at `/home/max/git/mowism` (lead's cwd)** |
+| **Workers inherit parent env vars** | **PARTIALLY VERIFIED** | **Runtime test Q4** | **`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` visible in subagent session** |
+| **Agent Teams tools NOT available in Task() subagents** | **VERIFIED** | **Runtime test META** | **Only top-level interactive sessions get AT tools; critical architectural constraint** |
+| **Background mode is invisible to user** | **VERIFIED** | **Runtime test Q6** | **No visible terminal, output returned to spawner only** |
 
 ## v1.1 Design Decision Matrix
 
@@ -372,54 +379,73 @@ For each of the 4 v1.1 multi-agent todos, assessed against research findings:
 
 This document IS the deliverable. The 8 research questions are answered with confidence levels. The three sibling todos can now reference this document for design decisions.
 
-## Open Questions
+## Open Questions (Partially Resolved)
 
-These require runtime testing with Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`):
+Runtime testing attempted 2026-02-20. **Key blocker:** Agent Teams tools are NOT available in Task()-spawned subagent sessions, even with env var set. Only top-level interactive Claude Code sessions get these tools. See `AGENT-TEAMS-API-RUNTIME.md` for full results.
 
-1. **Message delivery timing** -- When the lead sends a message to a busy worker, is it queued and delivered on next idle, or does it interrupt the worker's current operation? This affects how input routing notifications work.
+### Resolved (Partially)
 
-2. **Auto-unblocking behavior** -- When a blocking task is marked complete, does the blocked task automatically become available for claiming? Or must the lead manually remove the blocker? This is critical for wave execution.
+4. **Worker spawn environment** -- **PARTIALLY VERIFIED.** Workers spawned via `Task()` DO inherit the lead's cwd and environment variables. Confirmed: subagent session had cwd `/home/max/git/mowism` and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` visible. Custom spawn-time env vars and `cd` override untested.
 
-3. **Idle notification content** -- Does the idle notification include why the worker is idle (finished task, waiting for permission, error, no more tasks)? This determines whether the lead can differentiate between "worker done" and "worker needs user input."
+6. **In-process vs background vs tmux** -- **PARTIALLY VERIFIED (background only).** Background mode confirmed: no visible terminal, output returned to spawner, no user interaction possible. In-process and tmux modes could not be tested from within a subagent session.
 
-4. **Worker spawn environment** -- Does a worker spawned via `Task({ team_name: ... })` inherit the lead's working directory? Can the spawn prompt override it with `cd`? Can environment variables be passed at spawn time?
+### Still Open (Require Interactive Session Testing)
 
-5. **Teammate status querying** -- Is there a `listTeammates` or `getTeamStatus` operation? Or must the lead track teammate state through its own bookkeeping?
+1. **Message delivery timing** -- INCONCLUSIVE. Could not test (Teammate tool not available). Design recommendation: assume queuing, build tolerance for delivery delays.
 
-6. **In-process vs background vs tmux** -- What are the exact behavioral differences between these modes for: permission handling, terminal appearance, message delivery, idle detection?
+2. **Auto-unblocking behavior** -- INCONCLUSIVE. Could not test (TaskCreate/TaskUpdate not available). Design recommendation: implement defensive unblocking (lead explicitly checks and removes blockers after wave completion).
 
-7. **Message size limits** -- Is there a maximum size for inbox messages? If Mowism sends JSON-encoded structured metadata, will large messages be truncated?
+3. **Idle notification content** -- INCONCLUSIVE. Could not test (cannot spawn teammates). Design recommendation: assume minimal idle notifications, instruct workers to send structured status messages.
 
-8. **Team config persistence** -- Does `~/.claude/teams/{name}/config.json` persist across Claude Code restarts? Does it contain enough information to re-create a team?
+5. **Teammate status querying** -- INCONCLUSIVE. Could not test (Teammate tool not available). Design recommendation: continue with lead-maintained teammate registry via STATE.md.
 
-### Suggested Runtime Test Plan
+7. **Message size limits** -- INCONCLUSIVE. Could not test (Teammate tool not available). Design recommendation: keep messages compact (<1KB), send file paths not file contents.
+
+8. **Team config persistence** -- INCONCLUSIVE. No `~/.claude/teams/` directory exists despite env var set (no team ever created). Design recommendation: verify at team creation time.
+
+### How to Complete These Tests
+
+The remaining 6 questions can ONLY be tested from the user's interactive Claude Code session (not via `/mow:quick` or any spawned agent). Steps:
+
+1. Open a fresh Claude Code session (top-level, not spawned)
+2. Verify Agent Teams tools are available: check if Teammate/TaskCreate/TaskList appear in tool list
+3. Follow the test plan below
+4. Record results in `AGENT-TEAMS-API-RUNTIME.md`
+
+### Suggested Runtime Test Plan (Interactive Session Only)
 
 ```bash
-# 1. Enable Agent Teams
-export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+# PREREQUISITE: Must be run in a top-level interactive Claude Code session
+# Agent Teams tools are NOT available in Task()-spawned subagents
 
-# 2. Start Claude Code, create a test team
-# In Claude Code: "Create a team called mow-test with 2 workers"
+# 1. Verify Agent Teams tools are available
+# Check tool list for: Teammate, TaskCreate, TaskUpdate, TaskList
 
-# 3. Test message delivery: have worker send JSON to lead
-# Worker: Teammate({ operation: "write", teammate: "lead", message: '{"type":"progress","task":"test-1","status":"complete"}' })
-# Lead: verify JSON arrives intact
+# 2. Create a test team
+# Teammate({ operation: "spawnTeam", team_name: "mow-test" })
 
-# 4. Test auto-unblocking: create two tasks, block second on first, complete first
+# 3. Spawn a test worker
+# Task({ team_name: "mow-test", name: "test-worker-1", prompt: "...", run_in_background: true })
+
+# 4. Test message delivery (Q1): send message to busy/idle worker
+# Teammate({ operation: "write", teammate: "test-worker-1", message: "TEST" })
+
+# 5. Test auto-unblocking (Q2):
 # TaskCreate({ subject: "Task A" })  -> id1
 # TaskCreate({ subject: "Task B" })  -> id2
 # TaskUpdate({ taskId: id2, addBlockedBy: [id1] })
 # TaskUpdate({ taskId: id1, status: "completed" })
 # TaskList() -> check if Task B is now unblocked
 
-# 5. Test permission proxying: have worker attempt a Bash command
-# Worker: Bash("echo test") -> does lead get notified?
+# 6. Test idle notification content (Q3): observe what lead receives when worker goes idle
 
-# 6. Check ~/.claude/teams/ directory structure after team creation
+# 7. Test teammate status querying (Q5): try listTeammates, getTeamStatus operations
 
-# 7. Test idle notification content when worker is blocked on permission vs finished
+# 8. Test message size limits (Q7): send small, medium, large JSON messages
 
-# 8. Cleanup: Teammate({ operation: "cleanup", team_name: "mow-test" })
+# 9. Test team config persistence (Q8): check ~/.claude/teams/ after team creation
+
+# 10. Cleanup: Teammate({ operation: "cleanup", team_name: "mow-test" })
 ```
 
 ## Cross-Reference: v1.0 Research Corrections
@@ -449,4 +475,5 @@ Comparing this document against `.planning/milestones/v1.0-phases/03-agent-teams
 | Environment variable check (`$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) | HIGH | Confirmed not set |
 | kieranklaassen gist (referenced in v1.0 research) | MEDIUM | Detailed primitives reference. Community-sourced, not official. |
 | alexop.dev blog (referenced in v1.0 research) | MEDIUM | Practical patterns. Community-sourced, not official. |
-| Claude Code tool introspection (this session) | HIGH | Confirmed which tools are available in this context (Task but not standalone Teammate/TaskCreate in non-team sessions) |
+| Claude Code tool introspection (research session) | HIGH | Confirmed which tools are available in this context (Task but not standalone Teammate/TaskCreate in non-team sessions) |
+| Runtime test session (2026-02-20, Task()-spawned) | HIGH | Confirmed Agent Teams tools NOT available in subagent sessions; workers inherit cwd and env vars; background mode is invisible |
