@@ -3644,3 +3644,232 @@ plan: 01
     assert.ok(content.includes('0/5'), 'should count all 5 tasks including checkpoint');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// roadmap analyze-dag command
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('roadmap analyze-dag command', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('diamond topology produces correct waves', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 7: State Coherence
+**Goal**: Build state layer
+**Depends on**: Nothing
+
+### Phase 8: DAG Scheduling
+**Goal**: Build DAG
+**Depends on**: Nothing
+
+### Phase 9: Execution Engine
+**Goal**: Run phases
+**Depends on**: Phase 7, Phase 8
+
+### Phase 10: Live Feedback
+**Goal**: Show feedback
+**Depends on**: Phase 7
+
+### Phase 11: Documentation
+**Goal**: Write docs
+**Depends on**: Phase 7, Phase 8, Phase 9, Phase 10
+`
+    );
+
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+
+    // Validate waves
+    assert.ok(output.waves, 'waves should exist');
+    assert.strictEqual(output.waves.length, 3, 'should have 3 waves');
+    assert.deepStrictEqual(output.waves[0].phases.sort(), ['7', '8'], 'wave 1 = [7, 8]');
+    assert.deepStrictEqual(output.waves[1].phases.sort(), ['10', '9'], 'wave 2 = [9, 10]');
+    assert.deepStrictEqual(output.waves[2].phases, ['11'], 'wave 3 = [11]');
+
+    // Validate DAG properties
+    assert.strictEqual(output.validation.is_dag, true);
+    assert.strictEqual(output.validation.fully_sequential, false);
+    assert.strictEqual(output.validation.cycle_error, null);
+  });
+
+  test('linear chain is fully sequential', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 1: First
+**Goal**: Start
+**Depends on**: Nothing
+
+### Phase 2: Second
+**Goal**: Continue
+**Depends on**: Phase 1
+
+### Phase 3: Third
+**Goal**: Finish
+**Depends on**: Phase 2
+`
+    );
+
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.waves.length, 3, 'should have 3 waves');
+    assert.deepStrictEqual(output.waves[0].phases, ['1'], 'wave 1 = [1]');
+    assert.deepStrictEqual(output.waves[1].phases, ['2'], 'wave 2 = [2]');
+    assert.deepStrictEqual(output.waves[2].phases, ['3'], 'wave 3 = [3]');
+    assert.strictEqual(output.validation.fully_sequential, true);
+  });
+
+  test('fully independent phases in single wave', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 1: Alpha
+**Goal**: Do alpha
+**Depends on**: Nothing
+
+### Phase 2: Beta
+**Goal**: Do beta
+**Depends on**: Nothing
+
+### Phase 3: Gamma
+**Goal**: Do gamma
+**Depends on**: Nothing
+`
+    );
+
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.waves.length, 1, 'should have 1 wave');
+    assert.deepStrictEqual(output.waves[0].phases.sort(), ['1', '2', '3'], 'wave 1 = [1, 2, 3]');
+    assert.strictEqual(output.validation.fully_sequential, false);
+  });
+
+  test('cycle detection reports involved phases', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 1: Alpha
+**Goal**: Do alpha
+**Depends on**: Phase 3
+
+### Phase 2: Beta
+**Goal**: Do beta
+**Depends on**: Phase 1
+
+### Phase 3: Gamma
+**Goal**: Do gamma
+**Depends on**: Phase 2
+`
+    );
+
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.validation.is_dag, false, 'should not be a valid DAG');
+    assert.ok(output.validation.cycle_error, 'cycle_error should be set');
+    assert.ok(output.validation.cycle_error.includes('1'), 'cycle should involve phase 1');
+    assert.ok(output.validation.cycle_error.includes('2'), 'cycle should involve phase 2');
+    assert.ok(output.validation.cycle_error.includes('3'), 'cycle should involve phase 3');
+    assert.strictEqual(output.waves, null, 'waves should be null for cyclic graph');
+  });
+
+  test('missing references treated as warnings not errors', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 1: Alpha
+**Goal**: Do alpha
+**Depends on**: Nothing
+
+### Phase 2: Beta
+**Goal**: Do beta
+**Depends on**: Phase 1, Phase 99
+`
+    );
+
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.validation.is_dag, true, 'should still be a valid DAG');
+    assert.ok(output.validation.missing_refs.length > 0, 'should have missing refs');
+    assert.strictEqual(output.validation.missing_refs[0].phase, '2');
+    assert.strictEqual(output.validation.missing_refs[0].references, '99');
+
+    // Missing ref treated as satisfied, so phase 2 still in wave 2
+    assert.strictEqual(output.waves.length, 2, 'should have 2 waves');
+    assert.deepStrictEqual(output.waves[0].phases, ['1'], 'wave 1 = [1]');
+    assert.deepStrictEqual(output.waves[1].phases, ['2'], 'wave 2 = [2]');
+  });
+
+  test('ready and blocked status based on disk completion', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 1: Foundation
+**Goal**: Set up
+**Depends on**: Nothing
+
+### Phase 2: Build
+**Goal**: Build it
+**Depends on**: Phase 1
+
+### Phase 3: Deploy
+**Goal**: Ship it
+**Depends on**: Phase 1, Phase 2
+`
+    );
+
+    // Phase 1 complete (has PLAN + SUMMARY)
+    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    fs.mkdirSync(p1, { recursive: true });
+    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Summary');
+
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+
+    assert.deepStrictEqual(output.completed, ['1'], 'phase 1 should be completed');
+    assert.deepStrictEqual(output.ready, ['2'], 'phase 2 should be ready');
+    assert.strictEqual(output.blocked.length, 1, 'should have 1 blocked phase');
+    assert.strictEqual(output.blocked[0].phase, '3');
+    assert.deepStrictEqual(output.blocked[0].waiting_on, ['2']);
+  });
+
+  test('missing ROADMAP.md returns error', () => {
+    const result = runMowTools('roadmap analyze-dag --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.error, 'ROADMAP.md not found');
+  });
+});
