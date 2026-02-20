@@ -61,6 +61,14 @@
  * Todos:
  *   todo complete <filename>           Move todo from pending to completed
  *
+ * Per-Phase Status:
+ *   status init <phase>               Create STATUS.md from template in phase dir
+ *   status read <phase>               Parse STATUS.md and return JSON
+ *   status write <phase>              Update one plan row in STATUS.md
+ *     --plan <id> --status <state>
+ *     [--commit <sha>] [--duration <min>] [--tasks <progress>]
+ *   status aggregate <phase>          Recalculate Aggregate section from plan data
+ *
  * Agent Teams:
  *   team-status                        Read Agent Team Status from STATE.md
  *   team-update --action start         Start team (create section in STATE.md)
@@ -2522,14 +2530,14 @@ function writePlanProgressTable(content, rows) {
     `| ${r.plan} | ${r.status} | ${r.started} | ${r.duration} | ${r.commit} | ${r.tasks} |`
   ).join('\n');
 
-  const newSection = tableRows ? header + '\n' + tableRows : header;
+  const newSection = tableRows ? header + '\n' + tableRows + '\n' : header + '\n';
 
   const sectionPattern = /## Plan Progress\n[\s\S]*?(?=\n## |\n$|$)/;
   if (sectionPattern.test(content)) {
     return content.replace(sectionPattern, newSection);
   }
 
-  return content.trimEnd() + '\n\n' + newSection + '\n';
+  return content.trimEnd() + '\n\n' + newSection;
 }
 
 /**
@@ -2540,14 +2548,15 @@ function writeAggregateSection(content, counts, commits) {
   const newSection = `## Aggregate
 
 **Plans:** ${counts.complete} complete, ${counts.in_progress} in progress, ${counts.not_started} not started, ${counts.failed} failed
-**Commits:** ${commitStr}`;
+**Commits:** ${commitStr}
+`;
 
   const sectionPattern = /## Aggregate\n[\s\S]*?(?=\n## |\n$|$)/;
   if (sectionPattern.test(content)) {
     return content.replace(sectionPattern, newSection);
   }
 
-  return content.trimEnd() + '\n\n' + newSection + '\n';
+  return content.trimEnd() + '\n\n' + newSection;
 }
 
 /**
@@ -6414,7 +6423,7 @@ async function main() {
   const cwd = process.cwd();
 
   if (!command) {
-    error('Usage: mow-tools <command> [args] [--raw]\nCommands: state, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, message, chat-log, init');
+    error('Usage: mow-tools <command> [args] [--raw]\nCommands: state, status, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, message, chat-log, init');
   }
 
   switch (command) {
@@ -6518,6 +6527,33 @@ async function main() {
         }, raw);
       } else {
         error('Unknown worktree subcommand. Available: claim, release, status, update-plan, clean, verify-result');
+      }
+      break;
+    }
+
+    case 'status': {
+      const subcommand = args[1];
+      if (subcommand === 'init') {
+        cmdStatusInit(cwd, args[2], raw);
+      } else if (subcommand === 'read') {
+        cmdStatusRead(cwd, args[2], raw);
+      } else if (subcommand === 'write') {
+        const planIdx = args.indexOf('--plan');
+        const statusIdx = args.indexOf('--status');
+        const commitIdx = args.indexOf('--commit');
+        const durationIdx = args.indexOf('--duration');
+        const tasksIdx = args.indexOf('--tasks');
+        cmdStatusWrite(cwd, args[2], {
+          plan: planIdx !== -1 ? args[planIdx + 1] : null,
+          status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+          commit: commitIdx !== -1 ? args[commitIdx + 1] : null,
+          duration: durationIdx !== -1 ? args[durationIdx + 1] : null,
+          tasks: tasksIdx !== -1 ? args[tasksIdx + 1] : null,
+        }, raw);
+      } else if (subcommand === 'aggregate') {
+        cmdStatusAggregate(cwd, args[2], raw);
+      } else {
+        error('Unknown status subcommand. Available: init, read, write, aggregate');
       }
       break;
     }
