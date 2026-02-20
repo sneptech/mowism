@@ -4059,3 +4059,160 @@ describe('writeManifest and readManifest', () => {
     assert.deepStrictEqual(manifest.worktrees, {});
   });
 });
+
+// --- Phase 10: Visual Feedback Tests ---
+
+describe('message schema v2 tests', () => {
+  const { spawnSync } = require('child_process');
+
+  test('message format task_claimed produces valid JSON with v:2 and required fields', () => {
+    const result = runMowTools('message format task_claimed --phase 10 --plan 10-01 --task 3 --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.strictEqual(msg.v, 2, 'schema version should be 2');
+    assert.strictEqual(msg.type, 'task_claimed', 'type should be task_claimed');
+    assert.strictEqual(msg.phase, '10', 'phase should be 10');
+    assert.strictEqual(msg.plan, '10-01', 'plan should be 10-01');
+    assert.strictEqual(msg.task, '3', 'task should be 3');
+  });
+
+  test('message format commit_made includes commit_hash field', () => {
+    const result = runMowTools('message format commit_made --phase 10 --plan 10-01 --commit-hash abc1234 --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.strictEqual(msg.v, 2);
+    assert.strictEqual(msg.type, 'commit_made');
+    assert.strictEqual(msg.commit_hash, 'abc1234', 'should have commit_hash');
+  });
+
+  test('message format task_complete produces valid JSON with phase, plan, and task fields', () => {
+    const result = runMowTools('message format task_complete --phase 10 --plan 10-01 --task 2 --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.strictEqual(msg.v, 2);
+    assert.strictEqual(msg.type, 'task_complete');
+    assert.strictEqual(msg.phase, '10');
+    assert.strictEqual(msg.plan, '10-01');
+    assert.strictEqual(msg.task, '2');
+  });
+
+  test('message format input_needed validates input_type (warn on unknown, still produce output)', () => {
+    // Valid input_type
+    const result1 = runMowTools('message format input_needed --phase 10 --input-type permission_prompt --detail "test" --raw');
+    assert.ok(result1.success, `Valid input_type failed: ${result1.error}`);
+    const msg1 = JSON.parse(result1.output);
+    assert.strictEqual(msg1.input_type, 'permission_prompt');
+
+    // Unknown input_type -- should still succeed but warn on stderr
+    const proc = spawnSync('node', [TOOLS_PATH, 'message', 'format', 'input_needed', '--phase', '10', '--input-type', 'unknown_type', '--detail', 'test', '--raw'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.strictEqual(proc.status, 0, 'should still succeed with unknown input_type');
+    assert.ok(proc.stderr.includes('Unrecognized input_type'), 'should warn about unknown input_type');
+    const msg2 = JSON.parse(proc.stdout);
+    assert.strictEqual(msg2.input_type, 'unknown_type', 'should still include the unknown type');
+  });
+
+  test('message format plan_created includes phase and plan', () => {
+    const result = runMowTools('message format plan_created --phase 10 --plan 10-02 --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.strictEqual(msg.v, 2);
+    assert.strictEqual(msg.type, 'plan_created');
+    assert.strictEqual(msg.phase, '10');
+    assert.strictEqual(msg.plan, '10-02');
+  });
+
+  test('message parse accepts v2 messages with new types', () => {
+    const v2Msg = JSON.stringify({ v: 2, type: 'task_complete', phase: '10', plan: '10-01', task: '1', ts: '2026-02-20T10:00:00Z' });
+    const result = runMowTools(`message parse '${v2Msg}' --raw`);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.valid, true, 'should be valid');
+    assert.strictEqual(parsed.type, 'task_complete');
+    assert.strictEqual(parsed.v, 2);
+  });
+
+  test('message format with --activity includes activity field truncated to 40 chars', () => {
+    const longActivity = 'Implementing the dashboard renderer component for real-time updates';
+    const result = runMowTools(`message format plan_started --phase 10 --plan 10-01 --activity "${longActivity}" --raw`);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.ok(msg.activity, 'should have activity field');
+    assert.ok(msg.activity.length <= 40, `activity should be truncated to 40 chars, got ${msg.activity.length}`);
+    assert.strictEqual(msg.activity, longActivity.slice(0, 40), 'should match first 40 chars');
+  });
+});
+
+describe('color helper and format subcommand tests', () => {
+  const { spawnSync } = require('child_process');
+
+  test('format banner with FORCE_COLOR=1 produces ANSI escape codes', () => {
+    const proc = spawnSync('node', [TOOLS_PATH, 'format', 'banner', '--text', 'TEST BANNER', '--bg', '196', '--fg', '231'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, FORCE_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    assert.ok(proc.stdout.includes('\x1b[48;5;196m'), 'should have bg color escape');
+    assert.ok(proc.stdout.includes('\x1b[38;5;231m'), 'should have fg color escape');
+    assert.ok(proc.stdout.includes('TEST BANNER'), 'should contain text');
+  });
+
+  test('format banner with NO_COLOR=1 produces plain text (no escape codes)', () => {
+    const proc = spawnSync('node', [TOOLS_PATH, 'format', 'banner', '--text', 'PLAIN BANNER'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    assert.ok(!proc.stdout.includes('\x1b['), 'should NOT contain ANSI escape codes');
+    assert.ok(proc.stdout.includes('PLAIN BANNER'), 'should contain text');
+  });
+
+  test('format banner-phase --phase 10 uses phase palette color (not red)', () => {
+    const proc = spawnSync('node', [TOOLS_PATH, 'format', 'banner-phase', '--phase', '10'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, FORCE_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    // Phase 10 % 12 = 10, palette[10] = 175
+    assert.ok(proc.stdout.includes('48;5;175'), 'should use phase 10 palette bg color (175)');
+    assert.ok(!proc.stdout.includes('48;5;196'), 'should NOT use red (196)');
+  });
+
+  test('format progress --percent 50 --width 10 produces bar with 5 fill and 5 empty', () => {
+    const proc = spawnSync('node', [TOOLS_PATH, 'format', 'progress', '--percent', '50', '--width', '10'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    const output = proc.stdout.trim();
+    // Count fill chars (full block U+2588) and empty chars (light shade U+2591)
+    const fillCount = (output.match(/\u2588/g) || []).length;
+    const emptyCount = (output.match(/\u2591/g) || []).length;
+    assert.strictEqual(fillCount, 5, 'should have 5 fill chars');
+    assert.strictEqual(emptyCount, 5, 'should have 5 empty chars');
+    assert.ok(output.startsWith('['), 'should start with [');
+    assert.ok(output.endsWith(']'), 'should end with ]');
+  });
+});
+
+describe('caution stripe test', () => {
+  const { spawnSync } = require('child_process');
+
+  test('format banner-error with FORCE_COLOR=1 contains warning symbol and yellow ANSI code', () => {
+    const proc = spawnSync('node', [TOOLS_PATH, 'format', 'banner-error', '--text', 'CRITICAL ERROR'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      env: { ...process.env, FORCE_COLOR: '1' },
+    });
+    assert.strictEqual(proc.status, 0, `Command failed: ${proc.stderr}`);
+    assert.ok(proc.stdout.includes('\u26A0'), 'should contain warning symbol');
+    assert.ok(proc.stdout.includes('48;5;226'), 'should contain yellow ANSI code');
+    assert.ok(proc.stdout.includes('CRITICAL ERROR'), 'should contain error text');
+  });
+});
