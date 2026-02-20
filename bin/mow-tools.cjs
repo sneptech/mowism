@@ -244,6 +244,78 @@ const ENABLED_EVENTS = ['plan_started', 'plan_complete', 'phase_complete', 'erro
 // LEAN VERSION (milestones only -- uncomment to switch)
 // const ENABLED_EVENTS = ['plan_complete', 'phase_complete', 'error', 'blocker', 'ack'];
 
+// ─── Banner & Progress Renderers ─────────────────────────────────────────────
+
+function renderBanner(text, bgColor, fgColor, width) {
+  width = width || process.stdout.columns || 80;
+  const paddedText = (' ' + text + ' ').padEnd(width);
+  const colorLevel = supportsColor();
+  if (colorLevel === '256') {
+    return `\x1b[48;5;${bgColor}m\x1b[38;5;${fgColor}m\x1b[1m${paddedText}\x1b[0m`;
+  } else if (colorLevel === '16') {
+    try {
+      const util = require('util');
+      return util.styleText(['bold', 'inverse'], paddedText);
+    } catch {
+      return paddedText;
+    }
+  }
+  return paddedText;
+}
+
+function renderCautionBanner(text, width) {
+  width = width || process.stdout.columns || 80;
+  const colorLevel = supportsColor();
+  const warning = '\u26A0';
+
+  if (colorLevel === 'none') {
+    const inner = ` ${warning} ${text} ${warning} `;
+    return inner.padEnd(width);
+  }
+
+  // Build alternating yellow/black stripe
+  const yellow = '\x1b[48;5;226m\x1b[38;5;0m';
+  const black = '\x1b[48;5;0m\x1b[38;5;226m';
+  const reset = '\x1b[0m';
+
+  const innerText = ` ${warning}  ${text}  ${warning} `;
+  const padTotal = width - innerText.length;
+  const padLeft = Math.max(0, Math.floor(padTotal / 2));
+  const padRight = Math.max(0, padTotal - padLeft);
+
+  // Build stripe characters
+  let stripe = '';
+  for (let i = 0; i < padLeft; i++) {
+    stripe += (i % 2 === 0) ? `${yellow} ` : `${black} `;
+  }
+  stripe += `${yellow}\x1b[1m${innerText}${reset}`;
+  for (let i = 0; i < padRight; i++) {
+    stripe += (i % 2 === 0) ? `${black} ` : `${yellow} `;
+  }
+  stripe += reset;
+
+  return stripe;
+}
+
+function renderProgressBar(percent, width, isBlocked, colorCode) {
+  width = width || 10;
+  percent = Math.max(0, Math.min(100, percent));
+  const fillCount = Math.round((percent / 100) * width);
+  const emptyCount = width - fillCount;
+
+  const fillChar = isBlocked ? '\u2592' : '\u2588';
+  const emptyChar = '\u2591';
+
+  let fillStr = fillChar.repeat(fillCount);
+  const emptyStr = emptyChar.repeat(emptyCount);
+
+  if (colorCode !== undefined && supportsColor() === '256') {
+    fillStr = color256fg(colorCode, fillStr);
+  }
+
+  return `[${fillStr}${emptyStr}]`;
+}
+
 // ─── WorkTrunk Dependency ─────────────────────────────────────────────────────
 
 function checkWorkTrunk() {
@@ -7557,6 +7629,67 @@ async function main() {
         limit: limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : 10,
         freshness: freshnessIdx !== -1 ? args[freshnessIdx + 1] : null,
       }, raw);
+      break;
+    }
+
+    case 'format': {
+      const formatSub = args[1];
+      const textIdx = args.indexOf('--text');
+      const bgIdx = args.indexOf('--bg');
+      const fgIdx = args.indexOf('--fg');
+      const widthIdx = args.indexOf('--width');
+      const phaseIdx = args.indexOf('--phase');
+      const percentIdx = args.indexOf('--percent');
+      const colorIdx = args.indexOf('--color');
+      const isBlocked = args.includes('--blocked');
+
+      const fmtText = textIdx !== -1 ? args[textIdx + 1] : null;
+      const fmtBg = bgIdx !== -1 ? parseInt(args[bgIdx + 1], 10) : null;
+      const fmtFg = fgIdx !== -1 ? parseInt(args[fgIdx + 1], 10) : null;
+      const fmtWidth = widthIdx !== -1 ? parseInt(args[widthIdx + 1], 10) : undefined;
+      const fmtPhase = phaseIdx !== -1 ? args[phaseIdx + 1] : null;
+      const fmtPercent = percentIdx !== -1 ? parseFloat(args[percentIdx + 1]) : 0;
+      const fmtColor = colorIdx !== -1 ? parseInt(args[colorIdx + 1], 10) : undefined;
+
+      if (formatSub === 'banner') {
+        const rendered = renderBanner(fmtText || 'MOW ORCHESTRATOR', fmtBg !== null ? fmtBg : 196, fmtFg !== null ? fmtFg : 231, fmtWidth);
+        if (raw) {
+          output({ rendered }, true, JSON.stringify({ rendered }));
+        } else {
+          process.stdout.write(rendered + '\n');
+          process.exit(0);
+        }
+      } else if (formatSub === 'banner-phase') {
+        if (!fmtPhase) error('--phase required for banner-phase');
+        const pc = phaseColor(fmtPhase);
+        const bannerText = fmtText || `PHASE ${fmtPhase}`;
+        const rendered = renderBanner(bannerText, pc.bg, pc.fg, fmtWidth);
+        if (raw) {
+          output({ rendered }, true, JSON.stringify({ rendered }));
+        } else {
+          process.stdout.write(rendered + '\n');
+          process.exit(0);
+        }
+      } else if (formatSub === 'banner-error') {
+        if (!fmtText) error('--text required for banner-error');
+        const rendered = renderCautionBanner(fmtText, fmtWidth);
+        if (raw) {
+          output({ rendered }, true, JSON.stringify({ rendered }));
+        } else {
+          process.stdout.write(rendered + '\n');
+          process.exit(0);
+        }
+      } else if (formatSub === 'progress') {
+        const rendered = renderProgressBar(fmtPercent, fmtWidth || 10, isBlocked, fmtColor);
+        if (raw) {
+          output({ rendered }, true, JSON.stringify({ rendered }));
+        } else {
+          process.stdout.write(rendered + '\n');
+          process.exit(0);
+        }
+      } else {
+        error('Unknown format subcommand. Available: banner, banner-phase, banner-error, progress');
+      }
       break;
     }
 
