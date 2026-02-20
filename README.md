@@ -156,7 +156,9 @@ You can run `map-codebase` before or after `new-project`. If you're continuing w
 
 ## Commands
 
-Mowism provides 35 `/mow:*` commands and 7 quality skills. Append `???` to any command for detailed help -- e.g., `/mow:execute-phase ???` opens the full reference for that command.
+Mowism provides 35 `/mow:*` commands and 7 quality skills.
+
+Append `???` to any command for detailed help -- e.g., `/mow:execute-phase ???` opens the full reference for that command, including flags, examples, and edge cases.
 
 ### Getting Started
 
@@ -166,6 +168,12 @@ Mowism provides 35 `/mow:*` commands and 7 quality skills. Append `???` to any c
 | `/mow:map-codebase` | Analyze existing codebase with parallel mapper agents |
 | `/mow:help` | Show the full command reference |
 | `/mow:help-open` | Open help documentation for a specific command in your editor |
+
+```
+/mow:new-project              # Start here for new projects
+/mow:map-codebase             # Start here for existing codebases
+/mow:help-open execute-phase  # Open detailed docs for a command
+```
 
 ### Phase Planning
 
