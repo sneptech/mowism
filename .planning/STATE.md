@@ -11,7 +11,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 Milestone: v1.1 (in progress — scoping)
 Status: Defining scope via lifecycle walkthrough
-Last activity: 2026-02-20 - Completed quick task 1: Research Agent Teams API capabilities and constraints
+Last activity: 2026-02-20 - Completed quick task 2: Runtime test Agent Teams API (tools unavailable in subagent sessions)
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Last activity: 2026-02-20 - Completed quick task 1: Research Agent Teams API cap
 
 Full v1.0 decision log in PROJECT.md Key Decisions table.
 - [Phase quick-1]: Agent Teams: messages string-based, no streaming worker output, permission prompts session-local, terminal control outside scope. All 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations.
+- [Phase quick-2]: Agent Teams tools NOT available in Task()-spawned subagent sessions. Only top-level interactive sessions get AT tools. Workers inherit cwd and env vars. Background mode is invisible to user. 6/8 open questions still require interactive session testing.
 
 ### Pending Todos
 
@@ -65,13 +66,14 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 ### Blockers/Concerns
 
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
-- ~~Agent Teams API capabilities are UNVERIFIED~~ → RESEARCHED (quick task 1). All 4 v1.1 features assessed as PARTIALLY FEASIBLE with documented adaptations. 8 open questions remain that require runtime testing. See `.planning/research/AGENT-TEAMS-API.md`.
+- ~~Agent Teams API capabilities are UNVERIFIED~~ → RESEARCHED (quick task 1) + RUNTIME TESTED (quick task 2). All 4 v1.1 features PARTIALLY FEASIBLE. 2/8 open questions partially answered, 6/8 still need interactive session testing. Key discovery: AT tools only available in top-level sessions. See `.planning/research/AGENT-TEAMS-API.md` and `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Research Agent Teams API capabilities and constraints | 2026-02-20 | ad6260a | [1-research-agent-teams-api-capabilities-an](./quick/1-research-agent-teams-api-capabilities-an/) |
+| 2 | Runtime test Agent Teams API (8 open questions) | 2026-02-20 | 16bea5a | [2-runtime-test-agent-teams-api-verify-8-op](./quick/2-runtime-test-agent-teams-api-verify-8-op/) |
 
 ### Lifecycle Walkthrough Progress
 
@@ -100,10 +102,12 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 - `007eea3` docs(quick-1): research Agent Teams API runtime capabilities and constraints
 - `ad6260a` docs(quick-1): complete Agent Teams API research plan
 - `f508337` docs(quick-1): Research Agent Teams API capabilities and constraints (STATE.md update)
+- `1ae51eb` docs(quick-2): runtime test Agent Teams API - tools unavailable in subagent sessions
+- `16bea5a` docs(quick-2): update Agent Teams research doc with runtime test results
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Quick task 1 (Agent Teams API research) complete. Quick task 2 (runtime testing) was initialized but NOT started — user needs to set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and restart Claude Code first.
-Resume: Run `/mow:quick` to runtime-test Agent Teams API (8 open questions from research doc). Then continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`.
-Context: Agent Teams API research complete — all 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations. Key findings: no streaming (message-driven feedback), permission prompts are session-local (distributed routing confirmed), terminal control outside Agent Teams scope (color badges are shell-level). 8 open questions need runtime testing with env var enabled. Lifecycle walkthrough paused at plan-phase. 3 remaining multi-agent todos unblocked for scoping.
+Stopped at: Quick task 2 (Agent Teams API runtime testing) complete. Key finding: Agent Teams tools only available in top-level interactive sessions, not in Task()-spawned subagents. 6/8 open questions still need interactive testing.
+Resume: Either (a) run remaining 6 AT tests manually in interactive session, or (b) continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`. The 6 open questions have defensive design recommendations that allow v1.1 design to proceed without full verification.
+Context: Agent Teams API researched (quick-1) and runtime tested (quick-2). Meta-finding: AT tools are session-type restricted (top-level only). Workers inherit cwd/env vars, background mode is invisible. 2/8 questions partially answered, 6/8 inconclusive with defensive recommendations. Lifecycle walkthrough paused at plan-phase. 3 remaining multi-agent todos unblocked for scoping.
