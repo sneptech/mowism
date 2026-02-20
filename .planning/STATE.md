@@ -54,7 +54,7 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 - Phase-level parallelism in roadmap and execution (`.planning/todos/pending/2026-02-20-phase-level-parallelism-in-roadmap-and-execution.md`)
 - Live agent feedback and multi-phase input routing UX (`.planning/todos/pending/2026-02-20-live-agent-feedback-and-multi-phase-input-routing-ux.md`)
 - Distributed input routing with color-coded agent terminals (`.planning/todos/pending/2026-02-20-distributed-input-routing-with-color-coded-agent-terminals.md`)
-- Research Agent Teams API capabilities and constraints (`.planning/todos/pending/2026-02-20-research-agent-teams-api-capabilities-and-constraints.md`)
+- ~~Research Agent Teams API capabilities and constraints~~ → DONE (quick task 1). See `.planning/research/AGENT-TEAMS-API.md`
 
 ### Flagged Issues (not yet todos)
 
@@ -96,15 +96,14 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 
 ### Committed Changes This Session
 
-- `15a0d2f` fix: correct GSD attribution and GitHub URLs in README (TÂCHES/@glittercowboy, sneptech)
-- `73d3194` docs: move requirements section up and reformat in README (user edit)
-- `c3978ad` docs: capture todo - Phase-level parallelism
-- `0dc667c` docs: capture todo - Live agent feedback and multi-phase input routing UX
-- `51e2c72` docs: capture todo - Distributed input routing with color-coded agent terminals
+- `bd9b507` docs(quick-1): create Agent Teams API research plan
+- `007eea3` docs(quick-1): research Agent Teams API runtime capabilities and constraints
+- `ad6260a` docs(quick-1): complete Agent Teams API research plan
+- `f508337` docs(quick-1): Research Agent Teams API capabilities and constraints (STATE.md update)
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed Agent Teams API research (quick task 1). Research todo resolved. 3 remaining multi-agent todos now unblocked for scoping.
-Resume: Continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`
-Context: Agent Teams API research complete — all 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations. Key findings: no streaming (message-driven feedback), permission prompts are session-local (distributed routing confirmed), terminal control outside Agent Teams scope (color badges are shell-level). 8 open questions need runtime testing. Lifecycle walkthrough paused at plan-phase.
+Stopped at: Quick task 1 (Agent Teams API research) complete. Quick task 2 (runtime testing) was initialized but NOT started — user needs to set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and restart Claude Code first.
+Resume: Run `/mow:quick` to runtime-test Agent Teams API (8 open questions from research doc). Then continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`.
+Context: Agent Teams API research complete — all 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations. Key findings: no streaming (message-driven feedback), permission prompts are session-local (distributed routing confirmed), terminal control outside Agent Teams scope (color badges are shell-level). 8 open questions need runtime testing with env var enabled. Lifecycle walkthrough paused at plan-phase. 3 remaining multi-agent todos unblocked for scoping.
