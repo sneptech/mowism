@@ -25,6 +25,13 @@ Last activity: [YYYY-MM-DD] — [What happened]
 
 Progress: [░░░░░░░░░░] 0%
 
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+
+**Next unblockable:** --
+
 ## Performance Metrics
 
 **Velocity:**
@@ -131,6 +138,17 @@ Where we are right now:
 - Progress bar — visual indicator of overall completion
 
 Progress calculation: (completed plans) / (total plans across all phases) × 100%
+
+### Active Phases (v1.1 multi-agent)
+The coordinator's dashboard for tracking multiple concurrent phases.
+
+- Each row represents one phase with: phase number, name, status, assigned worker name (or `--`), plan progress as `N/M`, and ISO timestamp of last update
+- Status values: `not started`, `executing`, `complete`, `blocked (N,M)`, `failed`
+  - `blocked (7,8)` means blocked on phases 7 and 8 completing
+- The "Next unblockable" line shows which blocked phase will become available first
+- This table is coordinator-owned -- only the coordinator writes to it
+- Per-phase detail lives in `phases/XX/XX-STATUS.md` -- this table is the cached summary view
+- Coexists with Current Position for backward compatibility in single-agent mode
 
 ### Performance Metrics
 Track velocity to understand execution patterns:

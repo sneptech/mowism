@@ -2476,6 +2476,361 @@ function cmdStateSnapshot(cwd, raw) {
   output(result, raw);
 }
 
+// ─── STATUS.md Per-Phase Status Commands ──────────────────────────────────────
+
+/**
+ * Parse the Plan Progress table from STATUS.md content.
+ * Adapted from parseWorktreeTable() pattern.
+ */
+function parsePlanProgressTable(content) {
+  const rows = [];
+  const sectionMatch = content.match(
+    /## Plan Progress\n[\s\S]*?\n\|[^\n]+\n\|[-|\s]+\n([\s\S]*?)(?=\n##|\n$|$)/
+  );
+  if (!sectionMatch) return rows;
+
+  const tableBody = sectionMatch[1].trim();
+  if (!tableBody) return rows;
+
+  for (const line of tableBody.split('\n')) {
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    if (cells.length >= 6) {
+      rows.push({
+        plan: cells[0],
+        status: cells[1],
+        started: cells[2],
+        duration: cells[3],
+        commit: cells[4],
+        tasks: cells[5],
+      });
+    }
+  }
+  return rows;
+}
+
+/**
+ * Write the Plan Progress table section back into STATUS.md content.
+ */
+function writePlanProgressTable(content, rows) {
+  const header = `## Plan Progress
+
+| Plan | Status | Started | Duration | Commit | Tasks |
+|------|--------|---------|----------|--------|-------|`;
+
+  const tableRows = rows.map(r =>
+    `| ${r.plan} | ${r.status} | ${r.started} | ${r.duration} | ${r.commit} | ${r.tasks} |`
+  ).join('\n');
+
+  const newSection = tableRows ? header + '\n' + tableRows : header;
+
+  const sectionPattern = /## Plan Progress\n[\s\S]*?(?=\n## |\n$|$)/;
+  if (sectionPattern.test(content)) {
+    return content.replace(sectionPattern, newSection);
+  }
+
+  return content.trimEnd() + '\n\n' + newSection + '\n';
+}
+
+/**
+ * Write the Aggregate section back into STATUS.md content.
+ */
+function writeAggregateSection(content, counts, commits) {
+  const commitStr = commits.length > 0 ? commits.join(', ') : '--';
+  const newSection = `## Aggregate
+
+**Plans:** ${counts.complete} complete, ${counts.in_progress} in progress, ${counts.not_started} not started, ${counts.failed} failed
+**Commits:** ${commitStr}`;
+
+  const sectionPattern = /## Aggregate\n[\s\S]*?(?=\n## |\n$|$)/;
+  if (sectionPattern.test(content)) {
+    return content.replace(sectionPattern, newSection);
+  }
+
+  return content.trimEnd() + '\n\n' + newSection + '\n';
+}
+
+/**
+ * Calculate aggregate counts from Plan Progress rows.
+ */
+function calculateAggregate(rows) {
+  const counts = { complete: 0, in_progress: 0, not_started: 0, failed: 0 };
+  const commits = [];
+  for (const row of rows) {
+    const s = row.status.toLowerCase().trim();
+    if (s === 'complete') { counts.complete++; }
+    else if (s === 'in progress' || s === 'executing') { counts.in_progress++; }
+    else if (s === 'not started') { counts.not_started++; }
+    else if (s === 'failed') { counts.failed++; }
+    if (row.commit && row.commit !== '--') {
+      commits.push(row.commit);
+    }
+  }
+  return { counts, commits };
+}
+
+/**
+ * Resolve the STATUS.md path for a phase.
+ * Convention: phases/{padded}-{slug}/{padded}-STATUS.md
+ */
+function resolveStatusPath(cwd, phase) {
+  const phaseInfo = findPhaseInternal(cwd, phase);
+  if (!phaseInfo || !phaseInfo.found) return null;
+  const padded = normalizePhaseName(phase);
+  const phaseDir = path.join(cwd, phaseInfo.directory);
+  const statusFile = `${padded}-STATUS.md`;
+  return { phaseDir, statusPath: path.join(phaseDir, statusFile), phaseInfo, padded };
+}
+
+/**
+ * Resolve the STATUS.md template path.
+ * Checks repo-relative mowism/templates/ first, then ~/.claude/mowism/templates/.
+ */
+function resolveStatusTemplatePath(cwd) {
+  const repoPath = path.join(cwd, 'mowism', 'templates', 'status.md');
+  if (fs.existsSync(repoPath)) return repoPath;
+
+  const homedir = require('os').homedir();
+  const installPath = path.join(homedir, '.claude', 'mowism', 'templates', 'status.md');
+  if (fs.existsSync(installPath)) return installPath;
+
+  return null;
+}
+
+/**
+ * status init <phase> -- Create STATUS.md from template in the phase directory.
+ */
+function cmdStatusInit(cwd, phase, raw) {
+  if (!phase) { error('phase required for status init'); }
+
+  const resolved = resolveStatusPath(cwd, phase);
+  if (!resolved) { error(`Phase ${phase} not found`); }
+
+  const { phaseDir, statusPath, phaseInfo, padded } = resolved;
+
+  // Read template
+  const templatePath = resolveStatusTemplatePath(cwd);
+  if (!templatePath) { error('STATUS.md template not found in mowism/templates/ or ~/.claude/mowism/templates/'); }
+  let template = fs.readFileSync(templatePath, 'utf-8');
+
+  // Fill placeholders
+  const phaseName = phaseInfo.phase_name
+    ? phaseInfo.phase_name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    : 'Unnamed';
+  template = template.replace(/\{phase_number\}/g, padded);
+  template = template.replace(/\{phase_name\}/g, phaseName);
+
+  // Scan for PLAN.md files and pre-populate Plan Progress table
+  const planFiles = phaseInfo.plans || [];
+  const rows = [];
+  for (const planFile of planFiles) {
+    const planId = planFile.replace('-PLAN.md', '').replace('PLAN.md', '');
+    const planPath = path.join(phaseDir, planFile);
+    let taskCount = 0;
+    try {
+      const planContent = fs.readFileSync(planPath, 'utf-8');
+      const taskMatches = planContent.match(/<task[\s>]/g);
+      taskCount = taskMatches ? taskMatches.length : 0;
+    } catch { /* skip unreadable plans */ }
+    rows.push({
+      plan: planId,
+      status: 'not started',
+      started: '--',
+      duration: '--',
+      commit: '--',
+      tasks: `0/${taskCount}`,
+    });
+  }
+
+  // Write rows into template
+  if (rows.length > 0) {
+    template = writePlanProgressTable(template, rows);
+    // Update aggregate to reflect plan count
+    const { counts, commits } = calculateAggregate(rows);
+    template = writeAggregateSection(template, counts, commits);
+  }
+
+  fs.writeFileSync(statusPath, template, 'utf-8');
+
+  const relPath = path.relative(cwd, statusPath);
+  output({ created: true, path: relPath, plans: planFiles.length }, raw, relPath);
+}
+
+/**
+ * status read <phase> -- Parse STATUS.md and return JSON.
+ */
+function cmdStatusRead(cwd, phase, raw) {
+  if (!phase) { error('phase required for status read'); }
+
+  const resolved = resolveStatusPath(cwd, phase);
+  if (!resolved) { error(`Phase ${phase} not found`); }
+
+  const { statusPath } = resolved;
+
+  if (!fs.existsSync(statusPath)) {
+    error(`STATUS.md not found at ${statusPath}`);
+  }
+
+  const content = fs.readFileSync(statusPath, 'utf-8');
+
+  // Extract metadata fields
+  const phaseNum = stateExtractField(content, 'Phase');
+  const status = stateExtractField(content, 'Status');
+  const worker = stateExtractField(content, 'Worker');
+  const worktree = stateExtractField(content, 'Worktree');
+  const started = stateExtractField(content, 'Started');
+  const lastUpdate = stateExtractField(content, 'Last update');
+  const blockerMode = stateExtractField(content, 'Blocker mode');
+
+  // Parse Plan Progress table
+  const plans = parsePlanProgressTable(content);
+
+  // Calculate aggregate
+  const { counts, commits } = calculateAggregate(plans);
+
+  // Extract blockers section
+  const blockers = [];
+  const blockersMatch = content.match(/## Blockers\n([\s\S]*?)(?=\n## |$)/);
+  if (blockersMatch) {
+    const blockersSection = blockersMatch[1].trim();
+    if (blockersSection && blockersSection !== 'None.') {
+      const items = blockersSection.match(/^-\s+(.+)$/gm) || [];
+      for (const item of items) {
+        blockers.push(item.replace(/^-\s+/, '').trim());
+      }
+    }
+  }
+
+  // Extract decisions section
+  const decisions = [];
+  const decisionsMatch = content.match(/## Decisions\n([\s\S]*?)(?=\n## |$)/);
+  if (decisionsMatch) {
+    const decisionsSection = decisionsMatch[1].trim();
+    if (decisionsSection && decisionsSection !== 'None.') {
+      const items = decisionsSection.match(/^-\s+(.+)$/gm) || [];
+      for (const item of items) {
+        decisions.push(item.replace(/^-\s+/, '').trim());
+      }
+    }
+  }
+
+  output({
+    phase: phaseNum,
+    status,
+    worker,
+    worktree,
+    started,
+    last_update: lastUpdate,
+    blocker_mode: blockerMode,
+    plans,
+    aggregate: counts,
+    commits,
+    blockers,
+    decisions,
+  }, raw);
+}
+
+/**
+ * status write <phase> --plan <id> --status <state> [--commit <sha>] [--duration <min>] [--tasks <progress>]
+ * Update one plan row in STATUS.md.
+ */
+function cmdStatusWrite(cwd, phase, options, raw) {
+  if (!phase) { error('phase required for status write'); }
+  if (!options.plan) { error('--plan required for status write'); }
+
+  const resolved = resolveStatusPath(cwd, phase);
+  if (!resolved) { error(`Phase ${phase} not found`); }
+
+  const { statusPath } = resolved;
+
+  if (!fs.existsSync(statusPath)) {
+    error(`STATUS.md not found at ${statusPath}. Run 'status init ${phase}' first.`);
+  }
+
+  let content = fs.readFileSync(statusPath, 'utf-8');
+  const rows = parsePlanProgressTable(content);
+
+  // Find matching row
+  const rowIdx = rows.findIndex(r => r.plan === options.plan);
+  if (rowIdx === -1) {
+    error(`Plan ${options.plan} not found in STATUS.md Plan Progress table. Available: ${rows.map(r => r.plan).join(', ')}`);
+  }
+
+  const row = rows[rowIdx];
+  const oldStatus = row.status;
+
+  // Update fields (only specified ones)
+  if (options.status) {
+    row.status = options.status;
+
+    // Auto-set Started timestamp on transition to in progress
+    if (oldStatus === 'not started' && (options.status === 'in progress' || options.status === 'executing')) {
+      if (row.started === '--') {
+        const now = new Date();
+        row.started = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+  }
+  if (options.commit) { row.commit = options.commit; }
+  if (options.duration) { row.duration = options.duration; }
+  if (options.tasks) { row.tasks = options.tasks; }
+
+  rows[rowIdx] = row;
+
+  // Rewrite Plan Progress table
+  content = writePlanProgressTable(content, rows);
+
+  // Update Last update timestamp
+  const now = new Date().toISOString();
+  content = stateReplaceField(content, 'Last update', now) || content;
+
+  // Update phase Status based on plan rows
+  const hasInProgress = rows.some(r => r.status === 'in progress' || r.status === 'executing');
+  const allComplete = rows.every(r => r.status === 'complete');
+  const hasFailed = rows.some(r => r.status === 'failed');
+
+  if (allComplete) {
+    content = stateReplaceField(content, 'Status', 'complete') || content;
+  } else if (hasFailed) {
+    content = stateReplaceField(content, 'Status', 'failed') || content;
+  } else if (hasInProgress) {
+    content = stateReplaceField(content, 'Status', 'executing') || content;
+  }
+
+  // Recalculate aggregate
+  const { counts, commits } = calculateAggregate(rows);
+  content = writeAggregateSection(content, counts, commits);
+
+  fs.writeFileSync(statusPath, content, 'utf-8');
+
+  output({ updated: true, plan: options.plan, new_status: row.status }, raw);
+}
+
+/**
+ * status aggregate <phase> -- Recalculate the Aggregate section from Plan Progress data.
+ */
+function cmdStatusAggregate(cwd, phase, raw) {
+  if (!phase) { error('phase required for status aggregate'); }
+
+  const resolved = resolveStatusPath(cwd, phase);
+  if (!resolved) { error(`Phase ${phase} not found`); }
+
+  const { statusPath } = resolved;
+
+  if (!fs.existsSync(statusPath)) {
+    error(`STATUS.md not found at ${statusPath}`);
+  }
+
+  let content = fs.readFileSync(statusPath, 'utf-8');
+  const rows = parsePlanProgressTable(content);
+  const { counts, commits } = calculateAggregate(rows);
+
+  content = writeAggregateSection(content, counts, commits);
+  fs.writeFileSync(statusPath, content, 'utf-8');
+
+  output({ ...counts, commits }, raw);
+}
+
 function cmdSummaryExtract(cwd, summaryPath, fields, raw) {
   if (!summaryPath) {
     error('summary-path required for summary-extract');
