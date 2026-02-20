@@ -83,7 +83,12 @@ Plans:
   1. Team lead can spawn workers for 2+ independent phases simultaneously, each in its own worktree
   2. Phase workers are `general-purpose` teammates that independently orchestrate their own plan execution via Task() -- not micromanaged by the lead
   3. Agent Teams task dependencies reflect the DAG from ROADMAP.md -- a phase task is blocked until all its `depends_on` phases complete
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 09-01-PLAN.md -- Worktree lifecycle subcommands, manifest management, checkpoint template, circuit breaker config
+- [ ] 09-02-PLAN.md -- Multi-phase team lead orchestrator and autonomous phase worker agent definitions
+- [ ] 09-03-PLAN.md -- Close-shop workflow and execute-phase multi-phase mode awareness
 
 ### Phase 10: Live Feedback and Visual Differentiation
 **Goal**: Users can visually distinguish agents, track parallel progress, and know exactly where to provide input when prompted
