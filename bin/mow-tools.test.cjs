@@ -425,14 +425,14 @@ describe('roadmap get-phase command', () => {
 ## Phases
 
 ### Phase 1: Foundation
-**Goal:** Set up project infrastructure
-**Plans:** 2 plans
+**Goal**: Set up project infrastructure
+**Plans**: 2 plans
 
 Some description here.
 
 ### Phase 2: API
-**Goal:** Build REST API
-**Plans:** 3 plans
+**Goal**: Build REST API
+**Plans**: 3 plans
 `
     );
 
@@ -452,7 +452,7 @@ Some description here.
       `# Roadmap v1.0
 
 ### Phase 1: Foundation
-**Goal:** Set up project
+**Goal**: Set up project
 `
     );
 
@@ -469,10 +469,10 @@ Some description here.
       `# Roadmap
 
 ### Phase 2: Main
-**Goal:** Main work
+**Goal**: Main work
 
 ### Phase 2.1: Hotfix
-**Goal:** Emergency fix
+**Goal**: Emergency fix
 `
     );
 
@@ -491,7 +491,7 @@ Some description here.
       `# Roadmap
 
 ### Phase 1: Setup
-**Goal:** Initialize everything
+**Goal**: Initialize everything
 
 This phase covers:
 - Database setup
@@ -499,7 +499,7 @@ This phase covers:
 - CI/CD pipeline
 
 ### Phase 2: Build
-**Goal:** Build features
+**Goal**: Build features
 `
     );
 
@@ -527,11 +527,11 @@ This phase covers:
       `# Roadmap v1.0
 
 ## Phase 1: Foundation
-**Goal:** Set up project infrastructure
-**Plans:** 2 plans
+**Goal**: Set up project infrastructure
+**Plans**: 2 plans
 
 ## Phase 2: API
-**Goal:** Build REST API
+**Goal**: Build REST API
 `
     );
 
@@ -1265,13 +1265,13 @@ describe('roadmap analyze command', () => {
       `# Roadmap v1.0
 
 ### Phase 1: Foundation
-**Goal:** Set up infrastructure
+**Goal**: Set up infrastructure
 
 ### Phase 2: Authentication
-**Goal:** Add user auth
+**Goal**: Add user auth
 
 ### Phase 3: Features
-**Goal:** Build core features
+**Goal**: Build core features
 `
     );
 
@@ -1306,12 +1306,12 @@ describe('roadmap analyze command', () => {
       `# Roadmap
 
 ### Phase 1: Setup
-**Goal:** Initialize project
-**Depends on:** Nothing
+**Goal**: Initialize project
+**Depends on**: Nothing
 
 ### Phase 2: Build
-**Goal:** Build features
-**Depends on:** Phase 1
+**Goal**: Build features
+**Depends on**: Phase 1
 `
     );
 
@@ -1322,6 +1322,42 @@ describe('roadmap analyze command', () => {
     assert.strictEqual(output.phases[0].goal, 'Initialize project');
     assert.strictEqual(output.phases[0].depends_on, 'Nothing');
     assert.strictEqual(output.phases[1].goal, 'Build features');
+    assert.strictEqual(output.phases[1].depends_on, 'Phase 1');
+  });
+
+  test('provides depends_on_parsed arrays', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap\n\n### Phase 7: State\n**Goal**: Build state\n**Depends on**: Nothing (first phase)\n\n### Phase 8: DAG\n**Goal**: Build DAG\n**Depends on**: Nothing\n\n### Phase 9: Execution\n**Goal**: Run phases\n**Depends on**: Phase 7, Phase 8\n\n### Phase 11: Docs\n**Goal**: Write docs\n**Depends on**: Phase 7, Phase 8, Phase 9, Phase 10\n`
+    );
+
+    const result = runMowTools('roadmap analyze', tmpDir);
+    assert.ok(result.success);
+    const output = JSON.parse(result.output);
+
+    // Phase 7: depends on nothing
+    assert.deepStrictEqual(output.phases[0].depends_on_parsed, []);
+    // Phase 8: depends on nothing
+    assert.deepStrictEqual(output.phases[1].depends_on_parsed, []);
+    // Phase 9: depends on 7 and 8
+    assert.deepStrictEqual(output.phases[2].depends_on_parsed, ['7', '8']);
+    // Phase 11: depends on 7, 8, 9, 10 (10 missing from ROADMAP but still parsed)
+    assert.deepStrictEqual(output.phases[3].depends_on_parsed, ['7', '8', '9', '10']);
+  });
+
+  test('handles both colon-inside-bold and colon-outside-bold formats', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap\n\n### Phase 1: Old Format\n**Goal:** Old style goal\n**Depends on:** Nothing\n\n### Phase 2: New Format\n**Goal**: New style goal\n**Depends on**: Phase 1\n`
+    );
+
+    const result = runMowTools('roadmap analyze', tmpDir);
+    assert.ok(result.success);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phases[0].goal, 'Old style goal');
+    assert.strictEqual(output.phases[0].depends_on, 'Nothing');
+    assert.strictEqual(output.phases[1].goal, 'New style goal');
     assert.strictEqual(output.phases[1].depends_on, 'Phase 1');
   });
 });
@@ -1347,10 +1383,10 @@ describe('phase add command', () => {
       `# Roadmap v1.0
 
 ### Phase 1: Foundation
-**Goal:** Setup
+**Goal**: Setup
 
 ### Phase 2: API
-**Goal:** Build API
+**Goal**: Build API
 
 ---
 `
@@ -1410,10 +1446,10 @@ describe('phase insert command', () => {
       `# Roadmap
 
 ### Phase 1: Foundation
-**Goal:** Setup
+**Goal**: Setup
 
 ### Phase 2: API
-**Goal:** Build API
+**Goal**: Build API
 `
     );
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-foundation'), { recursive: true });
@@ -1442,10 +1478,10 @@ describe('phase insert command', () => {
       `# Roadmap
 
 ### Phase 1: Foundation
-**Goal:** Setup
+**Goal**: Setup
 
 ### Phase 2: API
-**Goal:** Build API
+**Goal**: Build API
 `
     );
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-foundation'), { recursive: true });
@@ -1461,7 +1497,7 @@ describe('phase insert command', () => {
   test('rejects missing phase', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n### Phase 1: Test\n**Goal:** Test\n`
+      `# Roadmap\n### Phase 1: Test\n**Goal**: Test\n`
     );
 
     const result = runMowTools('phase insert 99 Fix Something', tmpDir);
@@ -1475,10 +1511,10 @@ describe('phase insert command', () => {
       `# Roadmap
 
 ## Phase 09.05: Existing Decimal Phase
-**Goal:** Test padding
+**Goal**: Test padding
 
 ## Phase 09.1: Next Phase
-**Goal:** Test
+**Goal**: Test
 `
     );
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '09.05-existing'), { recursive: true });
@@ -1502,10 +1538,10 @@ describe('phase insert command', () => {
 ### v1.1 Milestone
 
 #### Phase 5: Feature Work
-**Goal:** Build features
+**Goal**: Build features
 
 #### Phase 6: Polish
-**Goal:** Polish
+**Goal**: Polish
 `
     );
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '05-feature-work'), { recursive: true });
@@ -1543,16 +1579,16 @@ describe('phase remove command', () => {
       `# Roadmap
 
 ### Phase 1: Foundation
-**Goal:** Setup
-**Depends on:** Nothing
+**Goal**: Setup
+**Depends on**: Nothing
 
 ### Phase 2: Auth
-**Goal:** Authentication
-**Depends on:** Phase 1
+**Goal**: Authentication
+**Depends on**: Phase 1
 
 ### Phase 3: Features
-**Goal:** Core features
-**Depends on:** Phase 2
+**Goal**: Core features
+**Depends on**: Phase 2
 `
     );
 
@@ -1606,7 +1642,7 @@ describe('phase remove command', () => {
     fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Summary');
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n### Phase 1: Test\n**Goal:** Test\n`
+      `# Roadmap\n### Phase 1: Test\n**Goal**: Test\n`
     );
 
     // Should fail without --force
@@ -1622,7 +1658,7 @@ describe('phase remove command', () => {
   test('removes decimal phase and renumbers siblings', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n### Phase 6: Main\n**Goal:** Main\n### Phase 6.1: Fix A\n**Goal:** Fix A\n### Phase 6.2: Fix B\n**Goal:** Fix B\n### Phase 6.3: Fix C\n**Goal:** Fix C\n`
+      `# Roadmap\n### Phase 6: Main\n**Goal**: Main\n### Phase 6.1: Fix A\n**Goal**: Fix A\n### Phase 6.2: Fix B\n**Goal**: Fix B\n### Phase 6.3: Fix C\n**Goal**: Fix C\n`
     );
 
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '06-main'), { recursive: true });
@@ -1647,7 +1683,7 @@ describe('phase remove command', () => {
   test('updates STATE.md phase count', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n### Phase 1: A\n**Goal:** A\n### Phase 2: B\n**Goal:** B\n`
+      `# Roadmap\n### Phase 1: A\n**Goal**: A\n### Phase 2: B\n**Goal**: B\n`
     );
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
@@ -1687,11 +1723,11 @@ describe('phase complete command', () => {
 - [ ] Phase 2: API
 
 ### Phase 1: Foundation
-**Goal:** Setup
-**Plans:** 1 plans
+**Goal**: Setup
+**Plans**: 1 plans
 
 ### Phase 2: API
-**Goal:** Build API
+**Goal**: Build API
 `
     );
     fs.writeFileSync(
@@ -1729,7 +1765,7 @@ describe('phase complete command', () => {
   test('detects last phase in milestone', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n### Phase 1: Only Phase\n**Goal:** Everything\n`
+      `# Roadmap\n### Phase 1: Only Phase\n**Goal**: Everything\n`
     );
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
@@ -1760,13 +1796,13 @@ describe('phase complete command', () => {
 - [ ] Phase 1: Auth
 
 ### Phase 1: Auth
-**Goal:** User authentication
-**Requirements:** AUTH-01, AUTH-02
-**Plans:** 1 plans
+**Goal**: User authentication
+**Requirements**: AUTH-01, AUTH-02
+**Plans**: 1 plans
 
 ### Phase 2: API
-**Goal:** Build API
-**Requirements:** API-01
+**Goal**: Build API
+**Requirements**: API-01
 `
     );
     fs.writeFileSync(
@@ -1833,13 +1869,13 @@ describe('phase complete command', () => {
 - [ ] Phase 1: Auth
 
 ### Phase 1: Auth
-**Goal:** User authentication
-**Requirements:** [AUTH-01, AUTH-02]
-**Plans:** 1 plans
+**Goal**: User authentication
+**Requirements**: [AUTH-01, AUTH-02]
+**Plans**: 1 plans
 
 ### Phase 2: API
-**Goal:** Build API
-**Requirements:** [API-01]
+**Goal**: Build API
+**Requirements**: [API-01]
 `
     );
     fs.writeFileSync(
@@ -1906,8 +1942,8 @@ describe('phase complete command', () => {
 - [ ] Phase 1: Setup
 
 ### Phase 1: Setup
-**Goal:** Project setup (no requirements)
-**Plans:** 1 plans
+**Goal**: Project setup (no requirements)
+**Plans**: 1 plans
 `
     );
     fs.writeFileSync(
@@ -1950,10 +1986,10 @@ describe('phase complete command', () => {
       `# Roadmap
 
 - [ ] Phase 1: Foundation
-**Requirements:** REQ-01
+**Requirements**: REQ-01
 
 ### Phase 1: Foundation
-**Goal:** Setup
+**Goal**: Setup
 `
     );
     fs.writeFileSync(
@@ -1989,7 +2025,7 @@ describe('milestone complete command', () => {
   test('archives roadmap, requirements, creates MILESTONES.md', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap v1.0 MVP\n\n### Phase 1: Foundation\n**Goal:** Setup\n`
+      `# Roadmap v1.0 MVP\n\n### Phase 1: Foundation\n**Goal**: Setup\n`
     );
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'REQUIREMENTS.md'),
