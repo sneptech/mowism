@@ -47,6 +47,7 @@ Last activity: 2026-02-20 -- v1.1 lifecycle audit session
 | Color-coded terminal badges per agent | Red background for orchestrator (always), rotating bright colors for workers. ANSI background escape codes. Must be clearly differentiated, not dark | — Pending |
 
 Full v1.0 decision log in PROJECT.md Key Decisions table.
+- [Phase quick-1]: Agent Teams: messages string-based, no streaming worker output, permission prompts session-local, terminal control outside scope. All 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations.
 
 ### Pending Todos
 
