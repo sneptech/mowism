@@ -1,7 +1,7 @@
 # Requirements: Mowism v1.1
 
 **Defined:** 2026-02-20
-**Core Value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration — without manual context-checking between sessions.
+**Core Value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
 
 ## v1.1 Requirements
 
@@ -9,7 +9,7 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### State Coherence
 
-- [ ] **STATE-01**: Lead/coordinator is the sole writer of STATE.md — workers never modify it directly
+- [ ] **STATE-01**: Lead/coordinator is the sole writer of STATE.md -- workers never modify it directly
 - [ ] **STATE-02**: Each phase worker writes to an isolated `phases/XX/STATUS.md` file with no cross-worker contention
 - [ ] **STATE-03**: Workers communicate state changes to the lead via structured JSON inbox messages (<1KB, defined schema)
 - [ ] **STATE-04**: STATE.md becomes a lightweight index that links to per-phase STATUS.md files for detail
@@ -30,14 +30,14 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 - [ ] **FEED-01**: Workers send structured milestone messages at defined checkpoints (task claimed, commit made, task complete, error)
 - [ ] **FEED-02**: Orchestrator aggregates worker messages into phase-level progress summary (O(phases) not O(tasks))
-- [ ] **FEED-03**: Workers display color-coded ANSI banner at startup — red background for orchestrator, rotating bright colors for workers
+- [ ] **FEED-03**: Workers display color-coded ANSI banner at startup -- red background for orchestrator, rotating bright colors for workers
 - [ ] **FEED-04**: When a worker hits a permission prompt, orchestrator shows which worker needs input and how to navigate to it
 
 ### Documentation
 
 - [ ] **DOC-01**: README includes lifecycle narrative covering full project workflow from install to milestone completion
 - [ ] **DOC-02**: All 34 `/mow:*` commands documented with description, usage, and examples
-- [ ] **DOC-03**: Brownfield entry point documented (existing codebase → map-codebase → new-milestone)
+- [ ] **DOC-03**: Brownfield entry point documented (existing codebase -> map-codebase -> new-milestone)
 - [ ] **DOC-04**: Configuration, security guidance, and troubleshooting sections included
 
 ## v2 Requirements
@@ -66,34 +66,32 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STATE-01 | — | Pending |
-| STATE-02 | — | Pending |
-| STATE-03 | — | Pending |
-| STATE-04 | — | Pending |
-| DAG-01 | — | Pending |
-| DAG-02 | — | Pending |
-| DAG-03 | — | Pending |
-| EXEC-01 | — | Pending |
-| EXEC-02 | — | Pending |
-| EXEC-03 | — | Pending |
-| FEED-01 | — | Pending |
-| FEED-02 | — | Pending |
-| FEED-03 | — | Pending |
-| FEED-04 | — | Pending |
-| DOC-01 | — | Pending |
-| DOC-02 | — | Pending |
-| DOC-03 | — | Pending |
-| DOC-04 | — | Pending |
+| STATE-01 | Phase 7 | Pending |
+| STATE-02 | Phase 7 | Pending |
+| STATE-03 | Phase 7 | Pending |
+| STATE-04 | Phase 7 | Pending |
+| DAG-01 | Phase 8 | Pending |
+| DAG-02 | Phase 8 | Pending |
+| DAG-03 | Phase 8 | Pending |
+| EXEC-01 | Phase 9 | Pending |
+| EXEC-02 | Phase 9 | Pending |
+| EXEC-03 | Phase 9 | Pending |
+| FEED-01 | Phase 10 | Pending |
+| FEED-02 | Phase 10 | Pending |
+| FEED-03 | Phase 10 | Pending |
+| FEED-04 | Phase 10 | Pending |
+| DOC-01 | Phase 11 | Pending |
+| DOC-02 | Phase 11 | Pending |
+| DOC-03 | Phase 11 | Pending |
+| DOC-04 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-20 after initial definition*
+*Last updated: 2026-02-20 after roadmap creation*
