@@ -20,6 +20,15 @@ cd mowism
 
 The installer copies all commands, agents, workflows, and tools to `~/.claude/` and checks for required dependencies. It never blocks on missing dependencies -- it reports what's missing and how to install it.
 
+## Requirements
+| -- needed --
+| [Claude Code](https://claude.ai/code) - Runtime environment
+| [Node.js](https://nodejs.org) - Powers mow-tools.cjs (state management, roadmap updates)
+| [WorkTrunk](https://github.com/nicholasgasior/worktrunk) - Multi-worktree management (`wt` CLI)
+|
+| -- optional --
+| Agent Teams env var  | No  | Enables parallel agent execution (optional but recommended)
+
 ## Quick Start
 
 After installing, open Claude Code in any project and run:
@@ -42,15 +51,6 @@ This initializes a `.planning/` directory with your project state, roadmap, and 
 - **Agent Teams integration** -- Optional parallel execution with Claude Code's experimental Agent Teams
 - **Quality skills** -- Standalone commands: `scope-check`, `simplify`, `dead-code-sweep`, `prove-it`, `grill-me`, `change-summary`, `update-claude-md`
 - **Inline help** -- Add `???` to any command (e.g., `/mow:execute-phase ???`) for detailed usage info
-
-## Requirements
-
-| Dependency | Required | Purpose |
-|---|---|---|
-| [Claude Code](https://claude.ai/code) | Yes | Runtime environment |
-| [Node.js](https://nodejs.org) | Yes | Powers mow-tools.cjs (state management, roadmap updates) |
-| [WorkTrunk](https://github.com/nicholasgasior/worktrunk) | Yes | Multi-worktree management (`wt` CLI) |
-| Agent Teams env var | No | Enables parallel agent execution (optional but recommended) |
 
 ## Commands
 
