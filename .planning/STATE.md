@@ -70,6 +70,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: v1.1 roadmap created -- 5 phases (7-11), 18 requirements mapped, DAG structure defined
-Resume: Plan Phase 7 (State Coherence Foundation) or Phase 8 (DAG-Based Phase Scheduling) -- both are ready, no dependencies
-Context: v1.1 requirements finalized. Research complete (SUMMARY.md). Architecture selected (Hybrid: index + lead-writes-state). Phases 7+8 parallelizable. Phase 9 needs both. Phase 10 needs 7. Phase 11 needs all.
+Stopped at: Phase 7 context gathered
+Resume: Plan Phase 7 (State Coherence Foundation) via /mow:plan-phase 7 -- or discuss Phase 8 (DAG-Based Phase Scheduling) via /mow:discuss-phase 8
+Context: Phase 7 context captured (07-CONTEXT.md). Key decisions: two-tier progress (per-task local, per-plan to coordinator), discrete plan states, strict worker ownership, acknowledged messages with state transitions, direct peer messaging with audit logs, blocker skip-and-continue default. Phase 8 still needs context.
