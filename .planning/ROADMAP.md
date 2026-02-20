@@ -68,7 +68,12 @@ Plans:
   1. ROADMAP.md `depends_on` field accepts comma-separated phase lists (not just "previous phase"), and existing roadmap parsing still works
   2. Running `mow-tools.cjs roadmap analyze-dag` produces correct execution waves from any valid DAG (tested with diamond, linear, independent, and complex topologies)
   3. The roadmapper agent auto-detects which phases can run in parallel based on requirement dependencies and emits `depends_on` and `Parallel with` annotations
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md -- Fix regex format bug, add parseDependsOn() helper, update tests
+- [ ] 08-02-PLAN.md -- Implement topoGenerations() and roadmap analyze-dag subcommand (TDD)
+- [ ] 08-03-PLAN.md -- Create mow-dag-analyzer agent and integrate into roadmapper workflow
 
 ### Phase 9: Multi-Phase Execution Engine
 **Goal**: Multiple independent phases execute simultaneously across worktrees with coordinated orchestration
