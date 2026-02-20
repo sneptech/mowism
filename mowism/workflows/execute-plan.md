@@ -376,7 +376,7 @@ MSG=$(node ~/.claude/mowism/bin/mow-tools.cjs message format plan_complete \
 # The coordinator will update STATE.md upon receiving this message
 ```
 
-Use SendMessage({ type: "message", recipient: "team-lead", content: $MSG, summary: "Phase ${PHASE_NUMBER}: plan ${PHASE}-${PLAN} complete (${DURATION})" })
+Use SendMessage({ type: "message", recipient: "lead", content: $MSG, summary: "Phase ${PHASE_NUMBER}: plan ${PHASE}-${PLAN} complete (${DURATION})" })
 
 **Single-agent mode (no team, backward compatible):**
 

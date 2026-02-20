@@ -1041,6 +1041,7 @@ with a lead orchestrator and workers across worktrees? (yes/no)
   ```
   Task(
     subagent_type="mow-team-lead",
+    name="lead",
     prompt="
     <objective>
     Set up Agent Teams for this project. Read the roadmap at .planning/ROADMAP.md

@@ -80,6 +80,7 @@ Would you like to re-spawn the team to continue parallel execution? (yes/no)
   ```
   Task(
     subagent_type="mow-team-lead",
+    name="lead",
     prompt="
     <objective>
     Re-spawn Agent Teams for this project. A previous team session ended.
