@@ -38,6 +38,7 @@ Phases 7 and 8 can execute in parallel (different file domains, no data dependen
 - [x] **Phase 9: Multi-Phase Execution Engine** - Concurrent phase workers across worktrees via Agent Teams (completed 2026-02-20)
 - [x] **Phase 10: Live Feedback and Visual Differentiation** - Structured milestone messages, color-coded terminals, input routing (completed 2026-02-20)
 - [x] **Phase 11: README Overhaul** - Lifecycle narrative, all 34 commands, brownfield entry, config/security/troubleshooting (completed 2026-02-20)
+- [ ] **Phase 12: Audit Gap Closure** - Standardize SendMessage recipient, add requirements_completed to SUMMARY template, fix stale counts
 
 ## Phase Details
 
@@ -122,6 +123,20 @@ Plans:
 - [ ] 11-02-PLAN.md -- Complete command reference (35 /mow:* commands + 7 quality skills)
 - [ ] 11-03-PLAN.md -- Configuration, security, troubleshooting, directory structure, common workflows
 
+### Phase 12: Audit Gap Closure
+**Goal**: Close integration and tech debt gaps identified by v1.1 milestone audit
+**Depends on**: Phase 11
+**Requirements**: STATE-03, FEED-01 (integration wiring fix), DOC-02 (stale count)
+**Gap Closure**: Closes gaps from v1.1-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. SendMessage `recipient` field uses the same value in both `execute-plan.md` and `mow-phase-worker.md`
+  2. SUMMARY.md template includes `requirements_completed` in YAML frontmatter
+  3. REQUIREMENTS.md text says "35" commands (not "34")
+**Plans**: 1 plan (3 small tasks)
+
+Plans:
+- [ ] 12-01-PLAN.md -- Standardize recipient name, add template field, fix stale count
+
 ## Progress
 
 **Execution Order:**
@@ -140,3 +155,4 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 9. Multi-Phase Execution Engine | v1.1 | Complete    | 2026-02-20 | - |
 | 10. Live Feedback and Visual Differentiation | 3/3 | Complete    | 2026-02-20 | - |
 | 11. README Overhaul | 3/3 | Complete    | 2026-02-20 | - |
+| 12. Audit Gap Closure | v1.1 | 0/1 | Planned | - |
