@@ -12,45 +12,40 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ GSD forked and all `/gsd:*` commands rebranded to `/mow:*` — v1.0
+- ✓ WorkTrunk required as core dependency with clear error if missing — v1.0
+- ✓ `.planning/` state files are worktree-aware (track assignments, prevent conflicts) — v1.0
+- ✓ `/mow:refine-phase` command — tiered quality checks (minimum, complex, algorithmic) with parallel subagents — v1.0
+- ✓ `???` suffix on any command opens documentation in user's editor — v1.0
+- ✓ Agent Teams integration — `/mow:new-project` and `/mow:resume-work` offer multi-session coordination — v1.0
+- ✓ All Karpathy/Cherny quality skills forked and registered as Mowism skills — v1.0
+- ✓ Quality check findings written to `.planning/phases/VERIFICATION-CHAIN-P{phase}.md` — v1.0
+- ✓ STATE.md tracks verification results, worktree assignments, and agent team status — v1.0
+- ✓ One-command install from GitHub README with all skills registered in `~/.claude/` — v1.0
+- ✓ Portable paths — zero hardcoded `~/.claude/` references, works on any machine — v1.0
+- ✓ Dual-path update workflow (git clone and install.sh installations both supported) — v1.0
 
 ### Active
 
-- [ ] GSD forked and all `/gsd:*` commands rebranded to `/mow:*`
-- [ ] WorkTrunk required as core dependency (replaces existing `wt:*` skills)
-- [ ] `.planning/` state files are worktree-aware (track which worktree/agent is doing what, prevent conflicts)
-- [ ] `/mow:refine-phase` command — tiered inter-phase quality checks (minimum, complex, algorithmic) running parallel subagents
-- [ ] `/mow:refine-phase` always asks which tier, presents 3 options
-- [ ] `???` suffix on any command opens that command's documentation in the user's default text editor
-- [ ] Agent Teams integration — `/mow:new-project` and `/mow:resume-work` offer to spin up a multi-session agent team with a lead orchestrator
-- [ ] Human moves between individual agent sessions for context/input while lead tracks overall state
-- [ ] All Karpathy/Cherny skills (scope-check, simplify, dead-code-sweep, prove-it, grill-me, change-summary, update-claude-md, etc.) forked into the Mowism repo
-- [ ] Quality check subagents write findings to persistent files (`.planning/phases/VERIFICATION-CHAIN-P{phase}.md`)
-- [ ] STATE.md tracks verification chain results, worktree assignments, and agent team status
-- [ ] GitHub repo with one-command install to Claude Code
-- [ ] Install script registers all `/mow:*` skills globally in `~/.claude/`
+(None — start next milestone to define)
 
 ### Out of Scope
 
-- Multi-year workflow persistence — aspirational goal, not v1. State files in git are sufficient for now.
-- Custom database or knowledge graph for long-term memory — CLAUDE.md + .planning/ files cover this
+- Multi-year workflow persistence — state files in git are sufficient for now
+- Custom database or knowledge graph — CLAUDE.md + .planning/ files cover this
 - Mobile/web UI — CLI-only, Claude Code terminal
-- Forking/modifying WorkTrunk itself — use it as-is, it's someone else's tool
+- Forking/modifying WorkTrunk itself — use as-is, clean dependency boundary
 - Building a custom Agent Teams implementation — use Anthropic's experimental feature as-is
+- Plugin/extension marketplace — skills are .md files, users copy them into a directory
+- Automatic model routing — user-selected profiles are more predictable
 
 ## Context
 
-**GSD's limitation:** GSD assumes a single agent working on a single branch. Its `.planning/STATE.md` doesn't track which worktree is executing which plan, and documentation written in one worktree isn't visible to agents in other worktrees until merged. This causes context fragmentation — agents in different worktrees don't know what other agents have done, leading to manual "hey, do you have everything?" checks.
+**Shipped v1.0** with ~41,500 lines across 248 files (cjs, md, sh, json).
+Tech stack: Node.js (mow-tools.cjs), Bash (install.sh), Markdown (workflows, commands, agents, templates, help).
+103 tests passing in mow-tools.test.cjs. 36/36 requirements satisfied. 6 phases, 22 plans executed in ~50 minutes.
 
-**Current manual workflow:** After every GSD phase execution, the user manually runs a chain of quality-check skills (scope-check, simplify, dead-code-sweep, prove-it, grill-me, change-summary, verify-work, update-claude-md) from the RECOMMENDED-WORKFLOW-CHAIN.md. These are staged in a specific order with parallelization opportunities, but running them manually is tedious and error-prone.
-
-**WorkTrunk:** A CLI tool (`wt` command) for managing git worktrees, purpose-built for multi-agent parallel work. Handles worktree creation, switching, merging, hooks, and cleanup. Available via brew, cargo, yay (Arch), or winget.
-
-**Agent Teams:** Anthropic's experimental feature for coordinating multiple Claude Code instances. One session acts as team lead, others are teammates with shared task lists and inter-agent messaging. Currently requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
-
-**Source skills:** 20+ skills from Boris Cherny (Claude Code team lead) and Andrej Karpathy, covering planning, review, simplification, scope discipline, testing, proof-of-correctness, code review, dead code cleanup, and CLAUDE.md maintenance. All currently live at `/home/max/git/ai-agent-tools-and-tips/`.
-
-**Name origin:** "Mow" = the chirping sound a snow leopard makes. "Mowism" = Mow + Maoism (five-year plans). A pun reflecting the goal of long-running agentic workflows. The project mascot is a snow leopard.
+**GSD divergence:** Mowism adds worktree-aware state, `/mow:refine-phase` quality gates, Agent Teams coordination, and a `???` help system — none of which exist in upstream GSD. The fork is intentionally permanent.
 
 ## Constraints
 
@@ -64,12 +59,16 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Fork GSD rather than wrap it | Need deep modifications to state management, skill names, and assumptions — wrapping would be fragile | — Pending |
-| Rebrand `/gsd:*` to `/mow:*` | Clean identity separation from upstream GSD | — Pending |
-| WorkTrunk replaces custom `wt:*` skills | WorkTrunk is purpose-built, actively maintained, and more capable than the custom skills | — Pending |
-| Fork Karpathy/Cherny skills into Mowism | Single package, can enhance with worktree awareness and state persistence | — Pending |
-| Agent Teams as a first-class integration | Multi-agent coordination is core to the vision, not an add-on | — Pending |
-| `???` suffix for inline docs | Low-friction way to learn command options without leaving the terminal | — Pending |
+| Fork GSD rather than wrap it | Need deep modifications to state management, skill names, and assumptions — wrapping would be fragile | ✓ Good — clean separation, 248 files modified without upstream entanglement |
+| Rebrand `/gsd:*` to `/mow:*` | Clean identity separation from upstream GSD | ✓ Good — zero "gsd" in user-facing output, migrate command for existing users |
+| WorkTrunk replaces custom `wt:*` skills | WorkTrunk is purpose-built, actively maintained, and more capable than the custom skills | ✓ Good — hard dependency with clear error messaging |
+| Fork Karpathy/Cherny skills into Mowism | Single package, can enhance with worktree awareness and state persistence | ✓ Good — 7 skills registered, fully standalone |
+| Agent Teams as a first-class integration | Multi-agent coordination is core to the vision, not an add-on | ✓ Good — prominent nudge, graceful degradation when disabled |
+| `???` suffix for inline docs | Low-friction way to learn command options without leaving the terminal | ✓ Good — 34 help files, $EDITOR fallback chain |
+| Ordered string replacement (most-specific-first) | Prevent double-replacement during rebrand (e.g., "gsd-tools" before "gsd") | ✓ Good — zero replacement artifacts across 107+ files |
+| Tiered quality gates (minimum/complex/algorithmic) | Different codebases need different depth of review | ✓ Good — one-word selection, parallel subagents, machine-readable output |
+| Dual-path update (git clone vs install.sh) | Users install via different methods, both need working updates | ✓ Good — configurable via .update-source file |
+| Archive pattern for orphaned files | Keep design references without cluttering active workflows | ✓ Good — _archive/ with YAML frontmatter documenting reason and replacement |
 
 ---
-*Last updated: 2026-02-19 after initialization*
+*Last updated: 2026-02-20 after v1.0 milestone*
