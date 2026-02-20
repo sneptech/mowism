@@ -154,7 +154,160 @@ These documents feed into the planner's context so execution plans respect your 
 
 You can run `map-codebase` before or after `new-project`. If you're continuing work on a project that already has a `.planning/` directory from a previous milestone, use `/mow:new-milestone` instead of `/mow:new-project`.
 
-<!-- COMMANDS_REFERENCE: Plan 02 will write this section -->
+## Commands
+
+Mowism provides 35 `/mow:*` commands and 7 quality skills. Append `???` to any command for detailed help -- e.g., `/mow:execute-phase ???` opens the full reference for that command.
+
+### Getting Started
+
+| Command | Description |
+|---|---|
+| `/mow:new-project` | Initialize a new project with deep context gathering and roadmap |
+| `/mow:map-codebase` | Analyze existing codebase with parallel mapper agents |
+| `/mow:help` | Show the full command reference |
+| `/mow:help-open` | Open help documentation for a specific command in your editor |
+
+### Phase Planning
+
+| Command | Description |
+|---|---|
+| `/mow:discuss-phase N` | Gather your vision for a phase through adaptive questioning |
+| `/mow:research-phase N` | Research domain for complex or niche phases |
+| `/mow:list-phase-assumptions N` | Surface Claude's assumptions about a phase before planning |
+| `/mow:plan-phase N` | Create detailed execution plans with verification criteria |
+
+```
+/mow:discuss-phase 3         # Optional: share your vision first
+/mow:research-phase 3        # Optional: deep research for niche domains
+/mow:plan-phase 3            # Create execution plans
+```
+
+### Execution
+
+| Command | Description |
+|---|---|
+| `/mow:execute-phase N` | Execute all plans in a phase with wave-based parallelization |
+| `/mow:quick` | Execute a quick task with Mowism guarantees, skip optional agents |
+
+```
+/mow:execute-phase 3         # Execute all plans in phase 3
+/mow:quick                   # Small task: plan + execute, no research/verify
+```
+
+### Quality and Verification
+
+| Command | Description |
+|---|---|
+| `/mow:refine-phase N` | Run tiered quality gates (minimum/complex/algorithmic) |
+| `/mow:verify-work N` | Conversational user acceptance testing against deliverables |
+
+```
+/mow:refine-phase 3          # Quality gates scaled to code complexity
+/mow:verify-work 3           # UAT: pass/fail each test case interactively
+```
+
+### Roadmap Management
+
+| Command | Description |
+|---|---|
+| `/mow:add-phase "description"` | Add a phase to the end of the current milestone |
+| `/mow:insert-phase N "description"` | Insert urgent work as a decimal phase between existing phases |
+| `/mow:remove-phase N` | Remove a future phase and renumber subsequent phases |
+
+```
+/mow:add-phase "Add admin dashboard"
+/mow:insert-phase 5 "Critical auth fix"   # Creates Phase 5.1
+/mow:remove-phase 12                      # Renumbers 13+ down
+```
+
+### Milestone Management
+
+| Command | Description |
+|---|---|
+| `/mow:new-milestone` | Start a new milestone cycle (questioning, research, requirements, roadmap) |
+| `/mow:complete-milestone` | Archive completed milestone, create git tag, prepare for next |
+| `/mow:audit-milestone` | Audit milestone completion against original intent |
+| `/mow:plan-milestone-gaps` | Create phases to close gaps identified by audit |
+
+```
+/mow:complete-milestone      # Archive and tag
+/clear
+/mow:new-milestone           # Start next body of work
+```
+
+### Session Management
+
+| Command | Description |
+|---|---|
+| `/mow:progress` | Check project status and route to next action |
+| `/mow:resume-work` | Resume from previous session with context restoration |
+| `/mow:pause-work` | Save context handoff when pausing mid-phase |
+
+```
+/mow:progress                # Where am I? What's next?
+/mow:pause-work              # Saves state for later
+/mow:resume-work             # Picks up where you left off
+```
+
+### Debugging and Todos
+
+| Command | Description |
+|---|---|
+| `/mow:debug "issue"` | Systematic debugging with persistent state across context resets |
+| `/mow:add-todo` | Capture an idea or task as a todo from conversation context |
+| `/mow:check-todos` | List pending todos and select one to work on |
+
+```
+/mow:debug "login fails"     # Start investigation
+/clear
+/mow:debug                   # Resume after context reset
+```
+
+### Multi-Agent
+
+| Command | Description |
+|---|---|
+| `/mow:team-status` | Show agent team status and teammate assignments |
+| `/mow:worktree-status` | Show detailed worktree assignment status |
+| `/mow:close-shop` | Gracefully shut down multi-agent session and merge worktrees |
+
+### Configuration
+
+| Command | Description |
+|---|---|
+| `/mow:settings` | Configure workflow toggles and model profile interactively |
+| `/mow:set-profile PROFILE` | Quick switch model profile (quality/balanced/budget) |
+
+```
+/mow:set-profile budget      # Sonnet for writing, Haiku for research
+/mow:settings                # Interactive toggle for agents and profile
+```
+
+### Utility
+
+| Command | Description |
+|---|---|
+| `/mow:health` | Diagnose `.planning/` directory health and optionally repair issues |
+| `/mow:cleanup` | Archive phase directories from completed milestones |
+| `/mow:update` | Update Mowism to latest version with changelog preview |
+| `/mow:migrate` | Migrate an existing GSD `.planning/` directory to Mowism format |
+| `/mow:reapply-patches` | Reapply local modifications after a Mowism update |
+
+### Quality Skills
+
+Standalone commands (no `/mow:` prefix) for code quality. Run directly in Claude Code.
+
+| Skill | Description |
+|---|---|
+| `scope-check` | Verify recent changes stay within the scope of the original task |
+| `simplify` | Audit code for unnecessary complexity and over-engineering |
+| `dead-code-sweep` | Find unreachable and unused code after refactors |
+| `change-summary` | Generate a structured summary of all changes with risks |
+| `prove-it` | Demand evidence that changes work by diffing behavior between states |
+| `grill-me` | Aggressive code review -- challenge changes before they ship |
+| `update-claude-md` | Update CLAUDE.md with session learnings so mistakes are not repeated |
+
+Run `/mow:help` for the full reference, or append `???` to any command for detailed help.
 
 <!-- CONFIG_SECURITY_TROUBLESHOOTING: Plan 03 will write this section -->
 
