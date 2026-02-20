@@ -77,6 +77,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 07-04-PLAN.md (Single-writer protocol wiring) -- Phase 7 complete
-Resume: Phase 7 complete (4/4 plans). Next: continue with remaining v1.1 phases.
-Context: Phase 7 complete -- STATUS.md template (07-01), message protocol (07-02), Active Phases table (07-03), single-writer wiring (07-04). Workers use STATUS.md + structured messages in multi-agent mode, direct STATE.md writes in single-agent mode. Coordinator processes messages and owns STATE.md exclusively.
+Stopped at: Phase 8 context gathered
+Resume: .planning/phases/08-dag-based-phase-scheduling/08-CONTEXT.md
+Context: Phase 8 context captured -- dedicated DAG analysis agent, tiered confidence parallelism (high=auto, medium=prompt, low=exclude), interactive cycle resolution, missing refs as to-dos, runtime file conflict awareness (deferred to Phase 9). Next: plan or research Phase 8.
