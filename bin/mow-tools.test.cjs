@@ -2998,3 +2998,268 @@ describe('chat-log command', () => {
     assert.strictEqual(entry.msg.length, 500, 'msg should be truncated to 500 chars');
   });
 });
+
+// ─── Active Phases Table Tests ────────────────────────────────────────────────
+
+describe('Active Phases table operations', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('state active-phases returns empty array when no section exists', () => {
+    // Create a v1.0-style STATE.md without Active Phases section
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Current Position
+
+Phase: 7 of 11
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+
+## Session Continuity
+
+Last session: 2026-02-20
+`);
+
+    const result = runMowTools('state active-phases --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok(output.warning, 'should include a warning');
+    assert.deepStrictEqual(output.rows, [], 'rows should be empty array');
+  });
+
+  test('state active-phases parses table correctly', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Current Position
+
+Phase: 7 of 11
+
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+| 7 | State Coherence | executing | worker-green | 1/4 | 2026-02-20T04:00:00Z |
+| 8 | DAG Scheduling | blocked (7) | -- | 0/3 | 2026-02-20T03:00:00Z |
+| 9 | Coordinator | not started | -- | 0/5 | 2026-02-20T02:00:00Z |
+
+**Next unblockable:** Phase 8 (DAG Scheduling) -- 1 dep(s) remaining
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+
+## Session Continuity
+
+Last session: 2026-02-20
+`);
+
+    const result = runMowTools('state active-phases --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const rows = JSON.parse(result.output);
+    assert.strictEqual(rows.length, 3, 'should have 3 rows');
+    assert.strictEqual(rows[0].phase, '7', 'first row phase should be 7');
+    assert.strictEqual(rows[0].name, 'State Coherence', 'first row name');
+    assert.strictEqual(rows[0].status, 'executing', 'first row status');
+    assert.strictEqual(rows[0].worker, 'worker-green', 'first row worker');
+    assert.strictEqual(rows[0].plans, '1/4', 'first row plans');
+    assert.strictEqual(rows[1].status, 'blocked (7)', 'second row status');
+    assert.strictEqual(rows[1].worker, '--', 'second row worker should be --');
+    assert.strictEqual(rows[2].status, 'not started', 'third row status');
+  });
+
+  test('state update-phase-row updates existing row', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+| 7 | State Coherence | not started | -- | 0/4 | 2026-02-20T01:00:00Z |
+| 8 | DAG Scheduling | not started | -- | 0/3 | 2026-02-20T01:00:00Z |
+
+**Next unblockable:** --
+
+## Session Continuity
+
+Last session: 2026-02-20
+`);
+
+    const result = runMowTools('state update-phase-row 7 --status executing --worker worker-green --plans 1/4 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.updated, true, 'should report updated');
+    assert.strictEqual(output.phase, '7', 'should report phase 7');
+    assert.ok(output.fields_changed.includes('status'), 'fields_changed should include status');
+    assert.ok(output.fields_changed.includes('worker'), 'fields_changed should include worker');
+    assert.ok(output.fields_changed.includes('plans'), 'fields_changed should include plans');
+
+    // Verify in STATE.md
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('executing'), 'should contain executing status');
+    assert.ok(content.includes('worker-green'), 'should contain worker-green');
+    assert.ok(content.includes('1/4'), 'should contain 1/4 plans');
+    // Phase 8 should be unchanged
+    assert.ok(content.includes('| 8 | DAG Scheduling | not started | -- | 0/3 |'), 'phase 8 should be unchanged');
+  });
+
+  test('state update-phase-row inserts new row when phase not found', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+
+**Next unblockable:** --
+
+## Session Continuity
+
+Last session: 2026-02-20
+`);
+
+    const result = runMowTools('state update-phase-row 7 --name "State Coherence" --status "not started" --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.updated, true, 'should report updated');
+
+    // Read back and verify
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('| 7 |'), 'should contain phase 7 row');
+    assert.ok(content.includes('State Coherence'), 'should contain phase name');
+    assert.ok(content.includes('not started'), 'should contain status');
+  });
+
+  test('state update-phase-row preserves unspecified fields', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+| 7 | State Coherence | executing | worker-green | 1/4 | 2026-02-20T01:00:00Z |
+
+**Next unblockable:** --
+
+## Session Continuity
+
+Last session: 2026-02-20
+`);
+
+    // Only update plans, leave other fields alone
+    const result = runMowTools('state update-phase-row 7 --plans 2/4 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok(output.fields_changed.includes('plans'), 'should report plans changed');
+    assert.ok(!output.fields_changed.includes('status'), 'should NOT report status changed');
+    assert.ok(!output.fields_changed.includes('worker'), 'should NOT report worker changed');
+
+    // Verify preserved fields
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('worker-green'), 'worker should be preserved');
+    assert.ok(content.includes('executing'), 'status should be preserved');
+    assert.ok(content.includes('2/4'), 'plans should be updated');
+    assert.ok(content.includes('State Coherence'), 'name should be preserved');
+  });
+
+  test('state update-phase-row updates Next unblockable', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), `# Project State
+
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+| 7 | State Coherence | executing | worker-green | 3/4 | 2026-02-20T01:00:00Z |
+| 8 | DAG Scheduling | executing | worker-blue | 2/3 | 2026-02-20T01:00:00Z |
+| 9 | Coordinator | blocked (7,8) | -- | 0/5 | 2026-02-20T01:00:00Z |
+
+**Next unblockable:** Phase 9 (Coordinator) -- 2 dep(s) remaining
+
+## Session Continuity
+
+Last session: 2026-02-20
+`);
+
+    // Mark phase 7 as complete
+    const result = runMowTools('state update-phase-row 7 --status complete --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    // Read and verify Next unblockable was recalculated
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('complete'), 'phase 7 should be complete');
+    // Phase 9 is blocked on (7,8). Phase 7 is now complete, so only 1 dep remaining (phase 8)
+    assert.ok(content.includes('1 dep(s) remaining'), 'should show 1 dep remaining for phase 9');
+  });
+
+  test('Active Phases table survives round-trip', () => {
+    const initialState = `# Project State
+
+## Active Phases
+
+| Phase | Name | Status | Worker | Plans | Last Update |
+|-------|------|--------|--------|-------|-------------|
+| 7 | State Coherence | executing | worker-green | 2/4 | 2026-02-20T01:00:00Z |
+| 8 | DAG Scheduling | executing | worker-blue | 1/3 | 2026-02-20T02:00:00Z |
+| 9 | Coordinator | blocked (7,8) | -- | 0/5 | 2026-02-20T03:00:00Z |
+| 10 | Live Feedback | blocked (7) | -- | 0/3 | 2026-02-20T04:00:00Z |
+| 11 | README Overhaul | not started | -- | 0/2 | 2026-02-20T05:00:00Z |
+
+**Next unblockable:** Phase 10 (Live Feedback) -- 1 dep(s) remaining
+
+## Session Continuity
+
+Last session: 2026-02-20
+`;
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), initialState);
+
+    // Parse all rows
+    const parseResult = runMowTools('state active-phases --raw', tmpDir);
+    assert.ok(parseResult.success, `Parse failed: ${parseResult.error}`);
+    const rows = JSON.parse(parseResult.output);
+    assert.strictEqual(rows.length, 5, 'should have 5 rows');
+
+    // Update one row
+    const updateResult = runMowTools('state update-phase-row 8 --plans 2/3 --raw', tmpDir);
+    assert.ok(updateResult.success, `Update failed: ${updateResult.error}`);
+
+    // Re-parse and verify all 5 rows are still present
+    const reParseResult = runMowTools('state active-phases --raw', tmpDir);
+    assert.ok(reParseResult.success, `Re-parse failed: ${reParseResult.error}`);
+    const newRows = JSON.parse(reParseResult.output);
+    assert.strictEqual(newRows.length, 5, 'should still have 5 rows after update');
+
+    // Verify only phase 8 changed
+    const phase7 = newRows.find(r => r.phase === '7');
+    const phase8 = newRows.find(r => r.phase === '8');
+    const phase9 = newRows.find(r => r.phase === '9');
+    const phase10 = newRows.find(r => r.phase === '10');
+    const phase11 = newRows.find(r => r.phase === '11');
+
+    assert.strictEqual(phase7.status, 'executing', 'phase 7 status unchanged');
+    assert.strictEqual(phase7.worker, 'worker-green', 'phase 7 worker unchanged');
+    assert.strictEqual(phase8.plans, '2/3', 'phase 8 plans updated');
+    assert.strictEqual(phase8.status, 'executing', 'phase 8 status unchanged');
+    assert.strictEqual(phase9.status, 'blocked (7,8)', 'phase 9 status unchanged');
+    assert.strictEqual(phase10.status, 'blocked (7)', 'phase 10 status unchanged');
+    assert.strictEqual(phase11.status, 'not started', 'phase 11 status unchanged');
+
+    // Verify Session Continuity section survived
+    const finalContent = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(finalContent.includes('## Session Continuity'), 'Session Continuity should survive round-trip');
+  });
+});
