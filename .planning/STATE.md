@@ -9,9 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 ## Current Position
 
-Milestone: v1.1 (in progress — scoping)
-Status: Defining scope via lifecycle walkthrough
-Last activity: 2026-02-20 - Completed quick task 2: Runtime test Agent Teams API (tools unavailable in subagent sessions)
+Milestone: v1.1 (in progress — defining requirements)
+Phase: Not started
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-20 — Milestone v1.1 started
 
 ## Performance Metrics
 
