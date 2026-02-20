@@ -5,13 +5,13 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.0 shipped — planning next milestone
+**Current focus:** v1.1 milestone scoping — lifecycle walkthrough audit
 
 ## Current Position
 
-Milestone: v1.0 shipped (2026-02-20)
-Status: Complete
-Last activity: 2026-02-20 -- v1.0 milestone archived
+Milestone: v1.1 (in progress — scoping)
+Status: Defining scope via lifecycle walkthrough
+Last activity: 2026-02-20 -- v1.1 lifecycle audit session
 
 ## Performance Metrics
 
@@ -36,20 +36,68 @@ Last activity: 2026-02-20 -- v1.0 milestone archived
 
 ### Decisions
 
-Full decision log in PROJECT.md Key Decisions table (updated at v1.0 milestone).
+**v1.1 Session Decisions:**
+
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| README overhaul is v1.1 scope | README documents only 17/34 commands, no lifecycle narrative, no brownfield entry point, missing config/security/troubleshooting sections | — Pending |
+| Lifecycle narrative modeled on GSD but Mowism-specific | GSD's README tells a story; ours is a reference card. Same storytelling approach but centered on worktree parallelism, quality gates, Agent Teams | — Pending |
+| Include security + troubleshooting, skip community ports/star history | Security guidance is universally useful; Mowism is single-runtime (Claude Code only) | — Pending |
+| Distributed input routing model (not centralized or hybrid) | User prefers switching to worker terminal with rich notification in orchestrator showing what's needed, not proxying questions through orchestrator | — Pending |
+| Color-coded terminal badges per agent | Red background for orchestrator (always), rotating bright colors for workers. ANSI background escape codes. Must be clearly differentiated, not dark | — Pending |
+
+Full v1.0 decision log in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
 - Phase-level parallelism in roadmap and execution (`.planning/todos/pending/2026-02-20-phase-level-parallelism-in-roadmap-and-execution.md`)
 - Live agent feedback and multi-phase input routing UX (`.planning/todos/pending/2026-02-20-live-agent-feedback-and-multi-phase-input-routing-ux.md`)
 - Distributed input routing with color-coded agent terminals (`.planning/todos/pending/2026-02-20-distributed-input-routing-with-color-coded-agent-terminals.md`)
+- Research Agent Teams API capabilities and constraints (`.planning/todos/pending/2026-02-20-research-agent-teams-api-capabilities-and-constraints.md`)
+
+### Flagged Issues (not yet todos)
+
+- Install script (`bin/install.sh`) has no Windows support — no .bat/.ps1 equivalent, no WSL detection, no error message. Works on Linux, probably macOS, ignores Windows entirely. Flag for future milestone.
+- `~/.claude/` directory existence not checked by install script (mkdir -p only creates subdirs)
+- No reinstall/upgrade messaging in install script
 
 ### Blockers/Concerns
 
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
+- Agent Teams API capabilities are UNVERIFIED — the entire multi-agent UX design (live feedback, distributed input, color terminals, multi-phase parallelism) depends on what the API actually supports. This is load-bearing. Must research before building.
+
+### Lifecycle Walkthrough Progress
+
+**Completed:**
+- Install process (install.sh) — reviewed, found Windows gap
+- Entry points (new-project vs map-codebase for brownfield) — verified wired up
+- `/mow:new-project` full workflow — reviewed all 9 steps including auto mode
+- `/mow:discuss-phase` full workflow — reviewed gray area identification, scope guardrails, auto-advance
+- Agent Teams integration — reviewed team-lead, team-status, worktree-status, execute-phase
+- Multi-agent UX — identified major gaps in feedback, parallel phase execution, input routing
+
+**Not yet reviewed:**
+- `/mow:plan-phase` — research → plan → verify loop
+- `/mow:execute-phase` — detailed wave execution (reviewed at high level for Agent Teams)
+- `/mow:refine-phase` — tiered quality gates
+- `/mow:verify-work` — conversational UAT
+- `/mow:complete-milestone` — archive and prep
+- `/mow:pause-work` and `/mow:resume-work` — session continuity
+- `/mow:quick` — ad-hoc task mode
+- `/mow:debug` — systematic debugging
+- Quality skills — scope-check, simplify, dead-code-sweep, prove-it, grill-me, change-summary
+
+### Committed Changes This Session
+
+- `15a0d2f` fix: correct GSD attribution and GitHub URLs in README (TÂCHES/@glittercowboy, sneptech)
+- `73d3194` docs: move requirements section up and reformat in README (user edit)
+- `c3978ad` docs: capture todo - Phase-level parallelism
+- `0dc667c` docs: capture todo - Live agent feedback and multi-phase input routing UX
+- `51e2c72` docs: capture todo - Distributed input routing with color-coded agent terminals
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: v1.0 milestone completed and archived
-Resume: `/mow:new-milestone` to start next version
+Stopped at: v1.1 lifecycle walkthrough — completed through discuss-phase and Agent Teams UX, identified 4 major todos
+Resume: Continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`
+Context: User wants to walk the full lifecycle to find gaps before defining milestone requirements. README overhaul is confirmed v1.1 scope. Multi-agent UX (parallel phases, live feedback, input routing, color terminals) is emerging as major v1.1 scope but depends on Agent Teams API research.
