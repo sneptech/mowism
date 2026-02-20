@@ -31,7 +31,7 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 - [ ] Phase-level parallelism — DAG dependency graph in roadmap (not linear chain), multi-phase execution across worktrees simultaneously — v1.1
 - [ ] Live agent feedback — message-driven progress reporting from phase workers to orchestrator terminal — v1.1
 - [ ] Distributed input routing with color-coded agent terminals — user switches to worker terminal for input, orchestrator shows rich notifications with phase/mode/terminal info — v1.1
-- [ ] README overhaul — lifecycle narrative, all 34 commands documented, brownfield entry point, config/security/troubleshooting sections — v1.1
+- [ ] README overhaul — lifecycle narrative, all 35 commands documented, brownfield entry point, config/security/troubleshooting sections — v1.1
 
 ### Out of Scope
 
@@ -60,7 +60,7 @@ Tech stack: Node.js (mow-tools.cjs), Bash (install.sh), Markdown (workflows, com
 - Phase-level parallelism (DAG roadmap, concurrent phase execution)
 - Live agent feedback (message-driven progress in orchestrator)
 - Distributed input routing (color-coded terminals, rich notifications)
-- README overhaul (lifecycle narrative, all 34 commands, brownfield entry)
+- README overhaul (lifecycle narrative, all 35 commands, brownfield entry)
 
 ## Constraints
 

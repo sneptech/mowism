@@ -37,7 +37,7 @@ Phases 7 and 8 can execute in parallel (different file domains, no data dependen
 - [x] **Phase 8: DAG-Based Phase Scheduling** - Dependency declarations, topological sort, parallel track detection (completed 2026-02-20)
 - [x] **Phase 9: Multi-Phase Execution Engine** - Concurrent phase workers across worktrees via Agent Teams (completed 2026-02-20)
 - [x] **Phase 10: Live Feedback and Visual Differentiation** - Structured milestone messages, color-coded terminals, input routing (completed 2026-02-20)
-- [x] **Phase 11: README Overhaul** - Lifecycle narrative, all 34 commands, brownfield entry, config/security/troubleshooting (completed 2026-02-20)
+- [x] **Phase 11: README Overhaul** - Lifecycle narrative, all 35 commands, brownfield entry, config/security/troubleshooting (completed 2026-02-20)
 - [ ] **Phase 12: Audit Gap Closure** - Standardize SendMessage recipient, add requirements_completed to SUMMARY template, fix stale counts
 
 ## Phase Details
@@ -113,7 +113,7 @@ Plans:
 **Requirements**: DOC-01, DOC-02, DOC-03, DOC-04
 **Success Criteria** (what must be TRUE):
   1. README includes a lifecycle narrative covering the full project workflow from install through milestone completion, including multi-agent parallel execution
-  2. All 34+ `/mow:*` commands are documented with description, usage, and examples
+  2. All 35 `/mow:*` commands are documented with description, usage, and examples
   3. Brownfield entry point is documented -- existing codebase to `map-codebase` to `new-milestone` workflow is clear
   4. Configuration options, security guidance (API keys, permissions), and troubleshooting sections are present and actionable
 **Plans**: 3 plans
