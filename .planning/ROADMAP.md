@@ -115,7 +115,12 @@ Plans:
   2. All 34+ `/mow:*` commands are documented with description, usage, and examples
   3. Brownfield entry point is documented -- existing codebase to `map-codebase` to `new-milestone` workflow is clear
   4. Configuration options, security guidance (API keys, permissions), and troubleshooting sections are present and actionable
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 11-01-PLAN.md -- README scaffold, opening, install, lifecycle narrative, brownfield entry
+- [ ] 11-02-PLAN.md -- Complete command reference (35 /mow:* commands + 7 quality skills)
+- [ ] 11-03-PLAN.md -- Configuration, security, troubleshooting, directory structure, common workflows
 
 ## Progress
 
@@ -134,4 +139,4 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 8. DAG-Based Phase Scheduling | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 9. Multi-Phase Execution Engine | v1.1 | Complete    | 2026-02-20 | - |
 | 10. Live Feedback and Visual Differentiation | 3/3 | Complete    | 2026-02-20 | - |
-| 11. README Overhaul | v1.1 | 0/TBD | Not started | - |
+| 11. README Overhaul | v1.1 | 0/3 | Not started | - |
