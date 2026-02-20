@@ -3263,3 +3263,348 @@ Last session: 2026-02-20
     assert.ok(finalContent.includes('## Session Continuity'), 'Session Continuity should survive round-trip');
   });
 });
+
+// ─── Per-Phase STATUS.md Tests ────────────────────────────────────────────────
+
+describe('status commands', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  /**
+   * Helper: create a phase directory with mock PLAN.md files
+   */
+  function setupPhaseWithPlans(phaseDir, plans) {
+    fs.mkdirSync(phaseDir, { recursive: true });
+    for (const [filename, taskCount] of plans) {
+      const tasks = Array.from({ length: taskCount }, (_, i) =>
+        `<task type="auto">\n  <name>Task ${i + 1}</name>\n</task>`
+      ).join('\n\n');
+      fs.writeFileSync(path.join(phaseDir, filename), `---\nphase: 07\n---\n\n${tasks}\n`);
+    }
+  }
+
+  /**
+   * Helper: create a STATUS.md template in the temp project
+   */
+  function setupTemplate(tmpDir) {
+    const templatesDir = path.join(tmpDir, 'mowism', 'templates');
+    fs.mkdirSync(templatesDir, { recursive: true });
+    const template = `# Phase {phase_number}: {phase_name} -- Status
+
+**Phase:** {phase_number}
+**Status:** not started
+**Worker:** --
+**Worktree:** --
+**Started:** --
+**Last update:** --
+**Blocker mode:** skip
+
+## Plan Progress
+
+| Plan | Status | Started | Duration | Commit | Tasks |
+|------|--------|---------|----------|--------|-------|
+
+## Aggregate
+
+**Plans:** 0 complete, 0 in progress, 0 not started, 0 failed
+**Commits:** --
+
+## Blockers
+
+None.
+
+## Decisions
+
+None.
+
+## Context
+
+None.
+`;
+    fs.writeFileSync(path.join(templatesDir, 'status.md'), template);
+  }
+
+  /**
+   * Helper: write a pre-built STATUS.md into a phase directory
+   */
+  function writeStatusMd(phaseDir, content) {
+    fs.writeFileSync(path.join(phaseDir, '07-STATUS.md'), content);
+  }
+
+  test('status init creates STATUS.md from template', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    setupPhaseWithPlans(phaseDir, [
+      ['07-01-PLAN.md', 2],
+      ['07-02-PLAN.md', 3],
+    ]);
+    setupTemplate(tmpDir);
+
+    const result = runMowTools('status init 7', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.created, true, 'should report created');
+    assert.strictEqual(output.plans, 2, 'should find 2 plans');
+
+    // Verify file exists and has correct content
+    const statusPath = path.join(phaseDir, '07-STATUS.md');
+    assert.ok(fs.existsSync(statusPath), 'STATUS.md should exist');
+
+    const content = fs.readFileSync(statusPath, 'utf-8');
+    assert.ok(content.includes('**Phase:** 07'), 'should contain phase number');
+    assert.ok(content.includes('07-01 | not started'), 'should have 07-01 row');
+    assert.ok(content.includes('07-02 | not started'), 'should have 07-02 row');
+    assert.ok(content.includes('0/2'), 'should have task count 0/2 for plan 1');
+    assert.ok(content.includes('0/3'), 'should have task count 0/3 for plan 2');
+  });
+
+  test('status init fails gracefully for missing phase', () => {
+    setupTemplate(tmpDir);
+    const result = runMowTools('status init 99', tmpDir);
+    assert.strictEqual(result.success, false, 'should fail');
+    assert.ok(result.error.includes('Phase') || result.error.includes('not found'),
+      `should mention phase not found, got: ${result.error}`);
+  });
+
+  test('status read parses STATUS.md correctly', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    fs.mkdirSync(phaseDir, { recursive: true });
+
+    writeStatusMd(phaseDir, `# Phase 07: Test Phase -- Status
+
+**Phase:** 07
+**Status:** executing
+**Worker:** worker-green
+**Worktree:** /tmp/wt-7
+**Started:** 2026-02-20T10:00:00Z
+**Last update:** 2026-02-20T10:15:00Z
+**Blocker mode:** skip
+
+## Plan Progress
+
+| Plan | Status | Started | Duration | Commit | Tasks |
+|------|--------|---------|----------|--------|-------|
+| 07-01 | complete | 10:00 | 3min | a1b2c3d | 4/4 |
+| 07-02 | in progress | 10:05 | -- | -- | 2/5 |
+
+## Aggregate
+
+**Plans:** 1 complete, 1 in progress, 0 not started, 0 failed
+**Commits:** a1b2c3d
+
+## Blockers
+
+None.
+
+## Decisions
+
+None.
+
+## Context
+
+None.
+`);
+
+    const result = runMowTools('status read 7', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.status, 'executing', 'should extract status');
+    assert.strictEqual(parsed.worker, 'worker-green', 'should extract worker');
+    assert.strictEqual(parsed.plans.length, 2, 'should have 2 plans');
+    assert.strictEqual(parsed.plans[0].status, 'complete', 'first plan should be complete');
+    assert.strictEqual(parsed.plans[0].commit, 'a1b2c3d', 'first plan should have commit');
+    assert.strictEqual(parsed.plans[1].status, 'in progress', 'second plan should be in progress');
+    assert.strictEqual(parsed.aggregate.complete, 1, 'should count 1 complete');
+    assert.strictEqual(parsed.aggregate.in_progress, 1, 'should count 1 in progress');
+  });
+
+  test('status write updates a single plan row', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    setupPhaseWithPlans(phaseDir, [
+      ['07-01-PLAN.md', 2],
+      ['07-02-PLAN.md', 3],
+    ]);
+    setupTemplate(tmpDir);
+
+    // Initialize first
+    runMowTools('status init 7', tmpDir);
+
+    // Write in progress status for 07-01
+    const result = runMowTools('status write 7 --plan 07-01 --status "in progress"', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.updated, true, 'should report updated');
+    assert.strictEqual(output.plan, '07-01', 'should report plan');
+    assert.strictEqual(output.new_status, 'in progress', 'should report new status');
+
+    // Read back and verify
+    const content = fs.readFileSync(path.join(phaseDir, '07-STATUS.md'), 'utf-8');
+    assert.ok(content.includes('07-01 | in progress'), '07-01 should be in progress');
+    assert.ok(content.includes('07-02 | not started'), '07-02 should remain not started');
+    assert.ok(content.includes('**Status:** executing'), 'phase status should be executing');
+    assert.ok(!content.includes('**Last update:** --'), 'last update should have timestamp');
+  });
+
+  test('status write handles plan completion with commit SHA', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    setupPhaseWithPlans(phaseDir, [
+      ['07-01-PLAN.md', 2],
+      ['07-02-PLAN.md', 3],
+    ]);
+    setupTemplate(tmpDir);
+
+    // Initialize and set to in progress first
+    runMowTools('status init 7', tmpDir);
+    runMowTools('status write 7 --plan 07-01 --status "in progress"', tmpDir);
+
+    // Now mark as complete with commit and duration
+    const result = runMowTools('status write 7 --plan 07-01 --status complete --commit a1b2c3d --duration 3min', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const content = fs.readFileSync(path.join(phaseDir, '07-STATUS.md'), 'utf-8');
+    assert.ok(content.includes('07-01 | complete'), '07-01 should be complete');
+    assert.ok(content.includes('a1b2c3d'), 'should contain commit SHA');
+    assert.ok(content.includes('3min'), 'should contain duration');
+    assert.ok(content.includes('1 complete'), 'aggregate should show 1 complete');
+  });
+
+  test('status write fails for unknown plan', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    setupPhaseWithPlans(phaseDir, [
+      ['07-01-PLAN.md', 2],
+    ]);
+    setupTemplate(tmpDir);
+
+    runMowTools('status init 7', tmpDir);
+
+    const result = runMowTools('status write 7 --plan 07-99 --status "in progress"', tmpDir);
+    assert.strictEqual(result.success, false, 'should fail');
+    assert.ok(result.error.includes('07-99') || result.error.includes('not found'),
+      `should mention plan not found, got: ${result.error}`);
+  });
+
+  test('status aggregate recalculates counts', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    fs.mkdirSync(phaseDir, { recursive: true });
+
+    writeStatusMd(phaseDir, `# Phase 07: Test Phase -- Status
+
+**Phase:** 07
+**Status:** executing
+**Worker:** --
+**Worktree:** --
+**Started:** --
+**Last update:** --
+**Blocker mode:** skip
+
+## Plan Progress
+
+| Plan | Status | Started | Duration | Commit | Tasks |
+|------|--------|---------|----------|--------|-------|
+| 07-01 | complete | 10:00 | 3min | a1b2c3d | 2/2 |
+| 07-02 | in progress | 10:05 | -- | -- | 1/3 |
+| 07-03 | not started | -- | -- | -- | 0/2 |
+
+## Aggregate
+
+**Plans:** 0 complete, 0 in progress, 0 not started, 0 failed
+**Commits:** --
+
+## Blockers
+
+None.
+
+## Decisions
+
+None.
+
+## Context
+
+None.
+`);
+
+    const result = runMowTools('status aggregate 7', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.complete, 1, 'should count 1 complete');
+    assert.strictEqual(output.in_progress, 1, 'should count 1 in progress');
+    assert.strictEqual(output.not_started, 1, 'should count 1 not started');
+    assert.strictEqual(output.failed, 0, 'should count 0 failed');
+    assert.deepStrictEqual(output.commits, ['a1b2c3d'], 'should collect commit SHAs');
+
+    // Verify the file was updated
+    const content = fs.readFileSync(path.join(phaseDir, '07-STATUS.md'), 'utf-8');
+    assert.ok(content.includes('1 complete, 1 in progress, 1 not started, 0 failed'),
+      'aggregate section should be updated');
+  });
+
+  test('status write updates phase status to complete when all plans complete', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    setupPhaseWithPlans(phaseDir, [
+      ['07-01-PLAN.md', 2],
+      ['07-02-PLAN.md', 3],
+    ]);
+    setupTemplate(tmpDir);
+
+    runMowTools('status init 7', tmpDir);
+
+    // Complete both plans
+    runMowTools('status write 7 --plan 07-01 --status complete --commit abc1234', tmpDir);
+    runMowTools('status write 7 --plan 07-02 --status complete --commit def5678', tmpDir);
+
+    const content = fs.readFileSync(path.join(phaseDir, '07-STATUS.md'), 'utf-8');
+    assert.ok(content.includes('**Status:** complete'), 'phase status should be complete');
+    assert.ok(content.includes('2 complete, 0 in progress, 0 not started, 0 failed'),
+      'aggregate should show all complete');
+    assert.ok(content.includes('abc1234') && content.includes('def5678'),
+      'commits section should list both SHAs');
+  });
+
+  test('status init pre-populates task counts from plan files', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-test-phase');
+    // Create plan with 5 tasks
+    fs.mkdirSync(phaseDir, { recursive: true });
+    const planContent = `---
+phase: 07
+plan: 01
+---
+
+<task type="auto">
+  <name>Task 1</name>
+</task>
+
+<task type="auto">
+  <name>Task 2</name>
+</task>
+
+<task type="auto">
+  <name>Task 3</name>
+</task>
+
+<task type="checkpoint:human-verify">
+  <name>Task 4</name>
+</task>
+
+<task type="auto">
+  <name>Task 5</name>
+</task>
+`;
+    fs.writeFileSync(path.join(phaseDir, '07-01-PLAN.md'), planContent);
+    setupTemplate(tmpDir);
+
+    runMowTools('status init 7', tmpDir);
+
+    const content = fs.readFileSync(path.join(phaseDir, '07-STATUS.md'), 'utf-8');
+    assert.ok(content.includes('0/5'), 'should count all 5 tasks including checkpoint');
+  });
+});
