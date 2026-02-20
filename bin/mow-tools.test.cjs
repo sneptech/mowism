@@ -2816,7 +2816,7 @@ describe('message format command', () => {
     const result = runMowTools('message format plan_started --phase 7 --plan 07-01 --raw');
     assert.ok(result.success, `Command failed: ${result.error}`);
     const msg = JSON.parse(result.output);
-    assert.strictEqual(msg.v, 1, 'schema version should be 1');
+    assert.strictEqual(msg.v, 2, 'schema version should be 2');
     assert.strictEqual(msg.type, 'plan_started', 'type should be plan_started');
     assert.strictEqual(msg.phase, '7', 'phase should be 7');
     assert.strictEqual(msg.plan, '07-01', 'plan should be 07-01');
@@ -2829,7 +2829,7 @@ describe('message format command', () => {
     const result = runMowTools('message format plan_complete --phase 7 --plan 07-01 --commit a1b2c3d --duration-min 3 --raw');
     assert.ok(result.success, `Command failed: ${result.error}`);
     const msg = JSON.parse(result.output);
-    assert.strictEqual(msg.v, 1, 'schema version should be 1');
+    assert.strictEqual(msg.v, 2, 'schema version should be 2');
     assert.strictEqual(msg.type, 'plan_complete', 'type should be plan_complete');
     assert.strictEqual(msg.phase, '7', 'phase should be 7');
     assert.strictEqual(msg.plan, '07-01', 'plan should be 07-01');
@@ -2865,7 +2865,7 @@ describe('message format command', () => {
       assert.ok(result.success, `${type} failed: ${result.error}`);
       const msg = JSON.parse(result.output);
       assert.strictEqual(msg.type, type, `type should be ${type}`);
-      assert.strictEqual(msg.v, 1, `${type} should have schema version 1`);
+      assert.strictEqual(msg.v, 2, `${type} should have schema version 2`);
       assert.ok(msg.ts, `${type} should have timestamp`);
     }
   });

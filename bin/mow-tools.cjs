@@ -179,9 +179,49 @@ const MODEL_PROFILES = {
   'mow-integration-checker':  { quality: 'sonnet', balanced: 'sonnet', budget: 'haiku' },
 };
 
+// ─── ANSI 256-Color Helpers ──────────────────────────────────────────────────
+
+function supportsColor() {
+  if (process.env.NO_COLOR !== undefined) return 'none';
+  if (process.env.FORCE_COLOR !== undefined) return '256';
+  if (!process.stdout.isTTY) return 'none';
+  const term = process.env.TERM || '';
+  if (term.includes('256color') || term.includes('truecolor')) return '256';
+  return '16';
+}
+
+function color256fg(n, text) {
+  if (supportsColor() === 'none') return text;
+  return `\x1b[38;5;${n}m${text}\x1b[39m`;
+}
+
+function color256bg(n, text) {
+  if (supportsColor() === 'none') return text;
+  return `\x1b[48;5;${n}m${text}\x1b[49m`;
+}
+
+function color256(fg, bg, text) {
+  if (supportsColor() === 'none') return text;
+  return `\x1b[38;5;${fg}m\x1b[48;5;${bg}m${text}\x1b[0m`;
+}
+
+// ─── Phase Color Palette ─────────────────────────────────────────────────────
+
+const PHASE_PALETTE = [33, 37, 71, 142, 166, 133, 44, 172, 63, 108, 175, 39];
+const PHASE_PALETTE_FG = [231, 231, 16, 16, 16, 231, 16, 16, 231, 16, 16, 16];
+
+function phaseColor(phaseNumber) {
+  const n = Math.floor(parseFloat(phaseNumber));
+  return { bg: PHASE_PALETTE[n % 12], fg: PHASE_PALETTE_FG[n % 12] };
+}
+
+// ─── Input Types ─────────────────────────────────────────────────────────────
+
+const INPUT_TYPES = ['discussion_prompt', 'permission_prompt', 'error_resolution', 'worker_failed', 'verification_question', 'planning_approval'];
+
 // ─── Message Protocol Schema ─────────────────────────────────────────────────
 
-const MESSAGE_SCHEMA_VERSION = 1;
+const MESSAGE_SCHEMA_VERSION = 2;
 
 const MESSAGE_REQUIRED_FIELDS = {
   plan_started: ['phase', 'plan'],
@@ -191,10 +231,16 @@ const MESSAGE_REQUIRED_FIELDS = {
   blocker: ['phase', 'plan', 'blocker', 'action'],
   state_change: ['phase', 'plan', 'from_state', 'to_state'],
   ack: ['ref_type', 'ref_plan'],
+  task_claimed: ['phase', 'plan', 'task'],
+  commit_made: ['phase', 'plan', 'commit_hash'],
+  task_complete: ['phase', 'plan', 'task'],
+  stage_transition: ['phase', 'from_stage', 'to_stage'],
+  input_needed: ['phase', 'input_type', 'detail'],
+  plan_created: ['phase', 'plan'],
 };
 
 // VERBOSE VERSION (milestones + state transitions -- default)
-const ENABLED_EVENTS = ['plan_started', 'plan_complete', 'phase_complete', 'error', 'blocker', 'state_change', 'ack'];
+const ENABLED_EVENTS = ['plan_started', 'plan_complete', 'phase_complete', 'error', 'blocker', 'state_change', 'ack', 'task_claimed', 'commit_made', 'task_complete', 'stage_transition', 'input_needed', 'plan_created'];
 // LEAN VERSION (milestones only -- uncomment to switch)
 // const ENABLED_EVENTS = ['plan_complete', 'phase_complete', 'error', 'blocker', 'ack'];
 
@@ -906,6 +952,11 @@ const CONFIG_DEFAULTS = {
     circuit_breaker_threshold: 2,
     merge_timing: 'batch',
     worktree_metadata_push: false,
+  },
+  feedback: {
+    terminal_bell: false,
+    dashboard_redraw: false,
+    event_log_count: 6,
   },
 };
 
@@ -1711,6 +1762,18 @@ function cmdMessageSummary(type, fields) {
       return `Phase ${phase}: ${plan} ${fields.to_state || '?'}`;
     case 'ack':
       return `Ack: ${fields.ref_type || '?'} ${fields.ref_plan || '?'}`;
+    case 'task_claimed':
+      return `Phase ${phase}: task ${fields.task || '?'} claimed`;
+    case 'commit_made':
+      return `Phase ${phase}: commit ${fields.commit_hash || '?'}`;
+    case 'task_complete':
+      return `Phase ${phase}: task ${fields.task || '?'} complete`;
+    case 'stage_transition':
+      return `Phase ${phase}: ${fields.from_stage || '?'} -> ${fields.to_stage || '?'}`;
+    case 'input_needed':
+      return `Phase ${phase}: input needed (${fields.input_type || '?'})`;
+    case 'plan_created':
+      return `Phase ${phase}: plan ${plan} created`;
     default:
       return `Phase ${phase}: ${type}`;
   }
@@ -1730,12 +1793,22 @@ function cmdMessageFormat(type, fields, raw, includeSummary) {
     error(`Missing required fields for ${type}: ${missing.join(', ')}`);
   }
 
+  // Validate input_type for input_needed messages
+  if (type === 'input_needed' && fields.input_type && !INPUT_TYPES.includes(fields.input_type)) {
+    process.stderr.write(`Warning: Unrecognized input_type: ${fields.input_type}. Known types: ${INPUT_TYPES.join(', ')}\n`);
+  }
+
   const msg = {
     v: MESSAGE_SCHEMA_VERSION,
     type,
     ts: new Date().toISOString(),
     ...fields,
   };
+
+  // Handle optional activity field (max 40 chars)
+  if (fields.activity !== undefined) {
+    msg.activity = String(fields.activity).slice(0, 40);
+  }
 
   if (includeSummary) {
     msg.summary = cmdMessageSummary(type, fields);
