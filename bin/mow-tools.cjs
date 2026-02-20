@@ -96,6 +96,17 @@
  *   chat-log prune --from <id>         Keep only last N entries
  *     --to <id> [--keep N]             Default: 200
  *
+ * Dashboard:
+ *   dashboard render [--raw]           Render live dashboard (summary + events)
+ *     [--width N]                      Override terminal width
+ *   dashboard event add                Add event to dashboard event log
+ *     --type <type> --phase <N>        Event type + phase number
+ *     [--detail <text>] [--raw]        Optional detail text
+ *   dashboard event prune --keep <N>   Prune event log to last N entries
+ *     [--raw]
+ *   dashboard state [--raw]            Output dashboard state JSON
+ *   dashboard clear                    Remove event log + state files
+ *
  * Scaffolding:
  *   scaffold context --phase <N>       Create CONTEXT.md template
  *   scaffold uat --phase <N>           Create UAT.md template
@@ -314,6 +325,407 @@ function renderProgressBar(percent, width, isBlocked, colorCode) {
   }
 
   return `[${fillStr}${emptyStr}]`;
+}
+
+// ─── Dashboard Event Storage ─────────────────────────────────────────────────
+
+function dashboardEventsPath(cwd) {
+  return path.join(cwd, '.planning', 'dashboard-events.ndjson');
+}
+
+function dashboardStatePath(cwd) {
+  return path.join(cwd, '.planning', 'dashboard-state.json');
+}
+
+function readDashboardState(cwd) {
+  const sp = dashboardStatePath(cwd);
+  if (!fs.existsSync(sp)) {
+    return { pinned: [], last_line_count: 0, last_render_ts: null };
+  }
+  try {
+    return JSON.parse(fs.readFileSync(sp, 'utf-8'));
+  } catch {
+    return { pinned: [], last_line_count: 0, last_render_ts: null };
+  }
+}
+
+function writeDashboardState(cwd, state) {
+  const sp = dashboardStatePath(cwd);
+  fs.writeFileSync(sp, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+}
+
+function readLastNEvents(cwd, n) {
+  const ep = dashboardEventsPath(cwd);
+  if (!fs.existsSync(ep)) return [];
+  const content = fs.readFileSync(ep, 'utf-8');
+  const lines = content.trim().split('\n').filter(l => l.trim());
+  const entries = lines.map(line => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
+  return entries.slice(-n);
+}
+
+function cmdDashboardEventAdd(cwd, type, phase, detail, raw) {
+  if (!type) { error('--type required for dashboard event add'); }
+
+  const ep = dashboardEventsPath(cwd);
+  const dir = path.dirname(ep);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const event = {
+    type,
+    phase: phase || null,
+    detail: detail || '',
+    ts: new Date().toISOString(),
+  };
+
+  fs.appendFileSync(ep, JSON.stringify(event) + '\n');
+
+  // Auto-prune: if file exceeds 100 events after append, truncate to last 50
+  const content = fs.readFileSync(ep, 'utf-8');
+  const lines = content.trim().split('\n').filter(l => l.trim());
+  if (lines.length > 100) {
+    const kept = lines.slice(-50);
+    fs.writeFileSync(ep, kept.join('\n') + '\n', 'utf-8');
+  }
+
+  // Pinned notification management
+  const state = readDashboardState(cwd);
+
+  if (type === 'input_needed' || type === 'error') {
+    // Auto-pin input_needed and error events
+    state.pinned.push({
+      phase: phase || null,
+      type,
+      input_type: type === 'input_needed' ? (detail || null) : null,
+      ts: event.ts,
+      detail: detail || '',
+    });
+    writeDashboardState(cwd, state);
+  } else if (phase) {
+    // Auto-dismiss: remove pinned notifications for this phase when a non-input_needed, non-error event arrives
+    const before = state.pinned.length;
+    state.pinned = state.pinned.filter(p => p.phase !== phase);
+    if (state.pinned.length !== before) {
+      writeDashboardState(cwd, state);
+    }
+  }
+
+  output(event, raw, JSON.stringify(event));
+}
+
+function cmdDashboardEventPrune(cwd, keep, raw) {
+  const ep = dashboardEventsPath(cwd);
+  if (!fs.existsSync(ep)) {
+    output({ pruned: false, reason: 'File not found' }, raw, JSON.stringify({ pruned: false, reason: 'File not found' }));
+    return;
+  }
+
+  const content = fs.readFileSync(ep, 'utf-8');
+  const lines = content.trim().split('\n').filter(l => l.trim());
+  const before = lines.length;
+  const kept = lines.slice(-keep);
+  fs.writeFileSync(ep, kept.join('\n') + '\n', 'utf-8');
+
+  const result = { pruned: true, before, after: kept.length };
+  output(result, raw, JSON.stringify(result));
+}
+
+// ─── Dashboard Renderers ─────────────────────────────────────────────────────
+
+function renderSummaryRow(phase, width) {
+  width = width || 80;
+  const pc = phaseColor(phase.number);
+
+  // Completed phases: single collapsed line
+  if (phase.status === 'complete' || phase.status === 'completed') {
+    const line = `\u2713 Phase ${phase.number} (${phase.elapsed || '--'})`;
+    return color256fg(pc.bg, line);
+  }
+
+  // Phase label: truncated to 25 chars
+  let label = `Phase ${phase.number}: ${phase.name || ''}`;
+  if (label.length > 25) label = label.slice(0, 22) + '...';
+  label = label.padEnd(25);
+
+  // Progress bar: 10 wide
+  const bar = renderProgressBar(phase.percent || 0, 10, phase.isBlocked, pc.bg);
+
+  // Percentage: right-aligned 4 chars
+  const pct = String(Math.round(phase.percent || 0) + '%').padStart(4);
+
+  // Activity: truncated to 22 chars
+  let activity = phase.isBlocked ? 'Awaiting input' : (phase.activity || '');
+  if (activity.length > 22) activity = activity.slice(0, 19) + '...';
+  activity = activity.padEnd(22);
+
+  // Elapsed: right-aligned 4 chars
+  const elapsed = (phase.elapsed || '--').padStart(4);
+
+  const rowText = `${label} ${bar} ${pct}  ${activity} ${elapsed}`;
+  return color256fg(pc.bg, rowText);
+}
+
+function renderEventLine(event, width) {
+  width = width || 80;
+  const pc = event.phase ? phaseColor(event.phase) : { bg: 250, fg: 16 };
+
+  // Phase-complete: bold separator line
+  if (event.type === 'phase_complete') {
+    const sepText = `\u2501\u2501\u2501 Phase ${event.phase}: Complete (${event.detail || ''}) \u2501\u2501\u2501`;
+    const colorLevel = supportsColor();
+    if (colorLevel === 'none') return sepText;
+    try {
+      const util = require('util');
+      return color256fg(pc.bg, util.styleText('bold', sepText));
+    } catch {
+      return color256fg(pc.bg, sepText);
+    }
+  }
+
+  // Timestamp: HH:MM from ISO ts
+  let timeStr = '--:--';
+  if (event.ts) {
+    try {
+      const d = new Date(event.ts);
+      timeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    } catch { /* keep default */ }
+  }
+
+  const phaseLabel = event.phase ? `[Phase ${event.phase}]` : '[--]';
+
+  // Icon per event type
+  let icon = '';
+  let detail = event.detail || '';
+  switch (event.type) {
+    case 'commit_made':
+    case 'plan_complete':
+      icon = '\u2713 ';
+      break;
+    case 'error':
+      icon = '\u2717 ';
+      break;
+    case 'input_needed':
+      icon = '\u26A0 ';
+      detail = `INPUT NEEDED: ${event.detail || 'unknown'} -- Switch to Phase ${event.phase} terminal`;
+      break;
+    case 'stage_transition':
+      icon = '\u2192 ';
+      break;
+    case 'task_claimed':
+    case 'plan_created':
+    default:
+      icon = '';
+      break;
+  }
+
+  let line = `${timeStr} ${phaseLabel} ${icon}${detail}`;
+
+  // Stage transitions and phase-level events: bold
+  if (event.type === 'stage_transition') {
+    const colorLevel = supportsColor();
+    if (colorLevel !== 'none') {
+      try {
+        const util = require('util');
+        line = util.styleText('bold', line);
+      } catch { /* no bold fallback */ }
+    }
+  }
+
+  if (line.length > width) line = line.slice(0, width - 3) + '...';
+
+  return color256fg(pc.bg, line);
+}
+
+function renderPinnedNotification(pinned, width) {
+  width = width || 80;
+  const pc = pinned.phase ? phaseColor(pinned.phase) : { bg: 226, fg: 16 };
+
+  let line;
+  if (pinned.type === 'error') {
+    line = `\u2717 [Phase ${pinned.phase || '--'}] ERROR: ${pinned.detail || 'unknown'}`;
+  } else {
+    line = `\u26A0 [Phase ${pinned.phase || '--'}] INPUT NEEDED: ${pinned.input_type || pinned.detail || 'unknown'} -- Switch to Phase ${pinned.phase} terminal`;
+  }
+
+  if (line.length > width) line = line.slice(0, width - 3) + '...';
+
+  return color256fg(pc.bg, line);
+}
+
+function cmdDashboardRender(cwd, options, raw) {
+  const width = options.width || process.stdout.columns || 80;
+
+  // a. Read Active Phases table from STATE.md
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  let activeRows = [];
+  if (fs.existsSync(statePath)) {
+    const stateContent = fs.readFileSync(statePath, 'utf-8');
+    if (stateContent.includes('## Active Phases')) {
+      activeRows = parseActivePhasesTable(stateContent);
+    }
+  }
+
+  // c. Read last N events
+  let eventCount = 6;
+  try {
+    const configPath = path.join(cwd, '.planning', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.feedback && config.feedback.event_log_count) {
+        eventCount = config.feedback.event_log_count;
+      }
+    }
+  } catch { /* use default */ }
+  // Also check CONFIG_DEFAULTS fallback
+  if (eventCount === 6) eventCount = CONFIG_DEFAULTS.feedback.event_log_count;
+
+  const events = readLastNEvents(cwd, eventCount);
+
+  // d. Read pinned notifications
+  const dashState = readDashboardState(cwd);
+  const pinnedNotifications = dashState.pinned || [];
+
+  // Build pinned phase set for isBlocked detection
+  const pinnedPhases = new Set(pinnedNotifications.map(p => String(p.phase)));
+
+  if (activeRows.length === 0) {
+    if (raw) {
+      output({ lines: 0, events: events.length, pinned: pinnedNotifications.length, phases: 0 }, true, JSON.stringify({ lines: 0, events: events.length, pinned: pinnedNotifications.length, phases: 0 }));
+    } else {
+      const lines = [];
+      if (events.length > 0) {
+        lines.push('No active phases');
+        lines.push('\u2500'.repeat(width));
+        for (const ev of events) {
+          lines.push(renderEventLine(ev, width));
+        }
+      } else {
+        lines.push('No active phases');
+      }
+      if (pinnedNotifications.length > 0) {
+        lines.push('');
+        for (const pin of pinnedNotifications) {
+          lines.push(renderPinnedNotification(pin, width));
+        }
+      }
+      process.stdout.write(lines.join('\n') + '\n');
+      dashState.last_line_count = lines.length;
+      dashState.last_render_ts = new Date().toISOString();
+      writeDashboardState(cwd, dashState);
+    }
+    return;
+  }
+
+  // b. For each active phase, assemble row data
+  const phaseRows = [];
+  for (const row of activeRows) {
+    // Skip phases not yet started
+    if (row.status === 'not started') continue;
+
+    const phaseNum = row.phase;
+    let percent = 0;
+    let planInfo = row.plans || '0/0';
+
+    // Try to read STATUS.md for plan counts
+    try {
+      const resolved = resolveStatusPath(cwd, phaseNum);
+      if (resolved && fs.existsSync(resolved.statusPath)) {
+        const statusContent = fs.readFileSync(resolved.statusPath, 'utf-8');
+        const plans = parsePlanProgressTable(statusContent);
+        if (plans.length > 0) {
+          const completed = plans.filter(p => p.status === 'complete' || p.status === 'completed').length;
+          percent = Math.round((completed / plans.length) * 100);
+          planInfo = `${completed}/${plans.length}`;
+        }
+      }
+    } catch { /* use 0% */ }
+
+    // Parse plans field fallback (e.g., "2/3")
+    if (percent === 0 && planInfo.includes('/')) {
+      const parts = planInfo.split('/');
+      const done = parseInt(parts[0], 10);
+      const total = parseInt(parts[1], 10);
+      if (total > 0) percent = Math.round((done / total) * 100);
+    }
+
+    // Activity: most recent event for this phase
+    let activity = '';
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (String(events[i].phase) === String(phaseNum)) {
+        activity = events[i].detail || '';
+        break;
+      }
+    }
+
+    const isBlocked = pinnedPhases.has(String(phaseNum));
+
+    phaseRows.push({
+      number: phaseNum,
+      name: row.name || '',
+      status: row.status,
+      plans: planInfo,
+      worker: row.worker || '',
+      lastUpdate: row.last_update || '',
+      activity,
+      elapsed: row.last_update || '--',
+      percent,
+      isBlocked,
+    });
+  }
+
+  // e. Render summary rows
+  const lines = [];
+  for (const pr of phaseRows) {
+    lines.push(renderSummaryRow(pr, width));
+  }
+
+  // f. Separator line
+  lines.push('\u2500'.repeat(width));
+
+  // g. Render event lines (non-pinned events)
+  for (const ev of events) {
+    lines.push(renderEventLine(ev, width));
+  }
+
+  // h. Render pinned notification lines
+  if (pinnedNotifications.length > 0) {
+    lines.push('');
+    for (const pin of pinnedNotifications) {
+      lines.push(renderPinnedNotification(pin, width));
+    }
+  }
+
+  // i. Terminal bell if enabled and pinned notifications exist
+  let bellChar = '';
+  try {
+    const configPath = path.join(cwd, '.planning', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.feedback && config.feedback.terminal_bell && pinnedNotifications.length > 0) {
+        bellChar = '\x07';
+      }
+    }
+  } catch { /* no bell */ }
+
+  // j. Output
+  if (raw) {
+    output({ lines: lines.length, events: events.length, pinned: pinnedNotifications.length, phases: phaseRows.length }, true, JSON.stringify({ lines: lines.length, events: events.length, pinned: pinnedNotifications.length, phases: phaseRows.length }));
+  } else {
+    process.stdout.write(lines.join('\n') + '\n' + bellChar);
+    dashState.last_line_count = lines.length;
+    dashState.last_render_ts = new Date().toISOString();
+    writeDashboardState(cwd, dashState);
+  }
+}
+
+function cmdDashboardClear(cwd, raw) {
+  const ep = dashboardEventsPath(cwd);
+  const sp = dashboardStatePath(cwd);
+  let removed = [];
+  if (fs.existsSync(ep)) { fs.unlinkSync(ep); removed.push('events'); }
+  if (fs.existsSync(sp)) { fs.unlinkSync(sp); removed.push('state'); }
+  output({ cleared: true, removed }, raw, JSON.stringify({ cleared: true, removed }));
 }
 
 // ─── WorkTrunk Dependency ─────────────────────────────────────────────────────
@@ -7744,6 +8156,45 @@ async function main() {
         );
       } else {
         error('Unknown chat-log subcommand. Available: append, read, prune');
+      }
+      break;
+    }
+
+    case 'dashboard': {
+      const subcommand = args[1];
+      if (subcommand === 'render') {
+        const widthIdx = args.indexOf('--width');
+        cmdDashboardRender(cwd, {
+          width: widthIdx !== -1 ? parseInt(args[widthIdx + 1], 10) : undefined,
+        }, raw);
+      } else if (subcommand === 'event') {
+        const eventSub = args[2];
+        if (eventSub === 'add') {
+          const typeIdx = args.indexOf('--type');
+          const phaseIdx = args.indexOf('--phase');
+          const detailIdx = args.indexOf('--detail');
+          cmdDashboardEventAdd(cwd,
+            typeIdx !== -1 ? args[typeIdx + 1] : null,
+            phaseIdx !== -1 ? args[phaseIdx + 1] : null,
+            detailIdx !== -1 ? args[detailIdx + 1] : null,
+            raw
+          );
+        } else if (eventSub === 'prune') {
+          const keepIdx = args.indexOf('--keep');
+          cmdDashboardEventPrune(cwd,
+            keepIdx !== -1 ? parseInt(args[keepIdx + 1], 10) : 50,
+            raw
+          );
+        } else {
+          error('Unknown dashboard event subcommand. Available: add, prune');
+        }
+      } else if (subcommand === 'state') {
+        const state = readDashboardState(cwd);
+        output(state, raw, JSON.stringify(state));
+      } else if (subcommand === 'clear') {
+        cmdDashboardClear(cwd, raw);
+      } else {
+        error('Unknown dashboard subcommand. Available: render, event, state, clear');
       }
       break;
     }
