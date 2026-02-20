@@ -34,7 +34,7 @@ Phase 8 (DAG Scheduling)  ---+---> Phase 10 (Feedback + Colors) ----/
 Phases 7 and 8 can execute in parallel (different file domains, no data dependencies).
 
 - [x] **Phase 7: State Coherence Foundation** - Single-writer protocol, per-phase STATUS.md, structured messaging (completed 2026-02-20)
-- [ ] **Phase 8: DAG-Based Phase Scheduling** - Dependency declarations, topological sort, parallel track detection
+- [x] **Phase 8: DAG-Based Phase Scheduling** - Dependency declarations, topological sort, parallel track detection (completed 2026-02-20)
 - [ ] **Phase 9: Multi-Phase Execution Engine** - Concurrent phase workers across worktrees via Agent Teams
 - [ ] **Phase 10: Live Feedback and Visual Differentiation** - Structured milestone messages, color-coded terminals, input routing
 - [ ] **Phase 11: README Overhaul** - Lifecycle narrative, all 34 commands, brownfield entry, config/security/troubleshooting
@@ -68,12 +68,12 @@ Plans:
   1. ROADMAP.md `depends_on` field accepts comma-separated phase lists (not just "previous phase"), and existing roadmap parsing still works
   2. Running `mow-tools.cjs roadmap analyze-dag` produces correct execution waves from any valid DAG (tested with diamond, linear, independent, and complex topologies)
   3. The roadmapper agent auto-detects which phases can run in parallel based on requirement dependencies and emits `depends_on` and `Parallel with` annotations
-**Plans**: 1/3 plans executed
+**Plans**: 3/3 plans complete
 
 Plans:
-- [ ] 08-01-PLAN.md -- Fix regex format bug, add parseDependsOn() helper, update tests
-- [ ] 08-02-PLAN.md -- Implement topoGenerations() and roadmap analyze-dag subcommand (TDD)
-- [ ] 08-03-PLAN.md -- Create mow-dag-analyzer agent and integrate into roadmapper workflow
+- [x] 08-01-PLAN.md -- Fix regex format bug, add parseDependsOn() helper, update tests
+- [x] 08-02-PLAN.md -- Implement topoGenerations() and roadmap analyze-dag subcommand (TDD)
+- [x] 08-03-PLAN.md -- Create mow-dag-analyzer agent and integrate into roadmapper workflow
 
 ### Phase 9: Multi-Phase Execution Engine
 **Goal**: Multiple independent phases execute simultaneously across worktrees with coordinated orchestration
@@ -120,8 +120,8 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 4. Distribution Portability | v1.0 | 3/3 | Complete | 2026-02-19 |
 | 5. Fix Update Workflow | v1.0 | 1/1 | Complete | 2026-02-19 |
 | 6. Cleanup Orphaned Workflows | v1.0 | 1/1 | Complete | 2026-02-20 |
-| 7. State Coherence Foundation | 3/4 | Complete    | 2026-02-20 | - |
-| 8. DAG-Based Phase Scheduling | 2/3 | In Progress|  | - |
+| 7. State Coherence Foundation | v1.1 | 4/4 | Complete | 2026-02-20 |
+| 8. DAG-Based Phase Scheduling | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 9. Multi-Phase Execution Engine | v1.1 | 0/TBD | Not started | - |
 | 10. Live Feedback and Visual Differentiation | v1.1 | 0/TBD | Not started | - |
 | 11. README Overhaul | v1.1 | 0/TBD | Not started | - |
