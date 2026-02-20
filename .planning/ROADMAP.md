@@ -51,7 +51,13 @@ Phases 7 and 8 can execute in parallel (different file domains, no data dependen
   2. Each phase worker writes progress to its own isolated `phases/XX/STATUS.md` file without touching any other worker's files
   3. Workers send state change notifications to the coordinator via structured JSON messages with a defined schema
   4. STATE.md is a lightweight index (~50-100 lines) linking to per-phase STATUS.md files for detail, not a monolithic dump of all phase state
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 07-01-PLAN.md -- Per-phase STATUS.md template and status CLI subcommands (init/read/write/aggregate)
+- [ ] 07-02-PLAN.md -- Structured JSON message schema, format/parse helpers, and peer chat log infrastructure
+- [ ] 07-03-PLAN.md -- STATE.md Active Phases table, active-phases/update-phase-row subcommands
+- [ ] 07-04-PLAN.md -- Wire execute-plan.md and mow-team-lead.md to single-writer protocol
 
 ### Phase 8: DAG-Based Phase Scheduling
 **Goal**: Roadmaps express arbitrary dependency relationships between phases, and tooling resolves execution order automatically
@@ -109,7 +115,7 @@ Phases 7 and 8 can execute in parallel. Phase 9 requires both 7 and 8. Phase 10 
 | 4. Distribution Portability | v1.0 | 3/3 | Complete | 2026-02-19 |
 | 5. Fix Update Workflow | v1.0 | 1/1 | Complete | 2026-02-19 |
 | 6. Cleanup Orphaned Workflows | v1.0 | 1/1 | Complete | 2026-02-20 |
-| 7. State Coherence Foundation | v1.1 | 0/TBD | Not started | - |
+| 7. State Coherence Foundation | v1.1 | 0/4 | Not started | - |
 | 8. DAG-Based Phase Scheduling | v1.1 | 0/TBD | Not started | - |
 | 9. Multi-Phase Execution Engine | v1.1 | 0/TBD | Not started | - |
 | 10. Live Feedback and Visual Differentiation | v1.1 | 0/TBD | Not started | - |
