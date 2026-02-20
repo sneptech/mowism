@@ -2772,3 +2772,229 @@ Last session: 2026-02-19
     assert.strictEqual(status.active, false, 'should report inactive after stop');
   });
 });
+
+// ─── Message Format Tests ─────────────────────────────────────────────────────
+
+describe('message format command', () => {
+  test('message format plan_started produces valid JSON', () => {
+    const result = runMowTools('message format plan_started --phase 7 --plan 07-01 --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.strictEqual(msg.v, 1, 'schema version should be 1');
+    assert.strictEqual(msg.type, 'plan_started', 'type should be plan_started');
+    assert.strictEqual(msg.phase, '7', 'phase should be 7');
+    assert.strictEqual(msg.plan, '07-01', 'plan should be 07-01');
+    assert.ok(msg.ts, 'should have timestamp');
+    // Validate ISO string
+    assert.ok(!isNaN(Date.parse(msg.ts)), 'ts should be valid ISO string');
+  });
+
+  test('message format plan_complete includes all required fields', () => {
+    const result = runMowTools('message format plan_complete --phase 7 --plan 07-01 --commit a1b2c3d --duration-min 3 --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.strictEqual(msg.v, 1, 'schema version should be 1');
+    assert.strictEqual(msg.type, 'plan_complete', 'type should be plan_complete');
+    assert.strictEqual(msg.phase, '7', 'phase should be 7');
+    assert.strictEqual(msg.plan, '07-01', 'plan should be 07-01');
+    assert.strictEqual(msg.commit, 'a1b2c3d', 'commit should be a1b2c3d');
+    assert.strictEqual(msg.duration_min, '3', 'duration_min should be 3');
+  });
+
+  test('message format validates required fields', () => {
+    const result = runMowTools('message format plan_complete --phase 7 --raw');
+    assert.ok(!result.success, 'should fail with missing fields');
+    assert.ok(result.error.includes('Missing required fields'), 'should mention missing fields');
+  });
+
+  test('message format rejects unknown event types', () => {
+    const result = runMowTools('message format unknown_type --phase 7 --raw');
+    assert.ok(!result.success, 'should fail with unknown type');
+    assert.ok(result.error.includes('Unknown event type'), 'should mention unknown type');
+  });
+
+  test('message format all 7 types produce valid JSON', () => {
+    const typeArgs = {
+      plan_started: '--phase 7 --plan 07-01',
+      plan_complete: '--phase 7 --plan 07-01 --commit abc --duration-min 3',
+      phase_complete: '--phase 7 --plans-completed 4 --total-duration-min 12',
+      error: '--phase 7 --plan 07-02 --error "test error"',
+      blocker: '--phase 7 --plan 07-01 --blocker "blocked" --action skip',
+      state_change: '--phase 7 --plan 07-01 --from-state queued --to-state in_progress',
+      ack: '--ref-type plan_complete --ref-plan 07-01',
+    };
+
+    for (const [type, argStr] of Object.entries(typeArgs)) {
+      const result = runMowTools(`message format ${type} ${argStr} --raw`);
+      assert.ok(result.success, `${type} failed: ${result.error}`);
+      const msg = JSON.parse(result.output);
+      assert.strictEqual(msg.type, type, `type should be ${type}`);
+      assert.strictEqual(msg.v, 1, `${type} should have schema version 1`);
+      assert.ok(msg.ts, `${type} should have timestamp`);
+    }
+  });
+
+  test('message format with --summary includes summary string', () => {
+    const result = runMowTools('message format plan_complete --phase 7 --plan 07-01 --commit abc --duration-min 3 --summary --raw');
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const msg = JSON.parse(result.output);
+    assert.ok(msg.summary, 'should have summary field');
+    assert.ok(msg.summary.includes('Phase 7'), 'summary should include phase');
+    assert.ok(msg.summary.includes('07-01'), 'summary should include plan');
+  });
+
+  test('message format warns on messages over 1KB', () => {
+    // Create a very long error field (~2000 chars)
+    const longError = 'x'.repeat(2000);
+    // Use spawnSync to capture both stdout and stderr independently
+    const { spawnSync } = require('child_process');
+    const proc = spawnSync('node', [TOOLS_PATH, 'message', 'format', 'error', '--phase', '7', '--plan', '07-02', '--error', longError, '--raw'], {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.strictEqual(proc.status, 0, `Command should succeed, got: ${proc.stderr}`);
+    // stderr should contain a warning about exceeding 1KB
+    assert.ok(proc.stderr.includes('Warning') && proc.stderr.includes('1KB'), 'stderr should warn about exceeding 1KB');
+    // stdout should still have valid JSON
+    const msg = JSON.parse(proc.stdout);
+    assert.strictEqual(msg.type, 'error', 'type should still be error');
+  });
+});
+
+// ─── Message Parse Tests ──────────────────────────────────────────────────────
+
+describe('message parse command', () => {
+  test('message parse validates good messages', () => {
+    const validMsg = JSON.stringify({ v: 1, type: 'plan_started', phase: '7', plan: '07-01', ts: '2026-02-20T10:00:00Z' });
+    const result = runMowTools(`message parse '${validMsg}' --raw`);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.valid, true, 'should be valid');
+    assert.strictEqual(parsed.type, 'plan_started', 'type should match');
+    assert.strictEqual(parsed.phase, '7', 'phase should match');
+  });
+
+  test('message parse rejects invalid JSON', () => {
+    const result = runMowTools("message parse 'not json' --raw");
+    assert.ok(result.success, 'command itself should succeed (returns valid:false)');
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.valid, false, 'should be invalid');
+    assert.ok(parsed.error.includes('Invalid JSON'), 'should mention invalid JSON');
+  });
+
+  test('message parse warns on unknown schema version', () => {
+    const futureMsg = JSON.stringify({ v: 99, type: 'plan_started', phase: '7', plan: '07-01', ts: '2026-02-20T10:00:00Z' });
+    const result = runMowTools(`message parse '${futureMsg}' --raw`);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.valid, true, 'should still be valid');
+    assert.ok(parsed.warnings, 'should have warnings');
+    assert.ok(parsed.warnings.some(w => w.includes('Unknown schema version')), 'should warn about unknown version');
+  });
+
+  test('message parse reports missing required fields', () => {
+    const incompleteMsg = JSON.stringify({ v: 1, type: 'plan_complete', phase: '7' });
+    const result = runMowTools(`message parse '${incompleteMsg}' --raw`);
+    assert.ok(result.success, 'command itself should succeed');
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.valid, false, 'should be invalid');
+    assert.ok(parsed.error.includes('Missing required fields'), 'should mention missing fields');
+    assert.ok(parsed.error.includes('commit'), 'should mention commit as missing');
+  });
+});
+
+// ─── Chat Log Tests ───────────────────────────────────────────────────────────
+
+describe('chat-log command', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('chat-log append creates NDJSON file', () => {
+    const result = runMowTools('chat-log append --from phase-07 --to phase-08 --msg "test message" --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.appended, true, 'should report appended');
+
+    // Check file exists
+    const filePath = path.join(tmpDir, '.planning', 'chat-logs', 'phase-07-to-phase-08.ndjson');
+    assert.ok(fs.existsSync(filePath), 'NDJSON file should exist');
+
+    // Check content is valid JSON
+    const content = fs.readFileSync(filePath, 'utf-8').trim();
+    const entry = JSON.parse(content);
+    assert.strictEqual(entry.from, 'phase-07', 'from should match');
+    assert.strictEqual(entry.to, 'phase-08', 'to should match');
+    assert.strictEqual(entry.msg, 'test message', 'msg should match');
+    assert.ok(entry.ts, 'should have timestamp');
+  });
+
+  test('chat-log append uses deterministic filename (sorted order)', () => {
+    // Append with reversed from/to
+    const result = runMowTools('chat-log append --from phase-08 --to phase-07 --msg "reversed" --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    // File should still be named phase-07-to-phase-08.ndjson (lower sorts first)
+    const filePath = path.join(tmpDir, '.planning', 'chat-logs', 'phase-07-to-phase-08.ndjson');
+    assert.ok(fs.existsSync(filePath), 'NDJSON file should use sorted filename');
+
+    // The reversed version should NOT exist
+    const reversedPath = path.join(tmpDir, '.planning', 'chat-logs', 'phase-08-to-phase-07.ndjson');
+    assert.ok(!fs.existsSync(reversedPath), 'reversed filename should not exist');
+  });
+
+  test('chat-log read returns all entries', () => {
+    // Append 3 entries
+    runMowTools('chat-log append --from phase-07 --to phase-08 --msg "msg 1" --raw', tmpDir);
+    runMowTools('chat-log append --from phase-07 --to phase-08 --msg "msg 2" --raw', tmpDir);
+    runMowTools('chat-log append --from phase-07 --to phase-08 --msg "msg 3" --raw', tmpDir);
+
+    // Read
+    const result = runMowTools('chat-log read --from phase-07 --to phase-08 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const entries = JSON.parse(result.output);
+    assert.strictEqual(entries.length, 3, 'should have 3 entries');
+    assert.strictEqual(entries[0].msg, 'msg 1', 'first entry should be msg 1');
+    assert.strictEqual(entries[2].msg, 'msg 3', 'third entry should be msg 3');
+  });
+
+  test('chat-log prune keeps only N most recent entries', () => {
+    // Append 10 entries
+    for (let i = 1; i <= 10; i++) {
+      runMowTools(`chat-log append --from phase-07 --to phase-08 --msg "msg ${i}" --raw`, tmpDir);
+    }
+
+    // Prune to keep 3
+    const result = runMowTools('chat-log prune --from phase-07 --to phase-08 --keep 3 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.pruned, true, 'should report pruned');
+    assert.strictEqual(parsed.before, 10, 'should report 10 before');
+    assert.strictEqual(parsed.after, 3, 'should report 3 after');
+
+    // Read and verify the remaining 3 are the last 3
+    const readResult = runMowTools('chat-log read --from phase-07 --to phase-08 --raw', tmpDir);
+    const entries = JSON.parse(readResult.output);
+    assert.strictEqual(entries.length, 3, 'should have 3 entries remaining');
+    assert.strictEqual(entries[0].msg, 'msg 8', 'first remaining should be msg 8');
+    assert.strictEqual(entries[2].msg, 'msg 10', 'last remaining should be msg 10');
+  });
+
+  test('chat-log append truncates messages over 500 chars', () => {
+    const longMsg = 'a'.repeat(600);
+    const result = runMowTools(`chat-log append --from phase-07 --to phase-08 --msg "${longMsg}" --raw`, tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    // Read and check msg length
+    const filePath = path.join(tmpDir, '.planning', 'chat-logs', 'phase-07-to-phase-08.ndjson');
+    const content = fs.readFileSync(filePath, 'utf-8').trim();
+    const entry = JSON.parse(content);
+    assert.strictEqual(entry.msg.length, 500, 'msg should be truncated to 500 chars');
+  });
+});
