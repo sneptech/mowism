@@ -11,7 +11,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 Milestone: v1.1 (in progress — scoping)
 Status: Defining scope via lifecycle walkthrough
-Last activity: 2026-02-20 -- v1.1 lifecycle audit session
+Last activity: 2026-02-20 - Completed quick task 1: Research Agent Teams API capabilities and constraints
 
 ## Performance Metrics
 
@@ -65,7 +65,13 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 ### Blockers/Concerns
 
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
-- Agent Teams API capabilities are UNVERIFIED — the entire multi-agent UX design (live feedback, distributed input, color terminals, multi-phase parallelism) depends on what the API actually supports. This is load-bearing. Must research before building.
+- ~~Agent Teams API capabilities are UNVERIFIED~~ → RESEARCHED (quick task 1). All 4 v1.1 features assessed as PARTIALLY FEASIBLE with documented adaptations. 8 open questions remain that require runtime testing. See `.planning/research/AGENT-TEAMS-API.md`.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Research Agent Teams API capabilities and constraints | 2026-02-20 | ad6260a | [1-research-agent-teams-api-capabilities-an](./quick/1-research-agent-teams-api-capabilities-an/) |
 
 ### Lifecycle Walkthrough Progress
 
@@ -99,6 +105,6 @@ Full v1.0 decision log in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: v1.1 lifecycle walkthrough — completed through discuss-phase and Agent Teams UX, identified 4 major todos
+Stopped at: Completed Agent Teams API research (quick task 1). Research todo resolved. 3 remaining multi-agent todos now unblocked for scoping.
 Resume: Continue lifecycle walkthrough from `/mow:plan-phase` onwards, then formalize v1.1 scope with `/mow:new-milestone`
-Context: User wants to walk the full lifecycle to find gaps before defining milestone requirements. README overhaul is confirmed v1.1 scope. Multi-agent UX (parallel phases, live feedback, input routing, color terminals) is emerging as major v1.1 scope but depends on Agent Teams API research.
+Context: Agent Teams API research complete — all 4 v1.1 multi-agent features PARTIALLY FEASIBLE with adaptations. Key findings: no streaming (message-driven feedback), permission prompts are session-local (distributed routing confirmed), terminal control outside Agent Teams scope (color badges are shell-level). 8 open questions need runtime testing. Lifecycle walkthrough paused at plan-phase.
