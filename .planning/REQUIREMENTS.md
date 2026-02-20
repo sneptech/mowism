@@ -16,7 +16,7 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### DAG Scheduling
 
-- [ ] **DAG-01**: ROADMAP.md supports arbitrary `depends_on` declarations (not just previous phase), enabling parallel tracks
+- [x] **DAG-01**: ROADMAP.md supports arbitrary `depends_on` declarations (not just previous phase), enabling parallel tracks
 - [ ] **DAG-02**: `mow-tools.cjs` includes topological sort (Kahn's algorithm) to resolve phase execution order from DAG
 - [ ] **DAG-03**: Roadmapper agent auto-detects which phases can run in parallel based on requirement dependencies
 
@@ -72,7 +72,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | STATE-02 | Phase 7 | Complete |
 | STATE-03 | Phase 7 | Complete |
 | STATE-04 | Phase 7 | Complete |
-| DAG-01 | Phase 8 | Pending |
+| DAG-01 | Phase 8 | Complete |
 | DAG-02 | Phase 8 | Pending |
 | DAG-03 | Phase 8 | Pending |
 | EXEC-01 | Phase 9 | Pending |
