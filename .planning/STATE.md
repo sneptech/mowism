@@ -40,7 +40,7 @@ Full decision log in PROJECT.md Key Decisions table (updated at v1.0 milestone).
 
 ### Pending Todos
 
-None.
+- Phase-level parallelism in roadmap and execution (`.planning/todos/pending/2026-02-20-phase-level-parallelism-in-roadmap-and-execution.md`)
 
 ### Blockers/Concerns
 
