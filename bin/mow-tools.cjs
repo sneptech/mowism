@@ -5933,6 +5933,272 @@ function cmdInitProgress(cwd, includes, raw) {
   output(result, raw);
 }
 
+// ─── Worktree Lifecycle Management ────────────────────────────────────────────
+
+function getRepoRoot(cwd) {
+  // Get the main repo root, even if cwd is inside a worktree
+  try {
+    const superproject = execSync('git rev-parse --show-superproject-working-tree', {
+      cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    if (superproject) return superproject;
+  } catch {}
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    return cwd;
+  }
+}
+
+function readManifest(cwd) {
+  const root = getRepoRoot(cwd);
+  const manifestPath = path.join(root, '.worktrees', 'manifest.json');
+  try {
+    if (fs.existsSync(manifestPath)) {
+      return JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    }
+  } catch {}
+  return { version: '1.0', worktrees: {}, updated: null };
+}
+
+function writeManifest(cwd, manifest) {
+  const root = getRepoRoot(cwd);
+  const worktreeDir = path.join(root, '.worktrees');
+  if (!fs.existsSync(worktreeDir)) {
+    fs.mkdirSync(worktreeDir, { recursive: true });
+  }
+  manifest.updated = new Date().toISOString();
+  const manifestPath = path.join(worktreeDir, 'manifest.json');
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf-8');
+}
+
+function getDefaultBranch(cwd) {
+  // Determine main or master
+  try {
+    const branches = execSync('git branch --list main master', {
+      cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    const lines = branches.split('\n').map(l => l.trim().replace(/^\*\s*/, ''));
+    if (lines.includes('main')) return 'main';
+    if (lines.includes('master')) return 'master';
+  } catch {}
+  return 'main';
+}
+
+function cmdWorktreeCreate(cwd, phase, options, raw) {
+  if (!phase) { error('phase required for worktree create'); }
+
+  const root = getRepoRoot(cwd);
+  const padded = normalizePhaseName(phase);
+  const wtKey = `p${padded}`;
+  const wtPath = path.join('.worktrees', wtKey);
+  const absWtPath = path.join(root, wtPath);
+  const branch = `phase-${padded}`;
+  const base = (options && options.base) || getDefaultBranch(root);
+
+  // Read manifest
+  const manifest = readManifest(root);
+
+  // Check for existing worktree
+  const existing = manifest.worktrees[wtKey];
+  if (existing && fs.existsSync(absWtPath)) {
+    // Reuse existing worktree
+    process.stderr.write(`MOW: Reusing existing worktree for phase ${phase}\n`);
+
+    let stashRestored = false;
+    if (existing.stash_ref) {
+      try {
+        execSync('git stash pop', {
+          cwd: absWtPath, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        stashRestored = true;
+        existing.stash_ref = null;
+      } catch {
+        process.stderr.write(`MOW: Warning: could not restore stash ${existing.stash_ref}\n`);
+      }
+    }
+
+    existing.status = 'active';
+    writeManifest(root, manifest);
+
+    output({ created: false, reused: true, path: wtPath, branch: existing.branch, stash_restored: stashRestored }, raw);
+    return;
+  }
+
+  // If entry exists but directory is gone, remove stale entry
+  if (existing && !fs.existsSync(absWtPath)) {
+    delete manifest.worktrees[wtKey];
+  }
+
+  // Ensure .worktrees/ directory exists
+  const worktreeDir = path.join(root, '.worktrees');
+  if (!fs.existsSync(worktreeDir)) {
+    fs.mkdirSync(worktreeDir, { recursive: true });
+  }
+
+  // Create new worktree
+  try {
+    execSync(`git worktree add ${wtPath} -b ${branch} ${base}`, {
+      cwd: root, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    error(`Failed to create worktree: ${err.stderr || err.message}`);
+  }
+
+  // Copy .planning/ from main worktree
+  const planningDir = path.join(root, '.planning');
+  const wtPlanningDir = path.join(absWtPath, '.planning');
+  if (fs.existsSync(planningDir)) {
+    try {
+      execSync(`cp -r "${planningDir}" "${wtPlanningDir}"`, {
+        encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch {
+      process.stderr.write('MOW: Warning: could not copy .planning/ to worktree\n');
+    }
+  }
+
+  // Initialize STATUS.md in the new worktree
+  try {
+    execSync(`node "${path.join(root, 'bin', 'mow-tools.cjs')}" status init ${phase}`, {
+      cwd: absWtPath, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch {
+    process.stderr.write('MOW: Warning: could not initialize STATUS.md in worktree\n');
+  }
+
+  // Get phase name from find-phase
+  let phaseName = null;
+  try {
+    const phaseInfo = findPhaseInternal(root, phase);
+    if (phaseInfo && phaseInfo.phase_name) {
+      phaseName = phaseInfo.phase_name;
+    }
+  } catch {}
+
+  // Get project name
+  let projectName = 'mowism';
+  try {
+    projectName = path.basename(root);
+  } catch {}
+
+  // Update manifest with new entry
+  manifest.project = manifest.project || projectName;
+  manifest.worktrees[wtKey] = {
+    path: wtPath,
+    branch,
+    phase: padded,
+    phase_name: phaseName,
+    created: new Date().toISOString(),
+    status: 'active',
+    stash_ref: null,
+    last_commit: null,
+    merged: false,
+    merged_at: null,
+  };
+  writeManifest(root, manifest);
+
+  output({ created: true, reused: false, path: wtPath, branch }, raw);
+}
+
+function cmdWorktreeListManifest(cwd, raw) {
+  const manifest = readManifest(cwd);
+  output(manifest, raw);
+}
+
+function cmdWorktreeMerge(cwd, phase, options, raw) {
+  if (!phase) { error('phase required for worktree merge'); }
+
+  const root = getRepoRoot(cwd);
+  const padded = normalizePhaseName(phase);
+  const branch = `phase-${padded}`;
+  const into = (options && options.into) || getDefaultBranch(root);
+
+  // Attempt merge from main worktree
+  const mergeResult = execGit(root, ['merge', branch, '--no-ff', '-m', `merge: phase ${phase} into ${into}`]);
+
+  if (mergeResult.exitCode !== 0) {
+    // Check if it's a conflict
+    const statusResult = execGit(root, ['diff', '--name-only', '--diff-filter=U']);
+    const conflictFiles = statusResult.stdout ? statusResult.stdout.split('\n').filter(Boolean) : [];
+
+    if (conflictFiles.length > 0) {
+      output({ merged: false, conflicts: true, conflict_files: conflictFiles }, raw);
+      return;
+    }
+
+    // Some other merge error
+    error(`Merge failed: ${mergeResult.stderr || mergeResult.stdout}`);
+  }
+
+  // Merge succeeded -- update manifest
+  const manifest = readManifest(root);
+  const wtKey = `p${padded}`;
+  if (manifest.worktrees[wtKey]) {
+    manifest.worktrees[wtKey].merged = true;
+    manifest.worktrees[wtKey].merged_at = new Date().toISOString();
+    manifest.worktrees[wtKey].status = 'merged';
+    writeManifest(root, manifest);
+  }
+
+  output({ merged: true, conflicts: false }, raw);
+}
+
+function cmdWorktreeStash(cwd, phase, raw) {
+  if (!phase) { error('phase required for worktree stash'); }
+
+  const root = getRepoRoot(cwd);
+  const padded = normalizePhaseName(phase);
+  const wtKey = `p${padded}`;
+  const manifest = readManifest(root);
+  const entry = manifest.worktrees[wtKey];
+
+  if (!entry) {
+    error(`No worktree found for phase ${phase} in manifest`);
+  }
+
+  const absWtPath = path.join(root, entry.path);
+  if (!fs.existsSync(absWtPath)) {
+    error(`Worktree directory not found: ${entry.path}`);
+  }
+
+  // Stash changes in the worktree
+  try {
+    execSync(`git stash push -m "mow-checkpoint-phase-${phase}"`, {
+      cwd: absWtPath, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    // If nothing to stash, that's fine
+    if (err.stderr && err.stderr.includes('No local changes')) {
+      output({ stashed: false, reason: 'no changes to stash' }, raw);
+      return;
+    }
+    error(`Failed to stash: ${err.stderr || err.message}`);
+  }
+
+  // Capture stash ref
+  let stashRef = null;
+  try {
+    const stashList = execSync('git stash list', {
+      cwd: absWtPath, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    const firstLine = stashList.split('\n')[0];
+    if (firstLine) {
+      const refMatch = firstLine.match(/^(stash@\{\d+\})/);
+      stashRef = refMatch ? refMatch[1] : 'stash@{0}';
+    }
+  } catch {}
+
+  // Update manifest
+  entry.stash_ref = stashRef;
+  entry.status = 'stashed';
+  writeManifest(root, manifest);
+
+  output({ stashed: true, stash_ref: stashRef }, raw);
+}
+
 // ─── Worktree State Tracking ──────────────────────────────────────────────────
 
 function getWorktreePath(cwd) {
@@ -6716,7 +6982,21 @@ async function main() {
 
     case 'worktree': {
       const subcommand = args[1];
-      if (subcommand === 'claim') {
+      if (subcommand === 'create') {
+        const baseIdx = args.indexOf('--base');
+        cmdWorktreeCreate(cwd, args[2], {
+          base: baseIdx !== -1 ? args[baseIdx + 1] : null,
+        }, raw);
+      } else if (subcommand === 'list-manifest') {
+        cmdWorktreeListManifest(cwd, raw);
+      } else if (subcommand === 'merge') {
+        const intoIdx = args.indexOf('--into');
+        cmdWorktreeMerge(cwd, args[2], {
+          into: intoIdx !== -1 ? args[intoIdx + 1] : null,
+        }, raw);
+      } else if (subcommand === 'stash') {
+        cmdWorktreeStash(cwd, args[2], raw);
+      } else if (subcommand === 'claim') {
         cmdWorktreeClaim(cwd, args[2], raw);
       } else if (subcommand === 'release') {
         cmdWorktreeRelease(cwd, args[2], raw);
@@ -6736,7 +7016,7 @@ async function main() {
           blockers: blockersIdx !== -1 ? args[blockersIdx + 1] : null,
         }, raw);
       } else {
-        error('Unknown worktree subcommand. Available: claim, release, status, update-plan, clean, verify-result');
+        error('Unknown worktree subcommand. Available: create, list-manifest, merge, stash, claim, release, status, update-plan, clean, verify-result');
       }
       break;
     }

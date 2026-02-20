@@ -1,0 +1,2 @@
+# Worktree directories (local artifacts, never committed)
+.worktrees/

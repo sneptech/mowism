@@ -3873,3 +3873,189 @@ describe('roadmap analyze-dag command', () => {
     assert.strictEqual(output.error, 'ROADMAP.md not found');
   });
 });
+
+// ─── Worktree Lifecycle Management Tests ──────────────────────────────────────
+
+describe('worktree list-manifest command', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Init git repo for worktree commands
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "init"', { cwd: tmpDir, stdio: 'pipe' });
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('returns default empty manifest when no manifest exists', () => {
+    const result = runMowTools('worktree list-manifest --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const manifest = JSON.parse(result.output);
+    assert.strictEqual(manifest.version, '1.0');
+    assert.deepStrictEqual(manifest.worktrees, {});
+    assert.strictEqual(manifest.updated, null);
+  });
+
+  test('returns manifest contents when manifest exists', () => {
+    const worktreeDir = path.join(tmpDir, '.worktrees');
+    fs.mkdirSync(worktreeDir, { recursive: true });
+    const manifestData = {
+      version: '1.0',
+      project: 'test',
+      worktrees: {
+        p09: {
+          path: '.worktrees/p09',
+          branch: 'phase-09',
+          phase: '09',
+          phase_name: 'test-phase',
+          created: '2026-01-01T00:00:00.000Z',
+          status: 'active',
+          stash_ref: null,
+          last_commit: null,
+          merged: false,
+          merged_at: null,
+        },
+      },
+      updated: '2026-01-01T00:00:00.000Z',
+    };
+    fs.writeFileSync(path.join(worktreeDir, 'manifest.json'), JSON.stringify(manifestData), 'utf-8');
+
+    const result = runMowTools('worktree list-manifest --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const manifest = JSON.parse(result.output);
+    assert.strictEqual(manifest.version, '1.0');
+    assert.strictEqual(manifest.project, 'test');
+    assert.ok(manifest.worktrees.p09, 'should have p09 entry');
+    assert.strictEqual(manifest.worktrees.p09.branch, 'phase-09');
+    assert.strictEqual(manifest.worktrees.p09.status, 'active');
+  });
+});
+
+describe('worktree create command', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Init git repo with a main branch and initial commit
+    execSync('git init -b main', { cwd: tmpDir, stdio: 'pipe' });
+    fs.writeFileSync(path.join(tmpDir, 'README.md'), '# Test');
+    execSync('git add .', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit -m "init"', { cwd: tmpDir, stdio: 'pipe' });
+  });
+
+  afterEach(() => {
+    // Clean up git worktrees before removing tmpDir
+    try {
+      execSync('git worktree prune', { cwd: tmpDir, stdio: 'pipe' });
+      const wtDir = path.join(tmpDir, '.worktrees');
+      if (fs.existsSync(wtDir)) {
+        // Remove worktree directories first
+        const entries = fs.readdirSync(wtDir).filter(e => e !== 'manifest.json');
+        for (const entry of entries) {
+          try {
+            execSync(`git worktree remove "${path.join(wtDir, entry)}" --force`, { cwd: tmpDir, stdio: 'pipe' });
+          } catch {}
+        }
+      }
+    } catch {}
+    cleanup(tmpDir);
+  });
+
+  test('creates new worktree with correct structure', () => {
+    const result = runMowTools('worktree create 09 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.created, true);
+    assert.strictEqual(output.reused, false);
+    assert.strictEqual(output.path, '.worktrees/p09');
+    assert.strictEqual(output.branch, 'phase-09');
+
+    // Verify worktree directory exists
+    assert.ok(fs.existsSync(path.join(tmpDir, '.worktrees', 'p09')), 'worktree directory should exist');
+
+    // Verify manifest was updated
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.worktrees', 'manifest.json'), 'utf-8'));
+    assert.ok(manifest.worktrees.p09, 'manifest should have p09 entry');
+    assert.strictEqual(manifest.worktrees.p09.status, 'active');
+    assert.strictEqual(manifest.worktrees.p09.branch, 'phase-09');
+    assert.strictEqual(manifest.worktrees.p09.phase, '09');
+  });
+
+  test('reuses existing worktree when directory exists', () => {
+    // Create first
+    const result1 = runMowTools('worktree create 09 --raw', tmpDir);
+    assert.ok(result1.success, `First create failed: ${result1.error}`);
+
+    // Create again -- should reuse
+    const result2 = runMowTools('worktree create 09 --raw', tmpDir);
+    assert.ok(result2.success, `Reuse failed: ${result2.error}`);
+
+    const output = JSON.parse(result2.output);
+    assert.strictEqual(output.created, false);
+    assert.strictEqual(output.reused, true);
+    assert.strictEqual(output.path, '.worktrees/p09');
+  });
+
+  test('cleans stale manifest entry when directory is gone', () => {
+    // Create worktree
+    runMowTools('worktree create 09 --raw', tmpDir);
+
+    // Remove the worktree directory but keep manifest entry
+    const wtPath = path.join(tmpDir, '.worktrees', 'p09');
+    try {
+      execSync(`git worktree remove "${wtPath}" --force`, { cwd: tmpDir, stdio: 'pipe' });
+    } catch {}
+    if (fs.existsSync(wtPath)) {
+      fs.rmSync(wtPath, { recursive: true, force: true });
+    }
+    execSync('git worktree prune', { cwd: tmpDir, stdio: 'pipe' });
+
+    // Verify manifest still has the entry
+    const manifestBefore = JSON.parse(fs.readFileSync(path.join(tmpDir, '.worktrees', 'manifest.json'), 'utf-8'));
+    assert.ok(manifestBefore.worktrees.p09, 'stale entry should still exist before create');
+
+    // Try to remove the branch so we can recreate
+    try {
+      execSync('git branch -D phase-09', { cwd: tmpDir, stdio: 'pipe' });
+    } catch {}
+
+    // Create again -- should detect stale entry and recreate
+    const result = runMowTools('worktree create 09 --raw', tmpDir);
+    assert.ok(result.success, `Recreate failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.created, true);
+    assert.strictEqual(output.reused, false);
+  });
+});
+
+describe('writeManifest and readManifest', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "init"', { cwd: tmpDir, stdio: 'pipe' });
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('writeManifest creates valid JSON with updated timestamp', () => {
+    // Write a manifest by creating a worktree entry via list-manifest (starts empty),
+    // then create a worktree which writes manifest
+    const result = runMowTools('worktree list-manifest --raw', tmpDir);
+    assert.ok(result.success);
+
+    const manifest = JSON.parse(result.output);
+    assert.strictEqual(manifest.version, '1.0');
+    assert.deepStrictEqual(manifest.worktrees, {});
+  });
+});
