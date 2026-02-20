@@ -10,7 +10,7 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 ### State Coherence
 
 - [ ] **STATE-01**: Lead/coordinator is the sole writer of STATE.md -- workers never modify it directly
-- [ ] **STATE-02**: Each phase worker writes to an isolated `phases/XX/STATUS.md` file with no cross-worker contention
+- [x] **STATE-02**: Each phase worker writes to an isolated `phases/XX/STATUS.md` file with no cross-worker contention
 - [x] **STATE-03**: Workers communicate state changes to the lead via structured JSON inbox messages (<1KB, defined schema)
 - [x] **STATE-04**: STATE.md becomes a lightweight index that links to per-phase STATUS.md files for detail
 
@@ -69,7 +69,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | STATE-01 | Phase 7 | Pending |
-| STATE-02 | Phase 7 | Pending |
+| STATE-02 | Phase 7 | Complete |
 | STATE-03 | Phase 7 | Complete |
 | STATE-04 | Phase 7 | Complete |
 | DAG-01 | Phase 8 | Pending |

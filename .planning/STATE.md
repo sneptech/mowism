@@ -13,9 +13,9 @@ Milestone: v1.1 Multi-Agent UX & Documentation
 Phase: 7 of 11 (State Coherence Foundation)
 Plan: 3 of 4
 Status: In progress
-Last activity: 2026-02-20 -- Completed 07-03 (Active Phases table for multi-agent coordinator dashboard)
+Last activity: 2026-02-20 -- Completed 07-01 (Per-phase STATUS.md template and CLI subcommands)
 
-Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 2/TBD)
+Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 3/TBD)
 
 ## Performance Metrics
 
@@ -35,6 +35,7 @@ Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 2/TBD)
 | 05-fix-update-workflow | 1 | 2min | 2min |
 | 06-cleanup-orphaned-workflows | 1 | 2min | 2min |
 | 07-state-coherence-foundation | 2 | 10min | 5min |
+| Phase 07 P01 | 7min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -55,6 +56,7 @@ Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 2/TBD)
 
 Full v1.0 decision log in PROJECT.md Key Decisions table.
 Research context: `.planning/research/SUMMARY.md`
+- [Phase 07]: Convention-based STATUS.md discovery over explicit links in STATE.md
 
 ### Pending Todos
 
@@ -75,6 +77,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 07-03-PLAN.md (Active Phases table for multi-agent coordinator dashboard)
+Stopped at: Completed 07-01-PLAN.md (Per-phase STATUS.md template and status CLI subcommands)
 Resume: Continue Phase 7 execution with 07-04-PLAN.md via /mow:execute-phase 07
-Context: 07-03 complete -- Active Phases table added to STATE.md template, state active-phases and state update-phase-row subcommands added to mow-tools.cjs. 7 new tests (126 total). Phase status values: not started/executing/complete/blocked(N,M)/failed. Next unblockable auto-maintained.
+Context: 07-01 complete -- STATUS.md template created, status init/read/write/aggregate subcommands added to mow-tools.cjs. 9 new tests (135 total). Convention-based discovery: phases/{padded}-{slug}/{padded}-STATUS.md. Discrete plan status values (not started/in progress/complete/failed).
