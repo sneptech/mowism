@@ -42,6 +42,7 @@ Full decision log in PROJECT.md Key Decisions table (updated at v1.0 milestone).
 
 - Phase-level parallelism in roadmap and execution (`.planning/todos/pending/2026-02-20-phase-level-parallelism-in-roadmap-and-execution.md`)
 - Live agent feedback and multi-phase input routing UX (`.planning/todos/pending/2026-02-20-live-agent-feedback-and-multi-phase-input-routing-ux.md`)
+- Distributed input routing with color-coded agent terminals (`.planning/todos/pending/2026-02-20-distributed-input-routing-with-color-coded-agent-terminals.md`)
 
 ### Blockers/Concerns
 
