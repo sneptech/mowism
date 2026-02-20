@@ -92,6 +92,11 @@ Record team start in STATE.md:
 node ~/.claude/mowism/bin/mow-tools.cjs team-update --action start --team-name "mow-{project-slug}"
 ```
 
+Print the orchestrator banner once at startup (red full-width bar identifying this terminal as the orchestrator):
+```bash
+node ~/.claude/mowism/bin/mow-tools.cjs format banner --text "MOW ORCHESTRATOR" --bg 196 --fg 231
+```
+
 For each selected phase, create a worktree:
 ```bash
 node ~/.claude/mowism/bin/mow-tools.cjs worktree create {phase}
@@ -164,8 +169,16 @@ React to messages from workers. Handle by event type using the `<message_process
    - "Circuit breaker tripped: {N} failures. Remaining workers halted. Please reassess."
 5. Otherwise: independent phases keep executing
 
-**On `blocker` (worker needs user input for discuss-phase):**
-- Notify user: "Phase {N} worker needs your input for {discuss-phase/checkpoint/etc}. Switch to terminal: phase-{NN}"
+**On `input_needed` (worker needs user input -- granular routing):**
+- The dashboard auto-pins the notification (done by `dashboard event add` auto-pin logic)
+- The dashboard render will show the pinned notification with the phase color
+- The lead does NOT need to manually notify the user -- the dashboard is the notification
+- The lead does NOT send anything to the worker -- the worker is waiting in its terminal
+- When the worker resumes (sends any subsequent message), the pin auto-dismisses
+
+**On `blocker` (worker needs user input for discuss-phase -- fallback):**
+- Same behavior as before: notify user "Phase {N} worker needs your input for {discuss-phase/checkpoint/etc}. Switch to terminal: phase-{NN}"
+- Additionally, append to dashboard events for visibility
 - Worker stays alive, waiting in its terminal
 
 ### Step 6: Wave Boundary Merge (Batch Mode)
@@ -200,11 +213,15 @@ When user runs `/mow:close-shop` or tells lead to wrap up:
 3. For each worker: read STATUS.md for deferred items, capture in `.planning/phases/{phase_dir}/deferred-items.md`
 4. Update STATE.md with final phase statuses
 5. Commit all `.planning/` changes
-6. Send shutdown requests to all workers:
+6. Clear dashboard state:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs dashboard clear
+   ```
+7. Send shutdown requests to all workers:
    ```
    SendMessage({ type: "shutdown_request", recipient: "{worker-name}", content: "All work complete", summary: "Shutdown: close-shop" })
    ```
-7. After all acknowledge: `TeamDelete()`
+8. After all acknowledge: `TeamDelete()`
 
 </multi_phase_flow>
 
@@ -252,6 +269,11 @@ node ~/.claude/mowism/bin/mow-tools.cjs team-update --action start --team-name "
 ```
 
 This creates the "Agent Team Status" section in STATE.md with team metadata.
+
+Print the orchestrator banner once at startup (red full-width bar identifying this terminal as the orchestrator):
+```bash
+node ~/.claude/mowism/bin/mow-tools.cjs format banner --text "MOW ORCHESTRATOR" --bg 196 --fg 231
+```
 
 ### Step 4: Create Tasks from Plans
 
@@ -331,24 +353,29 @@ Do NOT poll in a loop. Agent Teams delivers messages automatically. You will rec
 
 When all tasks are done (all plans have corresponding SUMMARY.md files):
 
-1. **Request shutdown for all workers:**
+1. **Clear dashboard state:**
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs dashboard clear
+   ```
+
+2. **Request shutdown for all workers:**
    ```
    SendMessage({ type: "shutdown_request", recipient: "{worker-name}", content: "All work complete", summary: "Shutdown: all plans complete" })
    ```
    Send a shutdown request to each active worker individually.
 
-2. **Stop team tracking in STATE.md:**
+3. **Stop team tracking in STATE.md:**
    ```bash
    node ~/.claude/mowism/bin/mow-tools.cjs team-update --action stop
    ```
 
-3. **Report summary to user:**
+4. **Report summary to user:**
    - List all completed plans with commit hashes from worker summaries
    - Note any deviations or issues workers reported
    - Show total duration and task count
    - Suggest next steps (e.g., `/mow:refine-phase` for quality checks)
 
-4. **Cleanup team:**
+5. **Cleanup team:**
    ```
    TeamDelete()
    ```
@@ -378,6 +405,28 @@ PARSED=$(node ~/.claude/mowism/bin/mow-tools.cjs message parse '${MESSAGE_CONTEN
 | `blocker` | Read blocker detail from worker's STATUS.md. If action="skip", acknowledge. If action="pause" (strict mode), decide resolution and send ack. In multi-phase mode: notify user which terminal to switch to. |
 | `state_change` | Update Active Phases table with new status. Informational -- no action required unless transition is unexpected. |
 | `ack` | Acknowledgment of a previous message. No action required. |
+| `task_claimed` | Informational -- append to dashboard events. No state update needed. |
+| `commit_made` | Informational -- append to dashboard events with commit hash in detail. |
+| `task_complete` | Informational -- append to dashboard events. No state update needed. |
+| `stage_transition` | Update Active Phases activity field: `state update-phase-row {phase} --last-update "{ts}"`. Append to dashboard events. |
+| `input_needed` | **Input routing:** Append to dashboard events (auto-pins notification, which also drives `isBlocked=true` for the summary row). Notify user: the dashboard will show which phase terminal needs attention. Do NOT send a message to the worker -- it is already waiting. |
+| `plan_created` | Informational -- append to dashboard events. |
+
+### Render Dashboard
+
+After processing any worker message, render the live dashboard:
+
+1. Append event to dashboard log:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs dashboard event add --type "{event_type}" --phase {phase} --detail "{brief_detail}"
+   ```
+
+2. Render the dashboard:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs dashboard render
+   ```
+
+Call `dashboard render` as the FINAL command in your message-processing sequence so the dashboard is the bottom-most terminal output.
 
 ### Send Acknowledgment
 
