@@ -27,6 +27,22 @@ CONFIG_CONTENT=$(echo "$INIT" | jq -r '.config_content // empty')
 ```
 
 If `.planning/` missing: error.
+
+**Detect multi-agent mode:**
+```bash
+# Check if STATUS.md exists for this phase (coordinator initialized it)
+MULTI_AGENT=false
+PADDED_PHASE=$(printf "%02d" "${PHASE_NUMBER}")
+STATUS_PATH="${PHASE_DIR}/${PADDED_PHASE}-STATUS.md"
+if [ -f "$STATUS_PATH" ]; then
+  MULTI_AGENT=true
+  # Mark plan as started in STATUS.md
+  node ~/.claude/mowism/bin/mow-tools.cjs status write "${PHASE_NUMBER}" \
+    --plan "${PHASE}-${PLAN}" --status "in progress"
+fi
+```
+
+Use `$MULTI_AGENT` throughout execution to route between multi-agent and single-agent paths.
 </step>
 
 <step name="identify_plan">
@@ -334,38 +350,83 @@ Next: more plans → "Ready for {next-plan}" | last → "Phase complete, ready f
 </step>
 
 <step name="update_current_position">
-Update STATE.md using mow-tools:
+Update progress -- the path depends on whether this is a multi-agent (Agent Teams) or single-agent execution.
+
+**Multi-agent mode (running as a worker in a team):**
+
+Workers NEVER write STATE.md directly. Instead:
+
+1. Update own STATUS.md:
+```bash
+# Update the plan row in this phase's STATUS.md
+node ~/.claude/mowism/bin/mow-tools.cjs status write "${PHASE_NUMBER}" \
+  --plan "${PHASE}-${PLAN}" --status complete \
+  --commit "${TASK_COMMIT}" --duration "${DURATION}" \
+  --tasks "${TASK_COUNT}/${TOTAL_TASKS}"
+```
+
+2. Send structured message to coordinator:
+```bash
+# Format the message
+MSG=$(node ~/.claude/mowism/bin/mow-tools.cjs message format plan_complete \
+  --phase "${PHASE_NUMBER}" --plan "${PHASE}-${PLAN}" \
+  --commit "${TASK_COMMIT}" --duration-min "${DURATION_MIN}" --raw)
+
+# Send via Agent Teams SendMessage
+# The coordinator will update STATE.md upon receiving this message
+```
+
+Use SendMessage({ type: "message", recipient: "team-lead", content: $MSG, summary: "Phase ${PHASE_NUMBER}: plan ${PHASE}-${PLAN} complete (${DURATION})" })
+
+**Single-agent mode (no team, backward compatible):**
 
 ```bash
-# Advance plan counter (handles last-plan edge case)
+# Legacy path -- still works when not in a team
 node ~/.claude/mowism/bin/mow-tools.cjs state advance-plan
-
-# Recalculate progress bar from disk state
 node ~/.claude/mowism/bin/mow-tools.cjs state update-progress
-
-# Record execution metrics
 node ~/.claude/mowism/bin/mow-tools.cjs state record-metric \
   --phase "${PHASE}" --plan "${PLAN}" --duration "${DURATION}" \
   --tasks "${TASK_COUNT}" --files "${FILE_COUNT}"
 ```
+
+**Detection:** Check `$MULTI_AGENT` (set in init_context). If STATUS.md exists at `${PHASE_DIR}/${PADDED_PHASE}-STATUS.md`, use multi-agent path. Otherwise, fall back to single-agent path.
 </step>
 
 <step name="extract_decisions_and_issues">
-From SUMMARY: Extract decisions and add to STATE.md:
+From SUMMARY: Extract decisions and add to project context.
+
+**Multi-agent mode (STATUS.md exists for this phase):**
+
+1. Log decisions in own STATUS.md (append to ## Decisions section):
+```bash
+# Decisions stay in STATUS.md for this phase
+# The coordinator will read them from STATUS.md if needed
+```
+
+2. If there are blockers, send a structured blocker message:
+```bash
+MSG=$(node ~/.claude/mowism/bin/mow-tools.cjs message format blocker \
+  --phase "${PHASE_NUMBER}" --plan "${PHASE}-${PLAN}" \
+  --blocker "${BLOCKER_DESC}" --action "skip" --raw)
+```
+
+Use SendMessage to coordinator with the blocker message. Per locked decision: default behavior is skip-and-continue (worker moves to next available task).
+
+**Single-agent mode (no STATUS.md -- legacy path):**
 
 ```bash
-# Add each decision from SUMMARY key-decisions
 node ~/.claude/mowism/bin/mow-tools.cjs state add-decision \
   --phase "${PHASE}" --summary "${DECISION_TEXT}" --rationale "${RATIONALE}"
 
-# Add blockers if any found
 node ~/.claude/mowism/bin/mow-tools.cjs state add-blocker "Blocker description"
 ```
 </step>
 
 <step name="update_session_continuity">
-Update session info using mow-tools:
+**Multi-agent mode:** Skip -- session continuity is coordinator-owned state.
+The coordinator updates this based on overall team progress.
 
+**Single-agent mode:**
 ```bash
 node ~/.claude/mowism/bin/mow-tools.cjs state record-session \
   --stopped-at "Completed ${PHASE}-${PLAN}-PLAN.md" \
