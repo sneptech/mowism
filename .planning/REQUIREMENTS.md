@@ -29,9 +29,9 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 ### Live Feedback
 
 - [x] **FEED-01**: Workers send structured milestone messages at defined checkpoints (task claimed, commit made, task complete, error)
-- [ ] **FEED-02**: Orchestrator aggregates worker messages into phase-level progress summary (O(phases) not O(tasks))
+- [x] **FEED-02**: Orchestrator aggregates worker messages into phase-level progress summary (O(phases) not O(tasks))
 - [x] **FEED-03**: Workers display color-coded ANSI banner at startup -- red background for orchestrator, rotating bright colors for workers
-- [ ] **FEED-04**: When a worker hits a permission prompt, orchestrator shows which worker needs input and how to navigate to it
+- [x] **FEED-04**: When a worker hits a permission prompt, orchestrator shows which worker needs input and how to navigate to it
 
 ### Documentation
 
@@ -79,9 +79,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | EXEC-02 | Phase 9 | Complete |
 | EXEC-03 | Phase 9 | Complete |
 | FEED-01 | Phase 10 | Complete |
-| FEED-02 | Phase 10 | Pending |
+| FEED-02 | Phase 10 | Complete |
 | FEED-03 | Phase 10 | Complete |
-| FEED-04 | Phase 10 | Pending |
+| FEED-04 | Phase 10 | Complete |
 | DOC-01 | Phase 11 | Pending |
 | DOC-02 | Phase 11 | Pending |
 | DOC-03 | Phase 11 | Pending |
