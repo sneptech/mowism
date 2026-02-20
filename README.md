@@ -317,8 +317,249 @@ Standalone commands (no `/mow:` prefix) for code quality. Run directly in Claude
 
 Run `/mow:help` for the full reference, or append `???` to any command for detailed help.
 
-<!-- CONFIG_SECURITY_TROUBLESHOOTING: Plan 03 will write this section -->
+## Configuration
+
+Mowism stores settings in `.planning/config.json`. Use `/mow:settings` to configure interactively, or edit the file directly.
+
+### Settings Overview
+
+A complete config.json with all options at their defaults:
+
+```json
+{
+  "model_profile": "balanced",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "auto_advance": false
+  },
+  "git": {
+    "branching_strategy": "none"
+  },
+  "planning": {
+    "commit_docs": true,
+    "search_gitignored": false
+  }
+}
+```
+
+### Configuration Reference
+
+| Option | Default | Description | When to Change |
+|---|---|---|---|
+| `model_profile` | `"balanced"` | Which Claude model each agent uses | `"budget"` to conserve quota, `"quality"` for critical architecture |
+| `workflow.research` | `true` | Spawn researcher during plan-phase | Disable for well-understood domains |
+| `workflow.plan_check` | `true` | Spawn plan checker during plan-phase | Disable for faster iteration |
+| `workflow.verifier` | `true` | Spawn verifier during execute-phase | Disable for non-critical phases |
+| `workflow.auto_advance` | `false` | Auto-chain stages without pausing | Enable for hands-off execution |
+| `git.branching_strategy` | `"none"` | Branch strategy: `none`, `phase`, or `milestone` | `"phase"` for code review per phase |
+| `planning.commit_docs` | `true` | Commit .planning/ artifacts to git | `false` for OSS contributions or client projects |
+| `planning.search_gitignored` | `false` | Include .planning/ in broad searches | `true` when .planning/ is gitignored |
+| `model_overrides` | `{}` | Per-agent model overrides | Override specific agents without changing profile |
+
+### Model Profiles
+
+Three profiles control which Claude model each agent uses. This balances reasoning quality against token spend.
+
+| Agent | quality | balanced | budget |
+|---|---|---|---|
+| Planner | opus | opus | sonnet |
+| Roadmapper | opus | sonnet | sonnet |
+| Executor | opus | sonnet | sonnet |
+| Phase Researcher | opus | sonnet | haiku |
+| Project Researcher | opus | sonnet | haiku |
+| Research Synthesizer | sonnet | sonnet | haiku |
+| Debugger | opus | sonnet | sonnet |
+| Codebase Mapper | sonnet | haiku | haiku |
+| Verifier | sonnet | sonnet | haiku |
+| Plan Checker | sonnet | sonnet | haiku |
+| Integration Checker | sonnet | sonnet | haiku |
+
+`balanced` is the default. Use `/mow:set-profile quality` for architecture phases, `/mow:set-profile budget` for routine work. Per-agent overrides are also available via the `model_overrides` config key.
+
+### Git Branching Strategies
+
+- **`none`** (default): All work on current branch. Simplest setup for solo development.
+- **`phase`**: Creates `mow/phase-{N}-{slug}` branch per phase. Good for code review per phase or granular rollback.
+- **`milestone`**: Creates `mow/{milestone}-{slug}` branch per milestone. Good for release branches and PR-per-version workflows.
+
+## Security
+
+### What Mowism Installs
+
+Mowism installs files into `~/.claude/`:
+
+- `~/.claude/commands/mow/` -- 35 slash commands
+- `~/.claude/commands/` -- 7 quality skill commands
+- `~/.claude/agents/` -- 14 agent definitions (mow-*.md)
+- `~/.claude/mowism/` -- workflows, references, templates, tools
+- `~/.claude/settings.local.json` -- Claude Code permission grants
+
+All files are plain Markdown and JavaScript. No compiled binaries. No network calls except Claude Code's own API.
+
+### Environment Variables
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | No | unset | Set to `1` to enable multi-agent parallel execution |
+| `VISUAL` / `EDITOR` | No | system default | Used by `???` help system to open help files |
+
+No API keys are stored or managed by Mowism. Claude Code handles its own authentication.
+
+### Permissions Model
+
+Mowism operates within Claude Code's permission system. The `.claude/settings.local.json` file grants:
+
+- File read/write access to project directories
+- Bash execution for Node.js (mow-tools.cjs) and git operations
+- No network access beyond Claude Code's own API
+
+Review permissions with: `cat .claude/settings.local.json`
+
+### Private Planning Mode
+
+To keep planning artifacts out of git:
+
+1. Set `planning.commit_docs: false` in `.planning/config.json`
+2. Add `.planning/` to `.gitignore`
+3. Optionally set `planning.search_gitignored: true` if you want project-wide searches to include planning files
+
+## Troubleshooting
+
+### Install Issues
+
+| Problem | Cause | Fix |
+|---|---|---|
+| `install.sh: command not found` | Wrong directory | `cd mowism && ./bin/install.sh` |
+| "Node.js not found" warning | Node.js not installed | Install from [nodejs.org](https://nodejs.org) |
+| "WorkTrunk not found" warning | WorkTrunk (`wt` CLI) not installed | See [WorkTrunk install docs](https://github.com/nicholasgasior/worktrunk) |
+
+The installer never blocks on missing dependencies -- it reports what's missing and continues.
+
+### Common Runtime Issues
+
+| Problem | Cause | Fix |
+|---|---|---|
+| `/mow:execute-phase` says "no plans found" | Phase not planned yet | Run `/mow:plan-phase N` first |
+| STATE.md out of sync after git operations | Manual git changes bypassed state tracking | Run `/mow:health` to diagnose, `/mow:health --fix` to repair |
+| Context window exhaustion mid-phase | Plan is too large for single context | Use `/clear` between commands; plans are designed for this |
+| "Agent Teams not available" | Env var not set | `export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` |
+
+### Multi-Agent Issues
+
+| Problem | Cause | Fix |
+|---|---|---|
+| Workers not spawning | Agent Teams env var missing | Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` |
+| Worktree conflicts | Stale worktree entries | `/mow:worktree-status` to check, manual cleanup if needed |
+| Permission prompts in worker terminal | Worker needs user approval | Check orchestrator dashboard for which terminal needs attention |
+| Workers stuck | Context exhaustion or error | `/mow:close-shop` to gracefully shut down, restart |
+
+## `.planning/` Directory Structure
+
+```
+.planning/
+├── PROJECT.md              # Project vision and requirements
+├── REQUIREMENTS.md         # Scoped requirements with REQ-IDs
+├── ROADMAP.md              # Phase breakdown with DAG dependencies
+├── STATE.md                # Project memory, session continuity
+├── config.json             # Workflow settings and model profile
+├── research/               # Domain research artifacts
+├── todos/
+│   ├── pending/            # Captured ideas waiting to be worked
+│   └── done/               # Completed todos
+├── debug/
+│   └── resolved/           # Archived resolved debug sessions
+├── milestones/
+│   ├── MILESTONES.md       # Milestone history
+│   ├── v1.0-ROADMAP.md     # Archived roadmap snapshots
+│   └── v1.0-phases/        # Archived phase directories
+├── codebase/               # Brownfield analysis (from map-codebase)
+│   ├── STACK.md
+│   ├── ARCHITECTURE.md
+│   ├── STRUCTURE.md
+│   ├── CONVENTIONS.md
+│   ├── TESTING.md
+│   ├── INTEGRATIONS.md
+│   └── CONCERNS.md
+└── phases/
+    └── NN-phase-name/
+        ├── NN-01-PLAN.md     # Execution plan
+        ├── NN-01-SUMMARY.md  # Post-execution summary
+        ├── STATUS.md         # Per-phase status (multi-agent)
+        └── VERIFICATION-CHAIN-PNN.md  # Quality gate results
+```
+
+## Common Workflows
+
+### Starting a new project
+
+```
+/mow:new-project           # Deep context gathering, research, requirements, roadmap
+/clear
+/mow:plan-phase 1          # Create execution plans for phase 1
+/clear
+/mow:execute-phase 1       # Execute all plans
+/clear
+/mow:refine-phase 1        # Quality gates
+```
+
+### Resuming work
+
+```
+/mow:resume-work           # Restores context from STATE.md
+# or
+/mow:progress              # Check status and route to next action
+```
+
+### Urgent mid-milestone work
+
+```
+/mow:insert-phase 5 "Critical auth fix"   # Creates Phase 5.1
+/clear
+/mow:plan-phase 5.1
+/clear
+/mow:execute-phase 5.1
+```
+
+### Completing a milestone
+
+```
+/mow:audit-milestone       # Check all requirements met
+/clear
+/mow:complete-milestone    # Archive, tag, prepare for next
+/clear
+/mow:new-milestone         # Start the next body of work
+```
+
+### Capturing ideas without interrupting flow
+
+```
+/mow:add-todo              # Captures idea as a todo from conversation
+# Later:
+/mow:check-todos           # List pending todos and work on one
+```
+
+### Debugging persistent issues
+
+```
+/mow:debug "login fails"   # Start structured investigation
+/clear
+/mow:debug                 # Resume after context reset (state persists)
+```
+
+### Parallel multi-agent execution
+
+```
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+/mow:execute-phase 3       # DAG scheduler runs independent plans in parallel
+# Workers appear in separate terminals with color-coded banners
+# Orchestrator terminal shows live dashboard
+/mow:close-shop            # Graceful shutdown when done
+```
 
 ## License and Attribution
 
-Mowism is a fork of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) by [TACHES](https://github.com/glittercowboy). The original GSD framework provides meta-prompting, context engineering, and spec-driven development for Claude Code. Mowism extends it with multi-agent coordination, worktree-aware state, and quality gates.
+Mowism is a permanent fork of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) by [TACHES](https://github.com/glittercowboy). The original GSD framework provides meta-prompting, context engineering, and spec-driven development for Claude Code. Mowism extends it with multi-agent coordination, worktree-aware state, DAG scheduling, and quality gates. The two projects have fully diverged.
+
+Quality skills derived from practices by Andrej Karpathy and Boris Cherny.
