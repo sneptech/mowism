@@ -1208,7 +1208,7 @@ function cmdRoadmapGetPhase(cwd, phaseNum, raw) {
     const section = content.slice(headerIndex, sectionEnd).trim();
 
     // Extract goal if present
-    const goalMatch = section.match(/\*\*Goal:\*\*\s*([^\n]+)/i);
+    const goalMatch = section.match(/\*\*Goal\*?\*?:\s*([^\n]+)/i);
     const goal = goalMatch ? goalMatch[1].trim() : null;
 
     // Extract success criteria as structured array
@@ -3317,6 +3317,12 @@ function cmdVerifyKeyLinks(cwd, planFilePath, raw) {
 
 // ─── Roadmap Analysis ─────────────────────────────────────────────────────────
 
+function parseDependsOn(raw) {
+  if (!raw || /nothing|none|n\/a|first phase/i.test(raw)) return [];
+  return (raw.match(/Phase\s+(\d+(?:\.\d+)?)/gi) || [])
+    .map(m => m.match(/\d+(?:\.\d+)?/)[0]);
+}
+
 function cmdRoadmapAnalyze(cwd, raw) {
   const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
 
@@ -3344,10 +3350,10 @@ function cmdRoadmapAnalyze(cwd, raw) {
     const sectionEnd = nextHeader ? sectionStart + nextHeader.index : content.length;
     const section = content.slice(sectionStart, sectionEnd);
 
-    const goalMatch = section.match(/\*\*Goal:\*\*\s*([^\n]+)/i);
+    const goalMatch = section.match(/\*\*Goal\*?\*?:\s*([^\n]+)/i);
     const goal = goalMatch ? goalMatch[1].trim() : null;
 
-    const dependsMatch = section.match(/\*\*Depends on:\*\*\s*([^\n]+)/i);
+    const dependsMatch = section.match(/\*\*Depends on\*?\*?:\s*([^\n]+)/i);
     const depends_on = dependsMatch ? dependsMatch[1].trim() : null;
 
     // Check completion on disk
@@ -3389,6 +3395,7 @@ function cmdRoadmapAnalyze(cwd, raw) {
       name: phaseName,
       goal,
       depends_on,
+      depends_on_parsed: parseDependsOn(depends_on),
       plan_count: planCount,
       summary_count: summaryCount,
       has_context: hasContext,
@@ -3795,9 +3802,9 @@ function cmdPhaseRemove(cwd, targetPhase, options, raw) {
         `$1${newStr}. `
       );
 
-      // Depends on references
+      // Depends on references (match both **Depends on:** and **Depends on**: formats)
       roadmapContent = roadmapContent.replace(
-        new RegExp(`(Depends on:\\*\\*\\s*Phase\\s+)${oldStr}\\b`, 'gi'),
+        new RegExp(`(Depends on\\*?\\*?:\\s*Phase\\s+)${oldStr}\\b`, 'gi'),
         `$1${newStr}`
       );
     }
@@ -3885,7 +3892,7 @@ function cmdRoadmapUpdatePlanProgress(cwd, phaseNum, raw) {
 
   // Update plan count in phase detail section
   const planCountPattern = new RegExp(
-    `(#{2,4}\\s*Phase\\s+${phaseEscaped}[\\s\\S]*?\\*\\*Plans:\\*\\*\\s*)[^\\n]+`,
+    `(#{2,4}\\s*Phase\\s+${phaseEscaped}[\\s\\S]*?\\*\\*Plans\\*?\\*?:\\s*)[^\\n]+`,
     'i'
   );
   const planCountText = isComplete
@@ -4029,7 +4036,7 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
 
     // Update plan count in phase section
     const planCountPattern = new RegExp(
-      `(#{2,4}\\s*Phase\\s+${phaseEscaped}[\\s\\S]*?\\*\\*Plans:\\*\\*\\s*)[^\\n]+`,
+      `(#{2,4}\\s*Phase\\s+${phaseEscaped}[\\s\\S]*?\\*\\*Plans\\*?\\*?:\\s*)[^\\n]+`,
       'i'
     );
     roadmapContent = roadmapContent.replace(
@@ -4044,7 +4051,7 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
     if (fs.existsSync(reqPath)) {
       // Extract Requirements line from roadmap for this phase
       const reqMatch = roadmapContent.match(
-        new RegExp(`Phase\\s+${phaseNum.replace('.', '\\.')}[\\s\\S]*?\\*\\*Requirements:\\*\\*\\s*([^\\n]+)`, 'i')
+        new RegExp(`Phase\\s+${phaseNum.replace('.', '\\.')}[\\s\\S]*?\\*\\*Requirements\\*?\\*?:\\s*([^\\n]+)`, 'i')
       );
 
       if (reqMatch) {
@@ -4972,7 +4979,7 @@ function getRoadmapPhaseInternal(cwd, phaseNum) {
     const sectionEnd = nextHeaderMatch ? headerIndex + nextHeaderMatch.index : content.length;
     const section = content.slice(headerIndex, sectionEnd).trim();
 
-    const goalMatch = section.match(/\*\*Goal:\*\*\s*([^\n]+)/i);
+    const goalMatch = section.match(/\*\*Goal\*?\*?:\s*([^\n]+)/i);
     const goal = goalMatch ? goalMatch[1].trim() : null;
 
     return {
