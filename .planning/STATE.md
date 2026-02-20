@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 Milestone: v1.1 Multi-Agent UX & Documentation
 Phase: 7 of 11 (State Coherence Foundation)
-Plan: 3 of 4
-Status: In progress
-Last activity: 2026-02-20 -- Completed 07-01 (Per-phase STATUS.md template and CLI subcommands)
+Plan: 4 of 4 (complete)
+Status: Phase complete
+Last activity: 2026-02-20 -- Completed 07-04 (Single-writer protocol wiring)
 
-Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 3/TBD)
+Progress: [############........] 60% (v1.0: 22/22 plans complete; v1.1: 4/TBD)
 
 ## Performance Metrics
 
@@ -34,8 +34,7 @@ Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 3/TBD)
 | 04-distribution-portability | 3 | 6min | 2min |
 | 05-fix-update-workflow | 1 | 2min | 2min |
 | 06-cleanup-orphaned-workflows | 1 | 2min | 2min |
-| 07-state-coherence-foundation | 2 | 10min | 5min |
-| Phase 07 P01 | 7min | 2 tasks | 3 files |
+| 07-state-coherence-foundation | 4 | 20min | 5min |
 
 ## Accumulated Context
 
@@ -53,6 +52,7 @@ Progress: [##########..........] 55% (v1.0: 22/22 plans complete; v1.1: 3/TBD)
 | Verbose event set as default with lean toggle commented out | Ship all 7 event types; can switch to milestones-only by uncommenting one line |
 | Chat log filenames use sorted peer IDs | Deterministic deduplication: phase-07-to-phase-08 regardless of sender |
 | Active Phases table coexists with Current Position | v1.0 single-agent view preserved; v1.1 multi-agent coordinator dashboard added alongside |
+| STATUS.md existence as multi-agent detection signal | Convention-based: if coordinator initialized it, workers use multi-agent path; no config flag needed |
 
 Full v1.0 decision log in PROJECT.md Key Decisions table.
 Research context: `.planning/research/SUMMARY.md`
@@ -77,6 +77,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 07-01-PLAN.md (Per-phase STATUS.md template and status CLI subcommands)
-Resume: Continue Phase 7 execution with 07-04-PLAN.md via /mow:execute-phase 07
-Context: 07-01 complete -- STATUS.md template created, status init/read/write/aggregate subcommands added to mow-tools.cjs. 9 new tests (135 total). Convention-based discovery: phases/{padded}-{slug}/{padded}-STATUS.md. Discrete plan status values (not started/in progress/complete/failed).
+Stopped at: Completed 07-04-PLAN.md (Single-writer protocol wiring) -- Phase 7 complete
+Resume: Phase 7 complete (4/4 plans). Next: continue with remaining v1.1 phases.
+Context: Phase 7 complete -- STATUS.md template (07-01), message protocol (07-02), Active Phases table (07-03), single-writer wiring (07-04). Workers use STATUS.md + structured messages in multi-agent mode, direct STATE.md writes in single-agent mode. Coordinator processes messages and owns STATE.md exclusively.
