@@ -36,7 +36,7 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 ### Documentation
 
 - [x] **DOC-01**: README includes lifecycle narrative covering full project workflow from install to milestone completion
-- [ ] **DOC-02**: All 34 `/mow:*` commands documented with description, usage, and examples
+- [x] **DOC-02**: All 34 `/mow:*` commands documented with description, usage, and examples
 - [x] **DOC-03**: Brownfield entry point documented (existing codebase -> map-codebase -> new-milestone)
 - [ ] **DOC-04**: Configuration, security guidance, and troubleshooting sections included
 
@@ -83,7 +83,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | FEED-03 | Phase 10 | Complete |
 | FEED-04 | Phase 10 | Complete |
 | DOC-01 | Phase 11 | Complete |
-| DOC-02 | Phase 11 | Pending |
+| DOC-02 | Phase 11 | Complete |
 | DOC-03 | Phase 11 | Complete |
 | DOC-04 | Phase 11 | Pending |
 
