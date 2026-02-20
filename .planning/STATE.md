@@ -85,6 +85,6 @@ None -- all captured as v1.1 requirements.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 08-03-PLAN.md (Phase 8 complete)
-Resume: Phase 9 (Multi-Phase Execution Engine) -- requires plan-phase before execution
-Context: Phase 8 complete -- all 3 plans executed (regex fixes, DAG analysis CLI, DAG agent integration). DAG analyzer agent created, roadmapper integration done. Phase 9 can consume DAG output for parallel execution groups.
+Stopped at: Phase 9 context gathered
+Resume: .planning/phases/09-multi-phase-execution-engine/09-CONTEXT.md
+Context: Phase 9 context captured -- worker lifecycle (full autonomy, event-driven, close-shop command), failure & recovery (persistent checkpoints, circuit breaker, graceful cancel), DAG-to-tasks (user selects phases, override with warning), worktree management (one per phase, subdirectory, batch merge at wave boundaries). Ready for /mow:plan-phase 9.
