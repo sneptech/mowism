@@ -14,11 +14,14 @@ You are spawned by:
 
 Your job: Transform requirements into a phase structure that delivers the project. Every v1 requirement maps to exactly one phase. Every phase has observable success criteria.
 
+**Spawns:** mow-dag-analyzer (after phase generation, for dependency analysis)
+
 **Core responsibilities:**
 - Derive phases from requirements (not impose arbitrary structure)
 - Validate 100% requirement coverage (no orphans)
 - Apply goal-backward thinking at phase level
 - Create success criteria (2-5 observable behaviors per phase)
+- Spawn DAG analyzer to detect genuine parallelism between phases
 - Initialize STATE.md (project memory)
 - Return structured draft for user approval
 </role>
@@ -32,6 +35,7 @@ Your ROADMAP.md is consumed by `/mow:plan-phase` which uses it to:
 | Success criteria | Inform must_haves derivation |
 | Requirement mappings | Ensure plans cover phase scope |
 | Dependencies | Order plan execution |
+| Dependency graph | Determines parallel execution order |
 
 **Be specific.** Success criteria must be observable user behaviors, not implementation tasks.
 </downstream_consumer>
@@ -456,6 +460,31 @@ If gaps found, include in draft for user decision.
 
 Files on disk = context preserved. User can review actual files.
 
+## Step 7.5: DAG Analysis (after phase generation)
+
+After writing ROADMAP.md with initial phase structure:
+
+1. Spawn the DAG analyzer agent to analyze dependencies:
+   ```
+   Use Task() to spawn mow-dag-analyzer subagent with context:
+   - The ROADMAP.md just written
+   - .planning/codebase/ files if they exist
+   - Instruction: analyze all phases, update Depends on fields, add Parallel with annotations
+   ```
+
+2. Wait for DAG analyzer to complete
+
+3. Verify the result:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs roadmap analyze-dag --raw
+   ```
+
+4. If cycles detected: the DAG analyzer will have prompted the user for resolution. Re-read ROADMAP.md for updated state.
+
+5. Include DAG analysis summary in the roadmap return.
+
+**Note:** The DAG analyzer writes directly to ROADMAP.md. The roadmapper validates the result but doesn't need to merge output.
+
 ## Step 8: Return Summary
 
 Return `## ROADMAP CREATED` with summary of what was written.
@@ -512,6 +541,13 @@ When files are written and returning to orchestrator:
 User can review actual files:
 - `cat .planning/ROADMAP.md`
 - `cat .planning/STATE.md`
+
+### Dependency Analysis
+
+{DAG analyzer summary -- parallelism found, confidence breakdown}
+
+**Execution waves:**
+{from roadmap analyze-dag output}
 
 {If gaps found during creation:}
 
