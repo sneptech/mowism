@@ -61,11 +61,14 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`
   3. `/mow:health --repair` creates a timestamped backup before regenerating STATE.md, and the backup is recoverable
   4. Executor stops retrying a failing task after a configurable maximum attempt limit instead of looping indefinitely
   5. Discuss-phase probes ambiguous user preferences with follow-up questions before finalizing CONTEXT.md
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — Pure code fixes: dollar sign corruption, requirement ID propagation, progress clamping
+- [ ] 13-02-PLAN.md — Safety guardrails: backup-before-repair, executor retry limits
+- [ ] 13-03-PLAN.md — Workflow fixes: early branch creation, ordering guards, discuss-phase ambiguity probing
+- [ ] 13-04-PLAN.md — Todo lifecycle: in-progress state, start subcommand, 3-state display
+- [ ] 13-05-PLAN.md — Hook infrastructure: context window monitor, CLAUDE.md subagent injection
 
 ### Phase 14: Native Worktree Adoption
 **Goal**: Agent worktrees are created and destroyed via Claude Code native hooks with Mowism coordination preserved
@@ -134,7 +137,7 @@ DAG: {13, 14} -> 15 -> 16
 | 10. Live Feedback and Visual Differentiation | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 11. README Overhaul | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 12. Audit Gap Closure | v1.1 | 1/1 | Complete | 2026-02-20 |
-| 13. GSD Bugfix Ports | v1.2 | 0/? | Not started | - |
+| 13. GSD Bugfix Ports | v1.2 | 0/5 | Planned | - |
 | 14. Native Worktree Adoption | v1.2 | 0/? | Not started | - |
 | 15. Full-Lifecycle Workers | v1.2 | 0/? | Not started | - |
 | 16. Auto-Advance Pipeline | v1.2 | 0/? | Not started | - |
