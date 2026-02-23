@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
 Phase: 13 of 16 (GSD Bugfix Ports) -- Phase 14 parallelizable
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-02-24 -- Roadmap created for v1.2
+Plan: 5 of 5 in current phase
+Status: Phase 13 complete
+Last activity: 2026-02-24 -- Plan 13-05 executed (hook infrastructure)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100% (Phase 13)
 
 ## Performance Metrics
 
@@ -44,6 +44,8 @@ Progress: [░░░░░░░░░░] 0%
 | 10-live-feedback-and-visual-differentiation | 3 | 15min | 5min |
 | 11-readme-overhaul | 3 | 8min | 3min |
 | 12-audit-gap-closure | 1 | 2min | 2min |
+| 13-gsd-bugfix-ports (plan 05) | 1 | 2min | 2min |
+| Phase 13 P03 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -57,6 +59,8 @@ Recent for v1.2:
 - Native worktree adoption keeps existing coordination layer (claiming, manifest, merge)
 - Full-lifecycle workers use disk-first context passing (file paths, not contents)
 - Discuss-phase always pauses for user input (hard constraint, never bypassed)
+- Tighter context window thresholds (25%/15%) than GSD upstream (35%/25%)
+- SubagentStart hook uses additionalContext for non-disruptive CLAUDE.md injection
 
 ### Pending Todos
 
@@ -72,5 +76,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Phase 13 context gathered
-Resume: `/mow:plan-phase 13` (or 14, since they are parallelizable)
+Stopped at: Completed 13-05-PLAN.md (hook infrastructure)
+Resume: Continue with remaining Phase 13 plans (01-04) or start Phase 14
