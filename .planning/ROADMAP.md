@@ -47,7 +47,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`
 - [x] **Phase 13: GSD Bugfix Ports** - Fix 11 correctness bugs from GSD upstream plus context window monitor hook (completed 2026-02-23)
 - [x] **Phase 14: Native Worktree Adoption** - Replace custom worktree creation with Claude Code native hooks, simplify coordination layer (completed 2026-02-23)
 - [x] **Phase 15: Full-Lifecycle Workers** - Workers autonomously chain discuss, research, plan, execute, refine per phase with nested subagents (completed 2026-02-23)
-- [ ] **Phase 16: Auto-Advance Pipeline** - `/mow:auto` chains phases through milestone end with DAG awareness and discuss pause gates
+- [x] **Phase 16: Auto-Advance Pipeline** - `/mow:auto` chains phases through milestone end with DAG awareness and discuss pause gates (completed 2026-02-23)
 
 ## Phase Details
 
@@ -144,4 +144,4 @@ DAG: {13, 14} -> 15 -> 16
 | 13. GSD Bugfix Ports | 5/5 | Complete    | 2026-02-23 | - |
 | 14. Native Worktree Adoption | 5/5 | Complete    | 2026-02-23 | - |
 | 15. Full-Lifecycle Workers | 3/3 | Complete    | 2026-02-23 | - |
-| 16. Auto-Advance Pipeline | 1/2 | In Progress|  | - |
+| 16. Auto-Advance Pipeline | 2/2 | Complete   | 2026-02-23 | - |
