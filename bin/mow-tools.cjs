@@ -2888,7 +2888,7 @@ function cmdTemplateFill(cwd, templateType, options, raw) {
       let templateContent = fs.readFileSync(templatePath, 'utf-8');
       const timestamp = new Date().toISOString();
       const workerName = options.worker || 'unknown';
-      const worktreePath = options.worktree || '.worktrees/p' + padded;
+      const worktreePath = options.worktree || '.claude/worktrees/phase-' + padded;
       const status = options.status || 'failed';
       const reason = options.reason || 'error';
 
@@ -6817,10 +6817,15 @@ function getRepoRoot(cwd) {
 
 function readManifest(cwd) {
   const root = getRepoRoot(cwd);
-  const manifestPath = path.join(root, '.worktrees', 'manifest.json');
+  const newPath = path.join(root, '.claude', 'worktrees', 'manifest.json');
+  const oldPath = path.join(root, '.worktrees', 'manifest.json');
   try {
-    if (fs.existsSync(manifestPath)) {
-      return JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    if (fs.existsSync(newPath)) {
+      return JSON.parse(fs.readFileSync(newPath, 'utf-8'));
+    }
+    if (fs.existsSync(oldPath)) {
+      process.stderr.write('MOW: Warning: manifest found at .worktrees/manifest.json (old location). Consider migrating to .claude/worktrees/manifest.json\n');
+      return JSON.parse(fs.readFileSync(oldPath, 'utf-8'));
     }
   } catch {}
   return { version: '1.0', worktrees: {}, updated: null };
@@ -6828,7 +6833,7 @@ function readManifest(cwd) {
 
 function writeManifest(cwd, manifest) {
   const root = getRepoRoot(cwd);
-  const worktreeDir = path.join(root, '.worktrees');
+  const worktreeDir = path.join(root, '.claude', 'worktrees');
   if (!fs.existsSync(worktreeDir)) {
     fs.mkdirSync(worktreeDir, { recursive: true });
   }
@@ -7156,7 +7161,7 @@ function cmdWorktreeMerge(cwd, phase, options, raw) {
 
   // Merge succeeded -- update manifest
   const manifest = readManifest(root);
-  const wtKey = `p${padded}`;
+  const wtKey = manifest.worktrees[`phase-${padded}`] ? `phase-${padded}` : `p${padded}`;
   if (manifest.worktrees[wtKey]) {
     manifest.worktrees[wtKey].merged = true;
     manifest.worktrees[wtKey].merged_at = new Date().toISOString();
@@ -7172,8 +7177,8 @@ function cmdWorktreeStash(cwd, phase, raw) {
 
   const root = getRepoRoot(cwd);
   const padded = normalizePhaseName(phase);
-  const wtKey = `p${padded}`;
   const manifest = readManifest(root);
+  const wtKey = manifest.worktrees[`phase-${padded}`] ? `phase-${padded}` : `p${padded}`;
   const entry = manifest.worktrees[wtKey];
 
   if (!entry) {
@@ -7443,17 +7448,23 @@ function cmdWorktreeUpdatePlan(cwd, phase, planId, raw) {
 
 function getActiveWorktrees(cwd) {
   try {
-    const wtOutput = execSync('wt list --format=json 2>&1', {
+    const wtOutput = execSync('git worktree list --porcelain', {
       encoding: 'utf-8',
       timeout: 10000,
       cwd: cwd || process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    const parsed = JSON.parse(wtOutput);
-    // wt list returns array of objects with 'path' field
-    return Array.isArray(parsed) ? parsed.map(w => w.path || w.directory || w.dir || '') : [];
+    // Porcelain format: each worktree block starts with "worktree /path/to/wt"
+    // followed by HEAD, branch, bare/detached lines, separated by blank lines
+    const paths = [];
+    for (const line of wtOutput.split('\n')) {
+      if (line.startsWith('worktree ')) {
+        paths.push(line.slice('worktree '.length));
+      }
+    }
+    return paths;
   } catch {
-    return null; // null means wt list failed — don't clean
+    return null; // null means git worktree list failed — don't clean
   }
 }
 
@@ -7470,17 +7481,19 @@ function cmdWorktreeClean(cwd, raw) {
     return;
   }
 
-  const activeWorktrees = getActiveWorktrees();
+  const root = getRepoRoot(cwd);
+  const activeWorktrees = getActiveWorktrees(cwd);
   if (activeWorktrees === null) {
-    // wt list failed — don't clean
-    output({ cleaned: 0, released: [], error: 'wt list failed' }, raw);
+    // git worktree list failed — don't clean
+    output({ cleaned: 0, released: [], error: 'git worktree list failed' }, raw);
     return;
   }
 
   const rows = parseWorktreeTable(content);
   const released = [];
   const newRows = rows.filter(r => {
-    const isActive = activeWorktrees.some(w => w === r.worktree || w.endsWith('/' + path.basename(r.worktree)));
+    const resolvedWorktree = path.resolve(root, r.worktree);
+    const isActive = activeWorktrees.some(w => w === resolvedWorktree || w === r.worktree || w.endsWith('/' + path.basename(r.worktree)));
     if (!isActive) {
       released.push(r.worktree);
       process.stderr.write(`MOW: Released stale claim for ${r.worktree} (worktree no longer exists)\n`);
@@ -7507,12 +7520,14 @@ function silentWorktreeClean(cwd) {
     const rows = parseWorktreeTable(content);
     if (rows.length === 0) return;
 
-    const activeWorktrees = getActiveWorktrees();
+    const root = getRepoRoot(cwd);
+    const activeWorktrees = getActiveWorktrees(cwd);
     if (activeWorktrees === null) return;
 
     const released = [];
     const newRows = rows.filter(r => {
-      const isActive = activeWorktrees.some(w => w === r.worktree || w.endsWith('/' + path.basename(r.worktree)));
+      const resolvedWorktree = path.resolve(root, r.worktree);
+      const isActive = activeWorktrees.some(w => w === resolvedWorktree || w === r.worktree || w.endsWith('/' + path.basename(r.worktree)));
       if (!isActive) {
         released.push(r.worktree);
         process.stderr.write(`MOW: Released stale claim for ${r.worktree} (worktree no longer exists)\n`);
