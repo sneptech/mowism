@@ -124,7 +124,30 @@ Use /mow:progress to see available phases.
 ```
 Exit workflow.
 
-**If `phase_found` is true:** Continue to check_existing.
+**If `phase_found` is true:** Continue to handle_branching.
+</step>
+
+<step name="handle_branching">
+After init is parsed and before any discussion begins, check if a feature branch should be created.
+
+```bash
+BRANCH_STRATEGY=$(node ~/.claude/mowism/bin/mow-tools.cjs config-get branching_strategy 2>/dev/null || echo "none")
+```
+
+**If `BRANCH_STRATEGY` is `"phase"`:**
+
+Compute branch name from phase template and create/switch to it:
+```bash
+BRANCH_NAME="mow/phase-${phase_number}-${phase_slug}"
+git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+```
+Log: `Created feature branch: $BRANCH_NAME`
+
+This ensures the branch exists before any phase work begins (context, research, planning, execution all happen on this branch).
+
+**If `BRANCH_STRATEGY` is `"milestone"` or `"none"`:** Skip branch creation. Milestone branches are managed at milestone scope, not per-phase. `"none"` means all work stays on the current branch.
+
+Continue to check_existing.
 </step>
 
 <step name="check_existing">
