@@ -64,6 +64,16 @@ if [ -d "$MOWISM_SRC/help" ]; then
   HELP_COUNT=$(find "$MOWISM_DEST/help" -type f | wc -l)
 fi
 
+# Copy hook scripts
+HOOK_DIR="$MOWISM_DEST/hooks"
+mkdir -p "$HOOK_DIR"
+HOOK_COUNT=0
+if [ -d "$MOWISM_SRC/.claude/hooks" ]; then
+  cp -r "$MOWISM_SRC/.claude/hooks/"* "$HOOK_DIR/" 2>/dev/null
+  chmod +x "$HOOK_DIR"/*.sh 2>/dev/null
+  HOOK_COUNT=$(ls "$HOOK_DIR"/*.sh 2>/dev/null | wc -l)
+fi
+
 # Check dependencies (check and report, NEVER block)
 echo "Checking dependencies..."
 echo ""
@@ -72,15 +82,6 @@ NODE_STATUS="MISSING -- Required for mow-tools.cjs (https://nodejs.org)"
 if command -v node &>/dev/null; then
   NODE_VERSION=$(node --version 2>/dev/null || echo "unknown")
   NODE_STATUS="$NODE_VERSION [OK]"
-fi
-
-WT_STATUS="MISSING -- Required for multi-worktree workflows"
-if command -v wt &>/dev/null; then
-  WT_VERSION=$(wt --version 2>&1 || echo "unknown")
-  WT_STATUS="$WT_VERSION [OK]"
-else
-  WT_STATUS="MISSING -- Required for multi-worktree workflows
-                     Install: yay -S worktrunk (Arch) | brew install worktrunk (macOS) | cargo install worktrunk"
 fi
 
 AT_STATUS="NOT ENABLED (optional but recommended)"
@@ -102,6 +103,9 @@ echo "    Skills:    $SKILL_COUNT files in commands/"
 echo "    Agents:    $AGENT_COUNT agent definitions"
 echo "    Workflows: $WORKFLOW_COUNT files"
 echo "    Bin:       mow-tools.cjs"
+if [ "$HOOK_COUNT" -gt 0 ]; then
+  echo "    Hooks:     $HOOK_COUNT hook scripts"
+fi
 if [ "$HELP_COUNT" -gt 0 ]; then
   echo "    Help:      $HELP_COUNT files"
 else
@@ -110,7 +114,6 @@ fi
 echo ""
 echo "  Dependencies:"
 echo "    Node.js:      $NODE_STATUS"
-echo "    WorkTrunk:    $WT_STATUS"
 echo "    Agent Teams:  $AT_STATUS"
 echo ""
 echo "  Get started:  /mow:new-project"
