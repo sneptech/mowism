@@ -41,15 +41,15 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 
 - [ ] **BUG-01**: STATE.md state mutators use callback replacers instead of string replacement (dollar sign corruption fix)
 - [ ] **BUG-02**: Phase requirement IDs extracted from ROADMAP.md and propagated via init functions
-- [ ] **BUG-03**: Feature branch created at discuss-phase start when branching_strategy is "phase" (not delayed until execution)
+- [x] **BUG-03**: Feature branch created at discuss-phase start when branching_strategy is "phase" (not delayed until execution)
 - [ ] **BUG-04**: Progress bar computations clamped with Math.min(100, ...) to prevent RangeError on orphaned files
 - [ ] **BUG-05**: Executor has maximum attempt limit per task to prevent infinite retry loops
-- [ ] **BUG-06**: plan-phase warns if no CONTEXT.md exists; discuss-phase warns if plans already exist
+- [x] **BUG-06**: plan-phase warns if no CONTEXT.md exists; discuss-phase warns if plans already exist
 - [ ] **BUG-07**: `/mow:health --repair` creates timestamped backup of STATE.md before regeneration
 - [x] **BUG-08**: Subagent spawn prompts include project CLAUDE.md content for context discovery
 - [ ] **BUG-09**: Todo system has `in-progress/` state and `todo start` subcommand (not immediately moved to done/)
 - [x] **BUG-10**: PostToolUse hook monitors context window usage and warns at 35%/25% remaining
-- [ ] **BUG-11**: Discuss-phase probes ambiguous user preferences with follow-up questions (gray area looping)
+- [x] **BUG-11**: Discuss-phase probes ambiguous user preferences with follow-up questions (gray area looping)
 
 ## Future Requirements
 
@@ -108,15 +108,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTO-07 | Phase 16 | Pending |
 | BUG-01 | Phase 13 | Pending |
 | BUG-02 | Phase 13 | Pending |
-| BUG-03 | Phase 13 | Pending |
+| BUG-03 | Phase 13 | Complete |
 | BUG-04 | Phase 13 | Pending |
 | BUG-05 | Phase 13 | Pending |
-| BUG-06 | Phase 13 | Pending |
+| BUG-06 | Phase 13 | Complete |
 | BUG-07 | Phase 13 | Pending |
 | BUG-08 | Phase 13 | Complete |
 | BUG-09 | Phase 13 | Pending |
 | BUG-10 | Phase 13 | Complete |
-| BUG-11 | Phase 13 | Pending |
+| BUG-11 | Phase 13 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 32 total

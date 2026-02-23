@@ -61,6 +61,7 @@ Recent for v1.2:
 - Discuss-phase always pauses for user input (hard constraint, never bypassed)
 - Tighter context window thresholds (25%/15%) than GSD upstream (35%/25%)
 - SubagentStart hook uses additionalContext for non-disruptive CLAUDE.md injection
+- [Phase 13-03]: Branch creation uses config-get for branching_strategy; ambiguity reframe limited to one attempt; BUG-06 context warning verified as already implemented
 
 ### Pending Todos
 
@@ -76,5 +77,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 13-05-PLAN.md (hook infrastructure)
-Resume: Continue with remaining Phase 13 plans (01-04) or start Phase 14
+Stopped at: Completed 13-03-PLAN.md (workflow fixes: branch creation, ambiguity detection)
+Resume: Continue with remaining Phase 13 plans or start Phase 14
