@@ -2,26 +2,29 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-20)
+See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.1 Phase 12 complete (Audit Gap Closure) -- milestone ready for completion
+**Current focus:** v1.1 shipped -- planning next milestone
 
 ## Current Position
 
-Milestone: v1.1 Multi-Agent UX & Documentation
-Phase: 12 of 12 (Audit Gap Closure)
-Plan: 1 of 1
-Status: Complete
-Last activity: 2026-02-20 -- Completed 12-01 (audit gap closure fixes)
+Milestone: v1.1 Multi-Agent UX & Documentation -- SHIPPED
+Phase: 12 of 12 (all complete)
+Status: Milestone archived
+Last activity: 2026-02-24 -- v1.1 milestone completion and archival
 
-Progress: [####################] 100% (v1.0: 22/22 plans complete; v1.1: 17/17)
+Progress: [####################] 100% (v1.0: 22/22; v1.1: 17/17 -- 39 total plans)
 
 ## Performance Metrics
 
 **v1.0 Velocity:**
 - Total plans completed: 22
 - Average duration: 3min
+- Total execution time: ~1 hour
+
+**v1.1 Velocity:**
+- Total plans completed: 17
 - Total execution time: ~1 hour
 
 **By Phase:**
@@ -35,67 +38,18 @@ Progress: [####################] 100% (v1.0: 22/22 plans complete; v1.1: 17/17)
 | 05-fix-update-workflow | 1 | 2min | 2min |
 | 06-cleanup-orphaned-workflows | 1 | 2min | 2min |
 | 07-state-coherence-foundation | 4 | 20min | 5min |
-| Phase 08 P01 | 8min | 2 tasks | 2 files |
-| Phase 08 P02 | 4min | 2 tasks | 2 files |
-| Phase 08 P03 | 3min | 2 tasks | 2 files |
-| Phase 09 P01 | 5min | 2 tasks | 4 files |
-| Phase 09 P03 | 3min | 2 tasks | 4 files |
-| Phase 09 P02 | 4min | 2 tasks | 2 files |
-| Phase 10 P10-01 | 6min | 3 tasks | 2 files |
-| Phase 10 P10-02 | 5min | 2 tasks | 2 files |
-| Phase 10 P10-03 | 4min | 2 tasks | 2 files |
-| Phase 11 P11-01 | 3min | 2 tasks | 1 files |
-| Phase 11 P11-02 | 3min | 2 tasks | 1 files |
-| Phase 11 P03 | 2min | 2 tasks | 1 files |
-| Phase 12 P12-01 | 2min | 3 tasks | 9 files |
+| 08-dag-based-phase-scheduling | 3 | 15min | 5min |
+| 09-multi-phase-execution-engine | 3 | 12min | 4min |
+| 10-live-feedback-and-visual-differentiation | 3 | 15min | 5min |
+| 11-readme-overhaul | 3 | 8min | 3min |
+| 12-audit-gap-closure | 1 | 2min | 2min |
 
 ## Accumulated Context
 
 ### Decisions
 
-**v1.1 Roadmap Decisions:**
-
-| Decision | Rationale |
-|----------|-----------|
-| Phases 7+8 can execute in parallel | Different file domains (state layer vs roadmap layer) -- no shared write conflicts; this is proof-of-concept for DAG model |
-| Phase 10 depends on Phase 7 only (not 8) | Structured messages and single-writer protocol are needed; DAG scheduling is not |
-| README overhaul is last phase | Documents what was actually built; writing before implementation creates churn |
-| 5 phases for quick depth | Each maps 1:1 to a requirement category; fewer would force artificial merges |
-
-| Verbose event set as default with lean toggle commented out | Ship all 7 event types; can switch to milestones-only by uncommenting one line |
-| Chat log filenames use sorted peer IDs | Deterministic deduplication: phase-07-to-phase-08 regardless of sender |
-| Active Phases table coexists with Current Position | v1.0 single-agent view preserved; v1.1 multi-agent coordinator dashboard added alongside |
-| STATUS.md existence as multi-agent detection signal | Convention-based: if coordinator initialized it, workers use multi-agent path; no config flag needed |
-
-Full v1.0 decision log in PROJECT.md Key Decisions table.
-Research context: `.planning/research/SUMMARY.md`
-- [Phase 07]: Convention-based STATUS.md discovery over explicit links in STATE.md
-- [Phase 08]: Used regex alternation (?:**:|:**) instead of optional quantifiers for dual-format markdown field matching
-- [Phase 08]: Duplicated phase parsing in cmdRoadmapAnalyzeDag rather than refactoring shared helper -- avoids breaking existing consumers
-- [Phase 08]: Missing dependency references treated as satisfied (warning only) -- more useful for real-world roadmaps
-- [Phase 08]: DAG analyzer writes directly to ROADMAP.md rather than returning analysis to roadmapper -- simpler flow
-- [Phase 08]: Default to INDEPENDENT when uncertain -- over-constraining is worse than under-constraining for execution efficiency
-- [Phase 09]: cmdConfigGet falls back to CONFIG_DEFAULTS for unconfigured keys
-- [Phase 09]: Worktree create uses direct git worktree add (not WorkTrunk wt) per research Pitfall 5
-- [Phase 09]: Help file placed in help/ directory matching existing convention (not mowism/help/ which does not exist)
-- [Phase 09]: Worker worktrees skip ROADMAP.md and REQUIREMENTS.md updates to avoid merge conflicts -- lead handles post-merge
-- [Phase 09]: Create all phase tasks upfront with full DAG dependencies (not incrementally by wave)
-- [Phase 09]: Phase workers spawned NOT in background -- need terminal access for discuss-phase user interaction
-- [Phase 09]: Merge conflicts delegate to focused subagent with minimal context -- keeps lead and worker context lean
-- [Phase 10]: Schema v2 backward compatible -- v1 messages still parse correctly
-- [Phase 10]: Banner fallback chain: 256-color -> util.styleText bold+inverse -> plain text
-- [Phase 10]: Auto-prune threshold 100/50 hardcoded for simplicity; pinned auto-dismiss on any non-error non-input event for same phase
-- [Phase 10]: Dashboard is the notification mechanism -- lead does not manually notify user on input_needed
-- [Phase 10]: input_needed replaces blocker for granular input routing; blocker kept as fallback
-- [Phase 10]: Permission prompt context uses echo above Bash command since prompt itself cannot be modified
-- [Phase 11]: Lifecycle uses numbered walkthrough with exact command names, not abstract descriptions
-- [Phase 11]: Multi-agent presented as opt-in after single-agent default (progressive disclosure)
-- [Phase 11]: Brownfield is a top-level section, not nested under lifecycle
-- [Phase 11]: ASCII flow diagram chosen over Mermaid for universal compatibility
-- [Phase 11]: Descriptions sourced from YAML frontmatter in commands/mow/*.md, not help.md
-- [Phase 11]: join-discord excluded from README: exists in help.md but has no file in commands/mow/
-- [Phase 11]: 14 agent definitions counted from actual agents/ directory (not 11 as plan specified)
-- [Phase 11]: Multi-agent section corrected to describe full-lifecycle workers during human verification
+Full decision log in PROJECT.md Key Decisions table.
+v1.1-specific decisions archived in `.planning/milestones/v1.1-ROADMAP.md`.
 
 ### Pending Todos
 
@@ -104,8 +58,9 @@ Research context: `.planning/research/SUMMARY.md`
 
 ### Blockers/Concerns
 
-- Agent Teams API runtime questions (6 of 8 inconclusive) -- affects Phase 9 coordinator design. Defensive patterns documented. See `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
+- Agent Teams API runtime questions (6 of 8 inconclusive) -- affects coordinator design. Defensive patterns documented. See `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
+- Claude Code now has native worktree support — may overlap with or supersede some Mowism features
 
 ### Quick Tasks Completed
 
@@ -116,7 +71,7 @@ Research context: `.planning/research/SUMMARY.md`
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Completed 12-01-PLAN.md (only plan of Phase 12)
-Resume: v1.1 milestone complete -- all 17/17 plans across 6 phases done. Run /mow:complete-milestone to archive.
-Context: Phase 12 (Audit Gap Closure) complete -- 1 plan executed. SendMessage recipient standardized to "lead", requirements-completed added to all SUMMARY template variants and extraction function, stale "34 commands" updated to "35" in ROADMAP.md and PROJECT.md. Requirements STATE-03, FEED-01, DOC-02 satisfied.
+Last session: 2026-02-24
+Stopped at: v1.1 milestone archived, preparing for v1.2
+Resume: Run /mow:new-milestone to start v1.2 planning
+Context: v1.1 shipped with 18/18 requirements. Researching Claude Code native worktree support and GSD upstream changes before v1.2 scoping.

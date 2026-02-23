@@ -18,3 +18,22 @@
 
 ---
 
+
+## v1.1 Multi-Agent UX & Documentation (Shipped: 2026-02-24)
+
+**Phases completed:** 6 phases (7-12), 17 plans
+**Timeline:** 1 day (2026-02-20)
+**Commits:** 108
+**Files:** 96 modified, +21,129 / -1,184 lines
+**Requirements:** 18/18 satisfied
+
+**Key accomplishments:**
+- Single-writer state protocol with per-phase STATUS.md, structured JSON messaging (7 event types), and Active Phases dashboard for multi-agent coordination
+- DAG-based phase scheduling — dependency parsing, Kahn's BFS topological sort with wave grouping, confidence-tiered parallelism detection in roadmapper
+- Multi-phase execution engine — worktree lifecycle management, DAG-driven team lead orchestrator, autonomous phase workers with full lifecycle, graceful shutdown
+- Live feedback dashboard — 256-color ANSI with fallbacks, 13-event message schema v2, pinned notifications, input routing for permission prompts
+- Comprehensive README — lifecycle narrative (8 stages), 35 commands documented, brownfield entry, configuration/security/troubleshooting
+- Audit gap closure — recipient standardization, requirements-completed in SUMMARY templates
+
+---
+

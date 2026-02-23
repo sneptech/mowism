@@ -24,14 +24,15 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 - ✓ One-command install from GitHub README with all skills registered in `~/.claude/` — v1.0
 - ✓ Portable paths — zero hardcoded `~/.claude/` references, works on any machine — v1.0
 - ✓ Dual-path update workflow (git clone and install.sh installations both supported) — v1.0
+- ✓ Multi-agent state coherence — single-writer protocol, per-phase STATUS.md, structured JSON messaging — v1.1
+- ✓ Phase-level parallelism — DAG dependency graph in roadmap, Kahn's BFS topological sort, multi-phase execution across worktrees — v1.1
+- ✓ Live agent feedback — 13-event message schema, dashboard renderer, NDJSON event log, pinned notifications — v1.1
+- ✓ Distributed input routing with color-coded agent terminals — 256-color ANSI banners, input_needed routing, permission prompt context — v1.1
+- ✓ README overhaul — lifecycle narrative (8 stages), 35 commands documented, brownfield entry, config/security/troubleshooting — v1.1
 
 ### Active
 
-- [ ] Multi-agent state coherence architecture — research and implement how `.planning/` state survives parallel worktree execution without merge conflicts or context window exhaustion — v1.1
-- [ ] Phase-level parallelism — DAG dependency graph in roadmap (not linear chain), multi-phase execution across worktrees simultaneously — v1.1
-- [ ] Live agent feedback — message-driven progress reporting from phase workers to orchestrator terminal — v1.1
-- [ ] Distributed input routing with color-coded agent terminals — user switches to worker terminal for input, orchestrator shows rich notifications with phase/mode/terminal info — v1.1
-- [ ] README overhaul — lifecycle narrative, all 35 commands documented, brownfield entry point, config/security/troubleshooting sections — v1.1
+(None — next milestone requirements to be defined via `/mow:new-milestone`)
 
 ### Out of Scope
 
@@ -42,25 +43,17 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 - Building a custom Agent Teams implementation — use Anthropic's experimental feature as-is
 - Plugin/extension marketplace — skills are .md files, users copy them into a directory
 - Automatic model routing — user-selected profiles are more predictable
+- Real-time streaming output from workers — Agent Teams is message-based, discrete milestones are the achievable UX
+- tmux-dependent features — not portable across terminal emulators
 
 ## Context
 
-**Shipped v1.0** with ~41,500 lines across 248 files (cjs, md, sh, json).
-Tech stack: Node.js (mow-tools.cjs), Bash (install.sh), Markdown (workflows, commands, agents, templates, help).
-103 tests passing in mow-tools.test.cjs. 36/36 requirements satisfied. 6 phases, 22 plans executed in ~50 minutes.
+**Shipped v1.1** with 96 files modified (+21,129 lines) across 6 phases and 17 plans.
+Tech stack: Node.js (mow-tools.cjs ~3,500 LOC), Bash (install.sh), Markdown (workflows, commands, agents, templates, help).
+103+ tests passing in mow-tools.test.cjs. 54/54 total requirements satisfied (36 v1.0 + 18 v1.1).
+12 phases, 39 plans executed across two milestones.
 
-**GSD divergence:** Mowism adds worktree-aware state, `/mow:refine-phase` quality gates, Agent Teams coordination, and a `???` help system — none of which exist in upstream GSD. The fork is intentionally permanent.
-
-## Current Milestone: v1.1 Multi-Agent UX & Documentation
-
-**Goal:** Make parallel multi-agent execution actually work well — coherent state across worktrees, phase-level parallelism, live feedback, intuitive input routing — then document the full system in a comprehensive README.
-
-**Target features:**
-- Multi-agent state coherence (research-driven architecture for `.planning/` under parallel execution)
-- Phase-level parallelism (DAG roadmap, concurrent phase execution)
-- Live agent feedback (message-driven progress in orchestrator)
-- Distributed input routing (color-coded terminals, rich notifications)
-- README overhaul (lifecycle narrative, all 35 commands, brownfield entry)
+**GSD divergence:** Mowism adds worktree-aware state, `/mow:refine-phase` quality gates, Agent Teams coordination, DAG scheduling, multi-phase execution, live feedback dashboard, and a `???` help system — none of which exist in upstream GSD. The fork is intentionally permanent.
 
 ## Constraints
 
@@ -84,11 +77,15 @@ Tech stack: Node.js (mow-tools.cjs), Bash (install.sh), Markdown (workflows, com
 | Tiered quality gates (minimum/complex/algorithmic) | Different codebases need different depth of review | ✓ Good — one-word selection, parallel subagents, machine-readable output |
 | Dual-path update (git clone vs install.sh) | Users install via different methods, both need working updates | ✓ Good — configurable via .update-source file |
 | Archive pattern for orphaned files | Keep design references without cluttering active workflows | ✓ Good — _archive/ with YAML frontmatter documenting reason and replacement |
-| Distributed input routing (not centralized/hybrid) | User switches to worker terminal; orchestrator shows rich notification with phase/mode/terminal info | — Pending |
-| Color-coded terminal badges per agent | Red background for orchestrator, rotating bright ANSI colors for workers | — Pending |
-| AT tool availability is per-agent-type | Executor types lack AT tools by design; general-purpose/team-lead types have them; nested hierarchies possible | — Pending |
-| README overhaul is last v1.1 phase | README documents what changed in the milestone, must run after all implementation phases | — Pending |
-| State coherence needs research before implementation | 5 candidate approaches identified; choosing wrong pattern bakes structural problems into multi-agent execution | — Pending |
+| Single-writer protocol for STATE.md | Prevents merge conflicts — coordinator owns STATE.md, workers write STATUS.md | ✓ Good — clean ownership model, workers never contend on shared files |
+| Convention-based STATUS.md discovery | phases/{padded}-{slug}/{padded}-STATUS.md — no config needed | ✓ Good — zero configuration, follows existing file layout |
+| Kahn's BFS for DAG resolution | Standard algorithm, produces wave groups for parallel scheduling | ✓ Good — correct topological order with parallel wave output |
+| Confidence-tiered dependency analysis | HIGH/MEDIUM/LOW tiers for parallelism detection — defaults to INDEPENDENT when uncertain | ✓ Good — over-constraining is worse than under-constraining |
+| Distributed input routing (not centralized/hybrid) | User switches to worker terminal; orchestrator shows rich notification | ✓ Good — simpler UX, no terminal multiplexing dependency |
+| Color-coded terminal badges per agent | Red background for orchestrator, rotating bright ANSI colors for workers | ✓ Good — instant visual identification |
+| 256-color ANSI with fallback chain | 256-color → util.styleText bold+inverse → plain text | ✓ Good — works across terminal capabilities |
+| Dashboard as notification mechanism | Lead doesn't manually notify — dashboard auto-pins input_needed events | ✓ Good — no message noise, user-driven navigation |
+| README overhaul as last v1.1 phase | Documents what was actually built; writing before implementation creates churn | ✓ Good — accurate documentation on first pass |
 
 ---
-*Last updated: 2026-02-20 after v1.1 milestone start*
+*Last updated: 2026-02-24 after v1.1 milestone completion*
