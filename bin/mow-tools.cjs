@@ -909,6 +909,7 @@ function loadConfig(cwd) {
     verifier: true,
     parallelization: true,
     brave_search: false,
+    max_task_attempts: 5,
   };
 
   try {
@@ -942,6 +943,7 @@ function loadConfig(cwd) {
       verifier: get('verifier', { section: 'workflow', field: 'verifier' }) ?? defaults.verifier,
       parallelization,
       brave_search: get('brave_search') ?? defaults.brave_search,
+      max_task_attempts: get('max_task_attempts', { section: 'executor', field: 'max_task_attempts' }) ?? defaults.max_task_attempts,
     };
   } catch {
     return defaults;
@@ -6000,6 +6002,9 @@ function cmdInitExecutePhase(cwd, phase, includes, raw) {
 
     // Phase requirement IDs
     phase_requirement_ids: extractPhaseRequirementIds(cwd, phase),
+
+    // Executor config
+    max_task_attempts: config.max_task_attempts,
 
     // Agent Teams
     agent_teams_enabled: checkAgentTeams().enabled,
