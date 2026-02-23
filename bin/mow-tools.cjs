@@ -6966,6 +6966,164 @@ function cmdWorktreeCreate(cwd, phase, options, raw) {
   output({ created: true, reused: false, path: wtPath, branch }, raw);
 }
 
+function cmdWorktreeCreateNative(cwd, options, raw) {
+  const name = options && options.name;
+  if (!name) { error('--name required for worktree create-native'); }
+
+  const root = getRepoRoot(cwd);
+  const base = getDefaultBranch(root);
+  const absWorktreesDir = path.join(root, '.claude', 'worktrees');
+
+  // Non-phase worktrees: plain git behavior
+  const phaseMatch = name.match(/^phase-(\d+)$/);
+  if (!phaseMatch) {
+    const absPath = path.join(absWorktreesDir, name);
+    fs.mkdirSync(absWorktreesDir, { recursive: true });
+    try {
+      execSync(`git worktree add "${absPath}" -b "${name}" "${base}"`, {
+        cwd: root, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (err) {
+      error(`Failed to create plain worktree: ${err.stderr || err.message}`);
+    }
+    output({ path: absPath, branch: name, phase: null, reused: false }, raw);
+    return;
+  }
+
+  // Phase worktrees: full Mowism coordination
+  const padded = phaseMatch[1].padStart(2, '0');
+  const branch = `phase-${padded}`;
+  const absPath = path.join(absWorktreesDir, name);
+
+  // Read manifest
+  const manifest = readManifest(root);
+
+  // Check for existing worktree (reuse)
+  const wtKey = name;
+  const existing = manifest.worktrees[wtKey];
+  if (existing && fs.existsSync(absPath)) {
+    process.stderr.write(`MOW: Reusing existing worktree for ${name}\n`);
+
+    let stashRestored = false;
+    if (existing.stash_ref) {
+      try {
+        execSync('git stash pop', {
+          cwd: absPath, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        stashRestored = true;
+        existing.stash_ref = null;
+      } catch {
+        process.stderr.write(`MOW: Warning: could not restore stash ${existing.stash_ref}\n`);
+      }
+    }
+
+    existing.status = 'active';
+    writeManifest(root, manifest);
+    output({ path: absPath, branch: existing.branch, phase: padded, reused: true, stash_restored: stashRestored }, raw);
+    return;
+  }
+
+  // Clean stale entry if directory gone
+  if (existing && !fs.existsSync(absPath)) {
+    delete manifest.worktrees[wtKey];
+  }
+
+  // Ensure .claude/worktrees/ directory exists
+  fs.mkdirSync(absWorktreesDir, { recursive: true });
+
+  // Create worktree
+  try {
+    execSync(`git worktree add "${absPath}" -b "${branch}" "${base}"`, {
+      cwd: root, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    error(`Failed to create worktree: ${err.stderr || err.message}`);
+  }
+
+  // Copy .planning/ from main worktree
+  const planningDir = path.join(root, '.planning');
+  const wtPlanningDir = path.join(absPath, '.planning');
+  if (fs.existsSync(planningDir)) {
+    try {
+      execSync(`cp -r "${planningDir}" "${wtPlanningDir}"`, {
+        encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch {
+      process.stderr.write('MOW: Warning: could not copy .planning/ to worktree\n');
+    }
+  }
+
+  // Initialize STATUS.md in the new worktree
+  try {
+    execSync(`node "${path.join(root, 'bin', 'mow-tools.cjs')}" status init ${padded}`, {
+      cwd: absPath, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch {
+    process.stderr.write('MOW: Warning: could not initialize STATUS.md in worktree\n');
+  }
+
+  // Get phase name from find-phase
+  let phaseName = null;
+  try {
+    const phaseInfo = findPhaseInternal(root, padded);
+    if (phaseInfo && phaseInfo.phase_name) {
+      phaseName = phaseInfo.phase_name;
+    }
+  } catch {}
+
+  // Get project name
+  let projectName = 'mowism';
+  try {
+    projectName = path.basename(root);
+  } catch {}
+
+  // Update manifest with new entry (using worktree name as key)
+  manifest.project = manifest.project || projectName;
+  manifest.worktrees[wtKey] = {
+    path: absPath,
+    branch,
+    phase: padded,
+    phase_name: phaseName,
+    created: new Date().toISOString(),
+    status: 'active',
+    stash_ref: null,
+    last_commit: null,
+    merged: false,
+    merged_at: null,
+  };
+  writeManifest(root, manifest);
+
+  output({ path: absPath, branch, phase: padded, reused: false }, raw);
+}
+
+function cmdWorktreeRemoveManifest(cwd, phase, raw) {
+  if (!phase) { error('phase required for worktree remove-manifest'); }
+
+  const root = getRepoRoot(cwd);
+  const padded = normalizePhaseName(phase);
+  const wtKey = `phase-${padded}`;
+
+  const manifest = readManifest(root);
+  const entry = manifest.worktrees[wtKey];
+
+  if (!entry) {
+    output({ removed: false, reason: 'no manifest entry found', key: wtKey }, raw);
+    return;
+  }
+
+  if (entry.merged) {
+    // Fully merged: safe to delete entry entirely
+    delete manifest.worktrees[wtKey];
+    writeManifest(root, manifest);
+    output({ removed: true, key: wtKey, action: 'deleted_entry' }, raw);
+  } else {
+    // Not merged: mark as removed but keep entry (branch may still exist for merge)
+    entry.status = 'removed_unmerged';
+    writeManifest(root, manifest);
+    output({ removed: true, key: wtKey, action: 'marked_removed_unmerged' }, raw);
+  }
+}
+
 function cmdWorktreeListManifest(cwd, raw) {
   const manifest = readManifest(cwd);
   output(manifest, raw);
@@ -7878,8 +8036,15 @@ async function main() {
           result: resultIdx !== -1 ? args[resultIdx + 1] : null,
           blockers: blockersIdx !== -1 ? args[blockersIdx + 1] : null,
         }, raw);
+      } else if (subcommand === 'create-native') {
+        const nameIdx = args.indexOf('--name');
+        cmdWorktreeCreateNative(cwd, {
+          name: nameIdx !== -1 ? args[nameIdx + 1] : null,
+        }, raw);
+      } else if (subcommand === 'remove-manifest') {
+        cmdWorktreeRemoveManifest(cwd, args[2], raw);
       } else {
-        error('Unknown worktree subcommand. Available: create, list-manifest, merge, stash, claim, release, status, update-plan, clean, verify-result');
+        error('Unknown worktree subcommand. Available: create, create-native, list-manifest, merge, stash, claim, release, status, update-plan, clean, verify-result, remove-manifest');
       }
       break;
     }
