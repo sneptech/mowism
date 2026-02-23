@@ -27,6 +27,28 @@ Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelizat
 
 When `parallelization` is false, plans within a wave execute sequentially.
 
+**Worker-mode detection:** When execute-phase is run inline by a phase worker (detected by STATUS.md existence AND current worktree being in `.claude/worktrees/`):
+- Skip `worktree claim` (worker already claimed the phase at spawn time)
+- Skip `handle_branching` (worktree has its own branch)
+- Skip `agent_teams_nudge` (worker is already in an Agent Team)
+- Skip `update_roadmap` (lead handles after merge)
+- Skip `offer_next` auto-advance (worker handles stage sequencing)
+
+The `multi_phase_check` step already handles this case. This note makes the behavior explicit for the worker context.
+
+```bash
+# Detect worker mode
+WORKTREE_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
+IS_WORKER=false
+if [[ "$WORKTREE_PATH" == *".claude/worktrees/"* ]] && [ -f "${phase_dir}/STATUS.md" ]; then
+  IS_WORKER=true
+fi
+```
+
+**If `IS_WORKER` is true:** Skip directly to `validate_phase` (bypassing claim, branching, nudge). The worker's phase-worker agent handles all coordination with the lead.
+
+**If `IS_WORKER` is false:** Proceed with standard initialization below.
+
 **Claim this phase for the current worktree:**
 ```bash
 # Claim phase — prevents other worktrees from executing the same phase
@@ -399,6 +421,8 @@ Verify phase achieved its GOAL, not just completed tasks.
 ```bash
 PHASE_REQ_IDS=$(node ~/.claude/mowism/bin/mow-tools.cjs roadmap get-phase "${PHASE_NUMBER}" | jq -r '.section' | grep -i "Requirements:" | sed 's/.*Requirements:\*\*\s*//' | sed 's/[\[\]]//g')
 ```
+
+**Worker-mode verifier model note:** When running in worker mode, the verifier spawn should use the `verifier_model` passed by the worker (from its resolve-model at init), not re-resolve. The worker passes this as part of its execution context to avoid redundant model resolution.
 
 ```
 Task(

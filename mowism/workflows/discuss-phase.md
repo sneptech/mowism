@@ -158,17 +158,20 @@ ls ${phase_dir}/*-CONTEXT.md 2>/dev/null
 ```
 
 **If exists:**
+
+**Worker-mode note:** When called from a phase worker (worker-mode detected), do NOT offer the "Skip" option. The worker always creates or updates context if missing -- skipping would leave the worker without the context it needs for downstream stages.
+
 Use AskUserQuestion:
 - header: "Context"
 - question: "Phase [X] already has context. What do you want to do?"
 - options:
   - "Update it" — Review and revise existing context
   - "View it" — Show me what's there
-  - "Skip" — Use existing context as-is
+  - "Skip" — Use existing context as-is (not available in worker mode)
 
 If "Update": Load existing, continue to analyze_phase
 If "View": Display CONTEXT.md, then offer update/skip
-If "Skip": Exit workflow
+If "Skip": Exit workflow (only in non-worker mode)
 
 **If doesn't exist:**
 
@@ -477,6 +480,22 @@ node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(state): record phase ${PHAS
 </step>
 
 <step name="auto_advance">
+**Worker-mode guard:** When discuss-phase is invoked inline by a phase worker (detected by the presence of STATUS.md for this phase in the current worktree or by the caller providing a `--worker-mode` flag), SKIP the auto_advance step entirely. The worker handles stage sequencing itself -- auto-advance would create a nested Task() that spawns plan-phase, which conflicts with the worker's inline plan-phase execution.
+
+```bash
+# Detect worker mode
+WORKTREE_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
+IS_WORKER=false
+if [[ "$WORKTREE_PATH" == *".claude/worktrees/"* ]] && [ -f "${phase_dir}/STATUS.md" ]; then
+  IS_WORKER=true
+fi
+# If --worker-mode flag was passed, also set IS_WORKER=true
+```
+
+**If `IS_WORKER` is true:** Skip this entire step. Return control to the caller (the phase worker).
+
+**If `IS_WORKER` is false:** Proceed with auto-advance check below.
+
 Check for auto-advance trigger:
 
 1. Parse `--auto` flag from $ARGUMENTS
