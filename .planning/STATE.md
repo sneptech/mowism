@@ -95,6 +95,7 @@ Recent for v1.2:
 
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
 - Phase 15 inline workflow execution pattern needs validation during research-phase
+- WorktreeRemove hook does not fire if `git worktree remove` fails (e.g., directory held open by file browser) — Claude Code limitation, not Mowism
 
 ## Session Continuity
 
@@ -113,6 +114,9 @@ Session approaching context limit (~14% remaining). Work committed. Run /clear a
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~12% remaining). Work committed. Run /clear and resume.
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
