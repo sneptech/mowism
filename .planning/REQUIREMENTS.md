@@ -35,7 +35,7 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 - [ ] **AUTO-04**: Auto-advance pauses at discuss-phase for user input and resumes after CONTEXT.md created
 - [ ] **AUTO-05**: Auto-advance stops at milestone boundary and clears `workflow.auto_advance` config
 - [ ] **AUTO-06**: `/mow:auto` accepts optional phase range (from/to) for partial pipeline execution
-- [ ] **AUTO-07**: Auto-advance progress banner shows current phase and milestone percentage in dashboard
+- [x] **AUTO-07**: Auto-advance progress banner shows current phase and milestone percentage in dashboard
 
 ### Bugfix Ports
 
@@ -105,7 +105,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTO-04 | Phase 16 | Pending |
 | AUTO-05 | Phase 16 | Pending |
 | AUTO-06 | Phase 16 | Pending |
-| AUTO-07 | Phase 16 | Pending |
+| AUTO-07 | Phase 16 | Complete |
 | BUG-01 | Phase 13 | Complete |
 | BUG-02 | Phase 13 | Complete |
 | BUG-03 | Phase 13 | Complete |

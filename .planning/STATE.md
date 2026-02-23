@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.2 Phase 15 (Full-Lifecycle Workers)
+**Current focus:** v1.2 Phase 16 (Auto-Advance Pipeline)
 
 ## Current Position
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
-Phase: 15 of 16 (Full-Lifecycle Workers)
-Plan: 3 of 3 in current phase
-Status: Phase 15 Complete
-Last activity: 2026-02-24 -- Plan 15-03 executed (workflow guards + team lead stage awareness)
+Phase: 16 of 16 (Auto-Advance Pipeline)
+Plan: 2 of 2 in current phase
+Status: Executing Phase 16
+Last activity: 2026-02-24 -- Plan 16-02 executed (auto-advance dashboard banner)
 
-Progress: [##########] 100% (Phase 15)
+Progress: [#####-----] 50% (Phase 16)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [##########] 100% (Phase 15)
 | Phase 15 P01 | 3min | 2 tasks | 2 files |
 | Phase 15 P03 | 2min | 2 tasks | 3 files |
 | Phase 15 P02 | 3min | 1 tasks | 1 files |
+| Phase 16 P02 | 2min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,7 @@ Recent for v1.2:
 - [Phase 15]: Team lead shows lifecycle stage in Active Phases (e.g., 'executing (research)') via stage_transition events
 - [Phase 15]: Discuss runs inline (not Task()) because AskUserQuestion needs worker terminal session
 - [Phase 15]: Stage gates read at each boundary (not cached) to allow mid-lifecycle config changes
+- [Phase 16]: Inline ROADMAP.md parsing for milestone stats (analyzeDagInternal not yet available from Plan 16-01)
 
 ### Pending Todos
 
@@ -109,8 +111,8 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 15-03-PLAN.md
-Resume: Phase 15 complete -- proceed with verification or Phase 16
+Stopped at: Completed 16-02-PLAN.md
+Resume: Phase 16 Plan 02 complete -- continue with remaining Phase 16 plans or verify milestone
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
@@ -123,6 +125,9 @@ Session approaching context limit (~14% remaining). Work committed. Run /clear a
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~12% remaining). Work committed. Run /clear and resume.
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
