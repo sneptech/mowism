@@ -5817,6 +5817,15 @@ function getRoadmapPhaseInternal(cwd, phaseNum) {
   }
 }
 
+function extractPhaseRequirementIds(cwd, phaseNum) {
+  const phaseData = getRoadmapPhaseInternal(cwd, phaseNum);
+  if (!phaseData || !phaseData.section) return [];
+  const reqMatch = phaseData.section.match(/\*\*Requirements(?:\*\*:|\*\*:\s*|:\*\*\s*)([^\n]+)/i);
+  if (!reqMatch) return [];
+  const raw = reqMatch[1].replace(/^\s*\[?\s*/, '').replace(/\s*\]?\s*$/, '');
+  return raw.split(/[,\s]+/).map(s => s.trim()).filter(s => /^[A-Z]+-\d+$/.test(s));
+}
+
 function pathExistsInternal(cwd, targetPath) {
   const fullPath = path.isAbsolute(targetPath) ? targetPath : path.join(cwd, targetPath);
   try {
@@ -5906,6 +5915,9 @@ function cmdInitExecutePhase(cwd, phase, includes, raw) {
     roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
     config_exists: pathExistsInternal(cwd, '.planning/config.json'),
 
+    // Phase requirement IDs
+    phase_requirement_ids: extractPhaseRequirementIds(cwd, phase),
+
     // Agent Teams
     agent_teams_enabled: checkAgentTeams().enabled,
     agent_teams_nudge_dismissed: getAgentTeamsNudgeDismissed(cwd),
@@ -5959,6 +5971,9 @@ function cmdInitPlanPhase(cwd, phase, includes, raw) {
     has_context: phaseInfo?.has_context || false,
     has_plans: (phaseInfo?.plans?.length || 0) > 0,
     plan_count: phaseInfo?.plans?.length || 0,
+
+    // Phase requirement IDs
+    phase_requirement_ids: extractPhaseRequirementIds(cwd, phase),
 
     // Environment
     planning_exists: pathExistsInternal(cwd, '.planning'),
@@ -6275,6 +6290,9 @@ function cmdInitPhaseOp(cwd, phase, raw) {
     has_plans: (phaseInfo?.plans?.length || 0) > 0,
     has_verification: phaseInfo?.has_verification || false,
     plan_count: phaseInfo?.plans?.length || 0,
+
+    // Phase requirement IDs
+    phase_requirement_ids: extractPhaseRequirementIds(cwd, phase),
 
     // File existence
     roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
