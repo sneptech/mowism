@@ -44,7 +44,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`
 - Integer phases (13, 14, 15, 16): Planned milestone work
 - Decimal phases (13.1, 14.1): Urgent insertions if needed (marked with INSERTED)
 
-- [ ] **Phase 13: GSD Bugfix Ports** - Fix 11 correctness bugs from GSD upstream plus context window monitor hook
+- [x] **Phase 13: GSD Bugfix Ports** - Fix 11 correctness bugs from GSD upstream plus context window monitor hook (completed 2026-02-23)
 - [ ] **Phase 14: Native Worktree Adoption** - Replace custom worktree creation with Claude Code native hooks, simplify coordination layer
 - [ ] **Phase 15: Full-Lifecycle Workers** - Workers autonomously chain discuss, research, plan, execute, refine per phase with nested subagents
 - [ ] **Phase 16: Auto-Advance Pipeline** - `/mow:auto` chains phases through milestone end with DAG awareness and discuss pause gates
@@ -137,7 +137,7 @@ DAG: {13, 14} -> 15 -> 16
 | 10. Live Feedback and Visual Differentiation | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 11. README Overhaul | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 12. Audit Gap Closure | v1.1 | 1/1 | Complete | 2026-02-20 |
-| 13. GSD Bugfix Ports | 4/5 | In Progress|  | - |
+| 13. GSD Bugfix Ports | 5/5 | Complete   | 2026-02-23 | - |
 | 14. Native Worktree Adoption | v1.2 | 0/? | Not started | - |
 | 15. Full-Lifecycle Workers | v1.2 | 0/? | Not started | - |
 | 16. Auto-Advance Pipeline | v1.2 | 0/? | Not started | - |

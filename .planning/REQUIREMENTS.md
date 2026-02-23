@@ -47,7 +47,7 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 - [x] **BUG-06**: plan-phase warns if no CONTEXT.md exists; discuss-phase warns if plans already exist
 - [x] **BUG-07**: `/mow:health --repair` creates timestamped backup of STATE.md before regeneration
 - [x] **BUG-08**: Subagent spawn prompts include project CLAUDE.md content for context discovery
-- [ ] **BUG-09**: Todo system has `in-progress/` state and `todo start` subcommand (not immediately moved to done/)
+- [x] **BUG-09**: Todo system has `in-progress/` state and `todo start` subcommand (not immediately moved to done/)
 - [x] **BUG-10**: PostToolUse hook monitors context window usage and warns at 35%/25% remaining
 - [x] **BUG-11**: Discuss-phase probes ambiguous user preferences with follow-up questions (gray area looping)
 
@@ -114,7 +114,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUG-06 | Phase 13 | Complete |
 | BUG-07 | Phase 13 | Complete |
 | BUG-08 | Phase 13 | Complete |
-| BUG-09 | Phase 13 | Pending |
+| BUG-09 | Phase 13 | Complete |
 | BUG-10 | Phase 13 | Complete |
 | BUG-11 | Phase 13 | Complete |
 

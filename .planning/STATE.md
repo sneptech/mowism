@@ -48,6 +48,7 @@ Progress: [██████████] 100% (Phase 13)
 | Phase 13 P03 | 2min | 2 tasks | 1 files |
 | Phase 13 P01 | 5min | 3 tasks | 1 files |
 | Phase 13 P02 | 5min | 2 tasks | 2 files |
+| Phase 13 P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Recent for v1.2:
 - [Phase 13]: Callback replacer pattern for .replace() with user data prevents dollar sign corruption
 - [Phase 13]: Backups never auto-deleted; cleanup suggestion informational only
 - [Phase 13]: Executor retry: warn at 3 attempts, hard block at max_task_attempts (default 5)
+- [Phase 13-04]: Todo 3-state lifecycle: no concurrent limit, no auto-revert, file-path overlap interference detection only
 
 ### Pending Todos
 
@@ -82,5 +84,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 13-02-PLAN.md (safety guardrails: backup-before-repair, executor retry limits)
-Resume: Continue with remaining Phase 13 plan (04) or start Phase 14
+Stopped at: Completed 13-04-PLAN.md (3-state todo lifecycle with in-progress support)
+Resume: Phase 13 fully complete (all 5 plans). Start Phase 14
