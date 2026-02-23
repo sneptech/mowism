@@ -85,13 +85,44 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| WKT-01 | Phase 14 | Pending |
+| WKT-02 | Phase 14 | Pending |
+| WKT-03 | Phase 14 | Pending |
+| WKT-04 | Phase 14 | Pending |
+| WKT-05 | Phase 14 | Pending |
+| WKT-06 | Phase 14 | Pending |
+| WKT-07 | Phase 14 | Pending |
+| WORK-01 | Phase 15 | Pending |
+| WORK-02 | Phase 15 | Pending |
+| WORK-03 | Phase 15 | Pending |
+| WORK-04 | Phase 15 | Pending |
+| WORK-05 | Phase 15 | Pending |
+| WORK-06 | Phase 15 | Pending |
+| WORK-07 | Phase 15 | Pending |
+| AUTO-01 | Phase 16 | Pending |
+| AUTO-02 | Phase 16 | Pending |
+| AUTO-03 | Phase 16 | Pending |
+| AUTO-04 | Phase 16 | Pending |
+| AUTO-05 | Phase 16 | Pending |
+| AUTO-06 | Phase 16 | Pending |
+| AUTO-07 | Phase 16 | Pending |
+| BUG-01 | Phase 13 | Pending |
+| BUG-02 | Phase 13 | Pending |
+| BUG-03 | Phase 13 | Pending |
+| BUG-04 | Phase 13 | Pending |
+| BUG-05 | Phase 13 | Pending |
+| BUG-06 | Phase 13 | Pending |
+| BUG-07 | Phase 13 | Pending |
+| BUG-08 | Phase 13 | Pending |
+| BUG-09 | Phase 13 | Pending |
+| BUG-10 | Phase 13 | Pending |
+| BUG-11 | Phase 13 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32 ⚠️
+- Mapped to phases: 32
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 after roadmap creation*

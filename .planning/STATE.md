@@ -5,15 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.2 Native Worktrees & Full-Lifecycle Workers
+**Current focus:** v1.2 Phase 13 (GSD Bugfix Ports) / Phase 14 (Native Worktree Adoption) -- parallelizable
 
 ## Current Position
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-24 — Milestone v1.2 started
+Phase: 13 of 16 (GSD Bugfix Ports) -- Phase 14 parallelizable
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-02-24 -- Roadmap created for v1.2
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -50,31 +52,25 @@ Last activity: 2026-02-24 — Milestone v1.2 started
 Full decision log in PROJECT.md Key Decisions table.
 v1.1-specific decisions archived in `.planning/milestones/v1.1-ROADMAP.md`.
 
+Recent for v1.2:
+- Phase 13+14 are parallelizable (disjoint code sections)
+- Native worktree adoption keeps existing coordination layer (claiming, manifest, merge)
+- Full-lifecycle workers use disk-first context passing (file paths, not contents)
+- Discuss-phase always pauses for user input (hard constraint, never bypassed)
+
 ### Pending Todos
 
-1 pending todo:
-- **Full-lifecycle multi-agent workers** — workers should run discuss → research → plan → execute → refine, not just execution (`.planning/todos/pending/2026-02-20-full-lifecycle-multi-agent-workers.md`) — **addressed in v1.2 scope**
+1 pending todo (addressed in v1.2 scope):
+- **Full-lifecycle multi-agent workers** -- `.planning/todos/pending/2026-02-20-full-lifecycle-multi-agent-workers.md`
 
 ### Blockers/Concerns
 
-- Agent Teams API runtime questions (6 of 8 inconclusive) -- affects coordinator design. Defensive patterns documented. See `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
-- Claude Code now has native worktree support — v1.2 adopts this as primary strategy
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit |
-|---|-------------|------|--------|
-| 1 | Research Agent Teams API capabilities and constraints | 2026-02-20 | ad6260a |
-| 2 | Runtime test Agent Teams API (8 open questions) | 2026-02-20 | 16bea5a |
-
-### v1.2 Research (pre-milestone)
-
-- `.planning/research/v1.2-NESTED-DELEGATION.md` — confirmed 2-level hierarchy works (teammate → Task() subagents)
-- `.planning/research/v1.2-GSD-UPSTREAM-DIFF.md` — 9 must-port bugs identified, 8 should-consider items
+- Phase 15 inline workflow execution pattern needs validation during research-phase
+- WorktreeCreate hook path convention decision needed before Phase 14 planning
 
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Milestone v1.2 started, defining requirements
-Resume: Continue with requirements definition or research.
+Stopped at: v1.2 roadmap created with 4 phases (13-16), 32 requirements mapped
+Resume: `/mow:plan-phase 13` (or 14, since they are parallelizable)
