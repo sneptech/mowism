@@ -2,6 +2,10 @@
 
 Coordinated multi-agent workflows for Claude Code -- plan, execute, and ship with parallel agents across git worktrees.
 
+<p align="center">
+  <img src="assets/mowism-image.webp" alt="Mowism" width="600">
+</p>
+
 ## ! IMPORTANT !
 This project is currently in early testing, do not entrust this to production work yet without accepting the risk that something might screw up! Let my naive self experiment, iterate, and step on the rakes so you need not.
 *(last edited: 2026-02-20)*
