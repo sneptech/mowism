@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.2 Phase 14 (Native Worktree Adoption)
+**Current focus:** v1.2 Phase 15 (Full-Lifecycle Workers)
 
 ## Current Position
 
@@ -100,8 +100,8 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 14-05-PLAN.md (worktree test suite update for native paths)
-Resume: Phase 14 fully complete (including gap closure plan 05). Continue with Phase 15
+Stopped at: Phase 15 context gathered
+Resume: .planning/phases/15-full-lifecycle-workers/15-CONTEXT.md — continue with /mow:plan-phase 15
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
@@ -114,6 +114,9 @@ Session approaching context limit (~14% remaining). Work committed. Run /clear a
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~12% remaining). Work committed. Run /clear and resume.
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
