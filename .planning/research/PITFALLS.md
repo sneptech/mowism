@@ -1,382 +1,425 @@
-# Domain Pitfalls: v1.1 Multi-Agent Coordination
+# Domain Pitfalls: v1.2 Native Worktrees, Full-Lifecycle Workers, Auto-Advance, GSD Cherry-Pick
 
-**Domain:** Adding parallel phase execution, shared state coherence, live agent feedback, and distributed input routing to an existing sequential multi-agent orchestration system
-**Researched:** 2026-02-20
-**Supersedes:** v1.0 PITFALLS.md (2026-02-19) -- v1.0 pitfalls (fork drift, API fragility, token cost, etc.) remain valid but are not repeated here. This document covers NEW pitfalls specific to v1.1's parallel execution features.
-**Overall confidence:** HIGH (grounded in existing codebase analysis, Agent Teams API research, and multi-agent failure literature)
+**Domain:** Adding native worktree isolation, full-lifecycle workers, nested agent delegation, auto-advance pipeline, and upstream bugfix cherry-picks to an existing multi-agent CLI orchestration system (Mowism)
+**Researched:** 2026-02-24
+**Supersedes:** v1.1 PITFALLS.md (2026-02-20) -- v1.1 pitfalls (concurrent state, context exhaustion, DAG cycles, etc.) remain valid and are not repeated here. This document covers NEW pitfalls specific to v1.2's changes.
+**Overall confidence:** HIGH (grounded in codebase analysis, official Claude Code docs, pre-existing delegation/upstream research, and v1.1 operational experience)
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, data corruption, or architectural dead ends. Each of these has caused real failures in multi-agent systems.
+Mistakes that cause rewrites, broken coordination, or data loss. Each targets a specific v1.2 feature area.
 
 ---
 
-### Pitfall 1: Lost Updates in STATE.md During Parallel Phase Execution
+### Pitfall 1: Native Worktree Isolation Creates Worktrees in a Different Location Than Mowism Expects
 
 **What goes wrong:**
-Phase Worker A (in worktree-alpha) reads STATE.md, updates "Phase 3: Complete," and writes it back. Phase Worker B (in worktree-beta) read the SAME STATE.md before A's write, updates "Phase 4: In Progress," and writes it back. B's write overwrites A's update. Phase 3 completion is lost -- the orchestrator thinks Phase 3 is still running. This is the classic "lost update" concurrency problem, transplanted to file-based state.
-
-In Mowism's current architecture, this is not theoretical. The `execute-phase` workflow calls `mow-tools.cjs phase complete` which modifies STATE.md's "Current Position" section, ROADMAP.md's progress table, and REQUIREMENTS.md's traceability. Two concurrent `phase complete` calls on different worktrees will corrupt all three files.
+Claude Code's `isolation: worktree` creates worktrees at `.claude/worktrees/<name>`. Mowism's entire coordination layer -- manifest tracking, claim table, merge orchestration, stash/restore, STATUS.md initialization -- assumes worktrees live at `.worktrees/p{NN}` in the repo root. After switching to native worktree isolation, the manifest JSON tracks paths in `.worktrees/` but actual worktrees exist in `.claude/worktrees/`. The `worktree claim` function reads from manifest, finds a path that does not exist on disk, and treats the claim as stale. The `worktree merge` function tries to merge branch `phase-{NN}` but the branch was created by Claude Code with a different naming convention (auto-generated slug, not `phase-{NN}`). The `close-shop` workflow tries to iterate `.worktrees/` to find phase worktrees, finds nothing, and reports "no active worktrees."
 
 **Why it happens:**
-The v1.0 system assumes sequential execution. STATE.md, ROADMAP.md, and REQUIREMENTS.md are designed as single-writer files with no concurrency control. The `mow-tools.cjs` commands are not atomic -- they read a file, modify it in memory, and write it back. The window between read and write (typically 50-200ms for file I/O plus string manipulation) is long enough for another process to interleave.
+`cmdWorktreeCreate` in mow-tools.cjs (line 6610-6724) hardcodes the path pattern `.worktrees/p{NN}` and the branch naming convention `phase-{NN}`. It also runs `cp -r .planning/` and `status init` in the new worktree. Claude Code's native `isolation: worktree` handles worktree creation entirely on its own -- different path, different branch name, no planning copy, no STATUS.md init. The two systems have incompatible assumptions about where worktrees live and how they are named.
 
-Git worktrees share a `.git` database but have separate working directories. Two worktrees can modify the same file path on different branches and not conflict until merge. But if both target the main branch (where `.planning/` lives), or if STATE.md is shared across worktrees via symlinks or periodic sync, the lost update is immediate.
+Additionally, `isolation: worktree` in subagent frontmatter means the worktree is created AND cleaned up automatically when the subagent finishes. If the subagent makes no changes, the worktree is auto-deleted. This conflicts with Mowism's pattern of keeping worktrees alive after phase completion for inspection, deferred context capture, and manual merge.
 
 **Consequences:**
-- Orchestrator loses awareness of completed phases, potentially re-executing them
-- ROADMAP.md progress table shows stale status, misleading both orchestrator and user
-- REQUIREMENTS.md traceability goes out of sync, causing verification failures
-- `worktree claim` may allow duplicate claims if the claim table was corrupted
+- Manifest JSON is out of sync with actual worktree locations -- every manifest-based operation fails
+- `worktree merge`, `worktree release`, `worktree-status`, `close-shop` all break
+- `.planning/` is not copied to native worktrees -- workers start without phase plans, STATE.md, or config
+- STATUS.md is not initialized -- worker messaging protocol that depends on STATUS.md breaks
+- Auto-cleanup deletes worktrees before close-shop can capture deferred items or merge
+- Branch naming mismatch means merge operations target nonexistent branches
 
 **Prevention:**
-1. **Single writer for shared state.** Only the orchestrator writes to STATE.md, ROADMAP.md, and REQUIREMENTS.md. Phase workers report completion via Agent Teams inbox messages. The orchestrator serializes these updates.
-2. **File-level locking in mow-tools.cjs.** Add advisory locks (`flock` on Linux) around all STATE.md read-modify-write operations. This prevents concurrent `mow-tools.cjs` invocations from interleaving.
-3. **Distributed state files.** Split per-phase status into `phases/XX/status.json` (one per phase). Each worker writes only its own status file. The orchestrator reads all status files to construct a unified view. No shared mutable file.
-4. **Optimistic concurrency control.** Add a version counter to STATE.md. Before writing, check that the version hasn't changed since the read. If it has, re-read and retry. This is the file-based equivalent of `If-Match` headers.
+1. **Use WorktreeCreate/WorktreeRemove hooks, not `isolation: worktree` frontmatter.** The hooks (v2.1.50) receive `{name, path}` via stdin JSON and let Mowism control the worktree lifecycle. The WorktreeCreate hook runs Mowism's creation logic (create at `.worktrees/p{NN}`, copy `.planning/`, init STATUS.md, update manifest) and outputs the worktree path to stdout. Claude Code then uses that path. This preserves native integration while keeping Mowism's coordination intact.
+2. **Alternatively, update `cmdWorktreeCreate` to accept arbitrary paths.** If we want subagents to use `isolation: worktree`, adapt the manifest system to track whatever path Claude Code provides. The WorktreeCreate hook bridges the gap: it receives the path from Claude Code and registers it in the manifest. But this requires refactoring every function that hardcodes `.worktrees/p{NN}`.
+3. **Do NOT use `isolation: worktree` on subagent YAML frontmatter for phase workers.** Phase workers need long-lived worktrees that survive the subagent lifecycle. `isolation: worktree` auto-cleans up. Instead, create worktrees BEFORE spawning the teammate (current pattern) and point the teammate at the pre-created worktree.
+4. **For plan-level executor subagents inside a phase worker,** `isolation: worktree` is fine IF the executor only needs temporary isolation within the phase worker's branch. But currently executors work within the phase worker's worktree (not their own) -- they share the worker's workspace. Adding worktree-per-executor would create 6 phases x 4 plans = 24 worktrees, which is the disk space explosion from v1.1 Pitfall 12.
 
 **Detection:**
-- `git log --all -- .planning/STATE.md` shows commits from multiple worktrees within seconds of each other
-- STATE.md "Current Position" section disagrees with what phase workers actually completed
-- `mow-tools.cjs roadmap get-phase` returns stale status for a phase that finished minutes ago
-- `worktree-status` shows a phase as "active" when no worker is running it
+- `node mow-tools.cjs worktree list-manifest` shows entries but `ls .worktrees/` is empty
+- Workers report "phase directory not found" or "no plans found" at startup
+- `close-shop` reports "no active worktrees to merge"
+- `git worktree list` shows worktrees at `.claude/worktrees/` not tracked by manifest
 
-**Phase to address:** First implementation phase (state coherence architecture). This MUST be solved before any parallel execution is enabled. Every other v1.1 feature depends on state being correct.
+**Phase to address:** First phase (native worktree adoption). This must be resolved before any other v1.2 feature can work. The WorktreeCreate/WorktreeRemove hook approach is recommended.
 
-**Confidence:** HIGH -- this is a well-understood concurrency problem. The codebase has zero concurrency controls in mow-tools.cjs (verified by reading the source).
+**Confidence:** HIGH -- verified by reading `cmdWorktreeCreate` (hardcoded paths at line 6616), official Claude Code docs (isolation: worktree creates at `.claude/worktrees/`), and WorktreeCreate hook docs (v2.1.50, receives JSON with path).
 
 ---
 
-### Pitfall 2: Coordinator Context Window Exhaustion Under Message Flood
+### Pitfall 2: Removing Too Much Custom Worktree Code (Simplification Overshoot)
 
 **What goes wrong:**
-The orchestrator (team lead) receives messages from every phase worker: task claimed, task complete, error encountered, checkpoint hit. It also receives automatic idle notifications from Agent Teams after every worker turn. With N phase workers, each sending 5-10 milestone messages plus automatic idle notifications (estimated 1 per turn, 20-50 turns per phase), the orchestrator's 200k context fills with coordination traffic rather than coordination logic.
-
-Claude Code's auto-compression triggers and lossily compresses earlier context. The orchestrator forgets which phases it already launched, which dependency edges it resolved, which decisions it made. It may re-launch an already-running phase, skip a dependency check it already performed, or send contradictory instructions to workers because it forgot its own earlier messages.
+The simplification pass sees that Claude Code now handles worktree creation natively and removes `cmdWorktreeCreate`, the manifest system, and the `.planning/` copy hook. But the native feature ONLY creates git worktrees -- it does not: track phase-to-worktree mapping (manifest), prevent duplicate claims (claim table in STATE.md), merge worktrees back with conflict detection (`worktree merge`), stash/restore interrupted work (`worktree stash`), initialize per-phase STATUS.md, copy `.planning/` context files, or coordinate close-shop cleanup. After the simplification, workers get clean worktrees with no project state, no one tracks which worktree runs which phase, merge requires manual git commands, and crash recovery loses the stash/restore path.
 
 **Why it happens:**
-The orchestrator's context window is finite (200k tokens). Every inbox message, idle notification, TaskList query result, and STATE.md read consumes tokens. With 4 parallel phase workers, conservative estimates:
-
-| Source | Per-worker messages | Total (4 workers) | Estimated tokens |
-|--------|--------------------|--------------------|------------------|
-| Milestone messages (claimed, commit, complete) | 8-15 | 32-60 | 16k-30k |
-| Idle notifications (automatic, per turn) | 20-50 | 80-200 | 8k-20k |
-| TaskList queries (periodic) | 3-5 | 12-20 | 6k-10k |
-| STATE.md re-reads (periodic) | 2-3 | 8-12 | 8k-12k |
-| Orchestrator's own reasoning | -- | -- | 20k-40k |
-| System prompt + loaded context | -- | -- | 30k-50k |
-
-Total estimate: 88k-162k tokens for a 4-worker run. This leaves minimal headroom. At 6+ workers, compression is nearly guaranteed within the first 30 minutes.
+The simplification goal ("remove redundant worktree code where Claude Code handles natively") is ambiguous about what counts as "redundant." The temptation is to replace the entire `cmdWorktreeCreate` function (and its 100+ lines) with a one-liner `isolation: worktree`. But `cmdWorktreeCreate` does 5 things: (1) create git worktree, (2) copy `.planning/`, (3) init STATUS.md, (4) update manifest, (5) handle reuse/stash-restore. Only step (1) is redundant with native support. Steps 2-5 are the coordination layer that has no native equivalent.
 
 **Consequences:**
-- Orchestrator forgets which phases are running, potentially spawning duplicates
-- Dependency resolution decisions are lost after compression, leading to incorrect phase ordering
-- Worker status tracking drifts from reality -- orchestrator reports stale status to user
-- Decision consistency degrades: orchestrator may approve contradictory approaches for different phases
+- Phase-to-worktree mapping is lost -- orchestrator cannot track which phase runs where
+- No duplicate phase prevention -- two workers can claim the same phase
+- Merge workflow breaks -- `worktree merge` depends on manifest entries
+- Crash recovery degrades -- no stash/restore capability for interrupted work
+- STATUS.md not initialized -- worker messaging protocol breaks from first message
 
 **Prevention:**
-1. **State on disk, not in context.** The orchestrator should NEVER rely on message history for current system state. After every significant action, update STATUS files on disk. Before every significant decision, re-read STATUS files from disk. This makes the orchestrator compression-resilient: even after aggressive compression, it can reconstruct awareness by reading files.
-2. **Message budget per worker.** Workers send ONLY: (a) task claimed, (b) task complete with 1-line summary, (c) error with 1-line description, (d) checkpoint/blocked. No progress chatter, no verbose explanations, no inline file contents. Target: <5 messages per plan.
-3. **Phase worker autonomy.** Phase workers (spawned as `general-purpose` type with AT tools) manage their own wave execution independently. They handle plan-level orchestration internally and message the coordinator only at phase-level transitions: phase started, phase complete, phase failed. This reduces coordinator message volume from O(plans) to O(phases).
-4. **Idle notification tolerance.** The orchestrator should be instructed to not respond to idle notifications unless a worker has been idle for >30 seconds. Most idle notifications are transient (between tool calls). Responding to each one wastes context on "Worker X is idle" / "Worker X is active again" churn.
-5. **Periodic context checkpointing.** Every 10-15 minutes, the orchestrator writes a structured status snapshot to disk and reads it back. This creates a "save point" that survives compression.
+1. **Enumerate every function the custom code provides.** Before removing anything, create a capabilities matrix:
+
+   | Capability | Custom code | Native support | Gap |
+   |-----------|------------|---------------|-----|
+   | Create git worktree | cmdWorktreeCreate | isolation: worktree | None |
+   | Copy .planning/ | cmdWorktreeCreate | None | KEEP |
+   | Init STATUS.md | cmdWorktreeCreate | None | KEEP |
+   | Track in manifest | cmdWorktreeCreate + manifest | None | KEEP |
+   | Claim prevention | worktree claim | None | KEEP |
+   | Merge orchestration | worktree merge | None | KEEP |
+   | Stash/restore | worktree stash | None | KEEP |
+
+2. **Remove ONLY the git worktree creation step.** Replace `git worktree add` (line 6663) with delegation to Claude Code's native mechanism via hooks. Keep everything else.
+3. **Ship the simplification as a separate phase from the feature additions.** If simplification and new features ship together, regressions from over-removal are masked by new code. Simplify first, verify coordination still works, then add new features.
+4. **Write integration tests before removing code.** The test creates a worktree, verifies manifest, verifies `.planning/` copy, verifies STATUS.md, verifies claim, verifies merge. Run after simplification to catch regressions.
 
 **Detection:**
-- Orchestrator asks workers for information it already received
-- Orchestrator re-launches a phase that is already running
-- Orchestrator's status reports become increasingly inaccurate over time
-- Orchestrator gives contradictory instructions to different workers
-- Session length exceeds 30 minutes with 4+ workers
+- `worktree list-manifest` returns empty or stale data
+- Workers cannot find `.planning/` directory at startup
+- Two workers execute the same phase simultaneously
+- `close-shop` merge step fails because manifest has no entries
 
-**Phase to address:** State coherence architecture phase AND live feedback phase. The message budget must be designed into the worker protocol, and the coordinator's state management must be disk-first, context-second.
+**Phase to address:** Simplification pass phase. Must happen AFTER native worktree adoption phase establishes the hook bridge, and BEFORE full-lifecycle workers depend on the coordination layer.
 
-**Confidence:** HIGH -- the AGENT-TEAMS-API-RUNTIME.md research explicitly identified this risk with the same token math. Claude Code's auto-compression is documented behavior.
+**Confidence:** HIGH -- the capabilities matrix can be built directly from reading `cmdWorktreeCreate` (lines 6610-6724), `cmdWorktreeClaim` (line 6928), `cmdWorktreeMerge` (line 6731), and `cmdWorktreeStash` (line 6769).
 
 ---
 
-### Pitfall 3: DAG Dependency Cycles and Phantom Dependencies
+### Pitfall 3: Full-Lifecycle Workers Accumulate 200k+ Tokens Across 4-5 Subagent Chains
 
 **What goes wrong:**
-The v1.0 roadmap uses a linear chain: Phase N depends on Phase N-1. The v1.1 roadmap moves to a DAG (directed acyclic graph) of dependencies. Two failure modes:
+A phase worker (teammate) runs the full lifecycle: discuss -> research -> plan -> execute -> refine. Each stage spawns 1+ Task() subagents. Each subagent returns its results to the parent worker's context. After 4-5 stages:
+- Discuss returns a CONTEXT.md (~2k tokens)
+- Research returns a RESEARCH.md (~5k tokens)
+- Planning returns 3-4 PLAN.md files (~15k tokens total)
+- Execution returns 3-4 SUMMARY.md files (~8k tokens) plus intermediate reasoning
+- Refinement returns quality assessment (~3k tokens)
 
-1. **Cycles:** Phase 3 depends on Phase 4, Phase 4 depends on Phase 5, Phase 5 depends on Phase 3. No phase can start. The system deadlocks or crashes depending on the cycle detection strategy. If the roadmapper (an LLM) generates the dependency graph, cycles are plausible -- LLMs are not reliable graph reasoners.
-
-2. **Phantom dependencies:** The roadmapper conservatively marks Phase 4 as depending on Phase 3 because "the API might use the auth system." But Phase 4 is the marketing website and Phase 3 is the authentication system -- they have no real dependency. The phantom dependency forces sequential execution of phases that could run in parallel, negating the entire benefit of DAG-based scheduling.
+The worker accumulates ~33k tokens of subagent return content plus its own reasoning (~20k per stage), tool call overhead (~5k per subagent spawn), and the initial system prompt + agent definition (~10k). Total: ~110k-150k tokens before the last stage (refinement) even starts. Auto-compaction kicks in and lossily compresses earlier stages. The worker forgets decisions made during discussion, plans created during planning, or commit hashes from execution. The refinement stage operates with degraded context and produces incoherent quality assessments.
 
 **Why it happens:**
-LLMs generating dependency graphs reason by surface-level textual similarity, not structural analysis. If Phase 3 mentions "authentication" and Phase 4 mentions "login page," the LLM may infer a dependency even if the login page is a static mockup. The v1.0 linear chain avoids this by making every phase depend on the previous one -- over-constrained but safe. Moving to a DAG requires the roadmapper to make nuanced judgments about which phases are truly independent.
+Subagent return values flow into the parent's context window. The nested delegation research (v1.2-NESTED-DELEGATION.md) flagged this: "collecting results from 4+ subagents across full lifecycle grows context." The v1.1 system avoided this because workers only executed (1 stage). Full-lifecycle workers make context accumulation 4-5x worse. Each stage NEEDS the results from prior stages (the planner needs discuss decisions; the executor needs plans; the refiner needs execution results). You cannot simply discard prior stage results.
+
+Anthropic's own multi-agent research system uses 15x token usage vs single-agent chat. With 6 phase workers doing full lifecycle, token usage could reach 6 * 15x = 90x, or approximately $60-180 per milestone run depending on model mix.
 
 **Consequences:**
-- Cycles cause deadlock: no phase can start because each waits on another
-- Phantom dependencies force unnecessary serialization, making parallel execution slower than sequential (because of coordination overhead without parallelism benefit)
-- Missing dependencies (the opposite of phantoms) cause phases to start before their prerequisites are ready, leading to runtime failures
+- Workers make decisions inconsistent with earlier stages (forgot discuss decisions during execution)
+- Quality assessment in refinement is incoherent (forgot what was executed)
+- Token cost explodes: 30 subagent spawns at Opus rates = ~$15-30 per phase, ~$90-180 per milestone
+- Auto-compaction noise: workers repeatedly re-read files they already processed because context was compressed
 
 **Prevention:**
-1. **Validate DAG at generation time.** After the roadmapper produces the dependency graph, run a topological sort. If the sort fails, the graph has a cycle. Report the cycle to the user and ask for manual resolution. Implement this in `mow-tools.cjs` as a `roadmap validate-dag` command.
-2. **Default to independent, not dependent.** The roadmapper should mark phases as independent unless there is a concrete, articulable dependency (shared database schema, shared API contract, shared file output). "They both deal with users" is NOT a dependency. "Phase 4 imports a module created in Phase 3" IS a dependency.
-3. **Dependency evidence requirement.** Each dependency edge in the roadmap must include a 1-line justification: `Depends on: Phase 3 (imports auth middleware from Phase 3's output)`. If the roadmapper cannot articulate a specific dependency, the edge should not exist.
-4. **User review of the DAG.** Before execution, display the dependency graph to the user and ask for confirmation. A simple ASCII visualization: `Phase 1 --> Phase 2, Phase 1 --> Phase 3, Phase 2 --> Phase 4`. The user can add or remove edges.
-5. **Cycle-breaking heuristic.** If a cycle is detected and the user is not available, break the cycle by removing the edge with the weakest justification (or the newest edge if justifications are equal).
+1. **Minimize subagent return content.** Subagents write their outputs to DISK (CONTEXT.md, RESEARCH.md, PLAN.md, SUMMARY.md) and return only a 1-2 line summary + file path. The worker reads from disk when it needs detail for the next stage. This keeps subagent returns at ~500 tokens each instead of ~5k-15k.
+2. **Route read-only stages to Haiku.** Research subagents do not modify code. Use `model: haiku` for research and planning stages. Only execution and refinement need Opus/Sonnet. The nested delegation research confirms this: "Use Haiku for read-only research."
+3. **Checkpoint between stages.** After each lifecycle stage, the worker writes a summary to STATUS.md and reads it back at the next stage. If auto-compaction triggers, the worker can reconstruct its state from STATUS.md + the files on disk. This is the disk-first pattern from v1.1 Pitfall 2.
+4. **Consider breaking full-lifecycle into 2 workers.** Instead of 1 worker doing all 5 stages, use 2 workers per phase: Worker A (discuss + research + plan) and Worker B (execute + refine). Worker A completes and its worktree is available for Worker B to read. This halves per-worker context accumulation. The downside: 2x more workers, higher orchestration overhead.
+5. **Set `maxTurns` on each subagent.** Prevent research subagents from running 50+ turns exploring tangential code. Cap research at 20 turns, planning at 30, execution per plan at 50.
 
 **Detection:**
-- `mow-tools.cjs roadmap validate-dag` reports a cycle
-- Two or more phases are in "waiting for dependency" state indefinitely
-- Phase execution takes longer with DAG scheduling than with linear scheduling (phantom dependencies)
-- The roadmapper generates identical dependency graphs for projects with very different structures (it's using a template, not reasoning)
+- Worker's later-stage outputs reference wrong files or outdated decisions
+- Worker re-reads files it already processed (sign of post-compaction confusion)
+- Token usage per milestone exceeds $100 (with Opus-heavy workers)
+- Workers take >30 minutes per phase (context degradation causes thrashing)
 
-**Phase to address:** Phase-level parallelism implementation. The DAG validation must be built BEFORE any parallel phase execution is attempted. Executing an invalid DAG is worse than sequential execution.
+**Phase to address:** Full-lifecycle workers phase. The "minimize return content" and "route to Haiku" strategies must be baked into the worker agent definition from the start.
 
-**Confidence:** HIGH -- cycle detection is a well-understood CS problem (topological sort). The concern about LLM-generated graphs is based on documented limitations of LLMs in graph reasoning tasks.
+**Confidence:** HIGH -- token math is straightforward, and the v1.2-NESTED-DELEGATION.md research explicitly flagged this risk with the same analysis.
 
 ---
 
-### Pitfall 4: Worker Crash Leaving Orphaned State
+### Pitfall 4: Discuss Phase Skipped or Auto-Approved in Autonomous Pipeline
 
 **What goes wrong:**
-Phase Worker 3 claims Phase 3 via `worktree claim`, begins executing plans, writes partial progress to its local `.planning/` files, and then crashes (Claude Code session timeout, rate limit exhaustion, `classifyHandoffIfNeeded` bug, or user closes the terminal). The worktree claim persists in STATE.md, but no worker is actively executing Phase 3. The orchestrator sends messages to the dead worker and receives no response. Other workers cannot claim Phase 3 because it's marked as taken. Phases dependent on Phase 3 wait indefinitely.
+The v1.2 HARD CONSTRAINT says "discuss phase ALWAYS pauses for user input." But the full-lifecycle worker runs discuss -> plan -> execute autonomously. If the phase has no CONTEXT.md, the worker spawns a discuss subagent. The discuss workflow uses `AskUserQuestion` to present gray areas. But the subagent is a Task() call from the worker, which cannot relay `AskUserQuestion` prompts to the user in the same way an interactive session can.
 
-In the current v1.0 architecture, `worktree clean` handles stale claims by checking if the worktree still exists. But in v1.1, the worker is a Claude Code process in a worktree that STILL exists -- the worktree is fine, it's the agent that's dead. The existing stale detection does not cover this case.
+Two failure modes:
+1. **AskUserQuestion fails silently in Task() subagent.** The subagent cannot ask the user questions (it's not in an interactive terminal), so it either skips the discussion, fabricates answers, or blocks indefinitely.
+2. **Auto-advance config is set to `true` (from a previous session).** The `workflow.auto_advance` flag in config.json persists across sessions. The discuss workflow checks `AUTO_CFG` and, if true, spawns plan-phase as Task() without waiting for user input. The pipeline proceeds without discuss-phase ever pausing.
+
+The user's v1.2 scope explicitly says this must never happen: "HARD CONSTRAINT: discuss phase ALWAYS pauses for user input."
 
 **Why it happens:**
-The claim system tracks worktree paths, not agent processes. A worktree can exist without an active agent. Agent Teams' idle notifications may help detect this (a permanently idle worker suggests a crash), but idle notification behavior for terminated agents is UNVERIFIED (Q3 from the API research). The orchestrator has no reliable way to distinguish "worker is thinking deeply" from "worker process is dead."
+The discuss-phase workflow (discuss-phase.md, lines 430-476) has an `auto_advance` step that chains directly to plan-phase when `--auto` flag or `AUTO_CFG` is true. This was designed for the v1.0 single-session flow where the user is present. In the v1.2 multi-agent flow, the worker is autonomous -- there is no user watching the discuss terminal unless explicitly routed there.
+
+Additionally, `AskUserQuestion` behavior inside Task() subagents is defined by the subagent's execution context. The mow-phase-worker already handles this (step 2 sends `input_needed` to lead and waits), but if the discuss WORKFLOW is invoked as a subagent rather than inline by the worker, the `input_needed` protocol may not fire.
 
 **Consequences:**
-- Phase 3 is blocked indefinitely: claimed but not executing
-- Dependent phases (4, 5, ...) wait for Phase 3 and never start
-- Partial state files in the worktree may be inconsistent (half-committed changes)
-- The orchestrator may exhaust its context window waiting for a worker that will never respond
+- Discuss phase produces no CONTEXT.md or a fabricated one, leading to plans that miss user intent
+- User discovers the problem only after execution, requiring a replan and re-execute
+- The "full-lifecycle autonomous workers" feature undermines the core user input guarantee
+- Trust erosion: if auto-advance bypasses the discuss gate once, users lose confidence in the pipeline
 
 **Prevention:**
-1. **Heartbeat protocol.** Workers send a heartbeat message to the orchestrator every 2-3 minutes: `{"type": "heartbeat", "phase": 3, "status": "executing", "plan": "03-02"}`. If the orchestrator does not receive a heartbeat for 5 minutes, mark the worker as suspected dead.
-2. **Timeout-based claim expiry.** Worktree claims include a `last_heartbeat` timestamp. A claim without a heartbeat for >10 minutes is automatically released. The `worktree clean` command checks heartbeat freshness in addition to worktree existence.
-3. **Worker startup handshake.** When a worker starts, it writes a PID file or timestamp to its worktree: `.planning/phases/XX/.worker_alive`. The orchestrator can check file modification time to detect stale workers.
-4. **Graceful degradation on timeout.** When the orchestrator detects a dead worker, it: (a) releases the worktree claim, (b) saves the partial state, (c) notifies the user, (d) optionally respawns a new worker to continue from the last checkpoint. The `execute-phase` resumption logic (re-run skips completed plans) already handles this for plan-level recovery.
-5. **Crash-consistent state writes.** Workers should commit after every plan (already the v1.0 pattern) so that a crash between plans leaves a consistent checkpoint. The new risk is a crash MID-plan, which the v1.0 `SUMMARY.md` check already handles -- no SUMMARY means the plan didn't finish.
+1. **Clear `workflow.auto_advance` at team startup.** When the team lead starts a multi-phase session, explicitly disable auto-advance: `config-set workflow.auto_advance false`. Auto-advance is a single-session feature; it must not persist into multi-agent sessions.
+2. **Discuss runs INLINE in the worker, not as a subagent.** The worker follows the discuss-phase workflow directly (not via Task()) so that `AskUserQuestion` becomes `input_needed` message to lead -> worker pauses -> user switches to terminal -> user answers. This is the pattern already in mow-phase-worker.md step 2.
+3. **Add a guard in discuss-phase workflow.** Check for multi-agent context (e.g., STATUS.md exists, or `$AGENT_TEAMS_ACTIVE` is set). If in multi-agent mode, NEVER auto-advance from discuss. Always pause for user input, regardless of `--auto` flag.
+4. **Validate CONTEXT.md is human-authored.** After discuss completes, the worker checks that CONTEXT.md contains actual decisions (not just "Claude's Discretion" for every area). If all decisions are "Claude's Discretion," flag this as a potential auto-skip and send `input_needed`.
+5. **Implement a discuss-phase bypass register.** If a phase's ROADMAP.md description indicates "pure infrastructure" or "no user-facing decisions," the roadmapper can annotate `discuss: skip` in the phase metadata. This is the ONLY way to bypass discuss, and it's set at roadmap creation time, not at runtime.
 
 **Detection:**
-- `worktree-status` shows an active claim with no recent heartbeat
-- The orchestrator's message log shows "sent message to Worker X" with no response for >5 minutes
-- `git log` in the claimed worktree shows no new commits for an unexpectedly long time
-- Agent Teams TaskList shows a task "in_progress" with no updates
+- CONTEXT.md created without any `input_needed` message in the lead's event log
+- CONTEXT.md has "Claude's Discretion" for every decision area
+- Phase timeline shows discuss-phase completed in <1 minute (too fast for real user interaction)
+- `config.json` shows `auto_advance: true` during a multi-agent session
 
-**Phase to address:** State coherence architecture phase. The heartbeat protocol must be part of the worker coordination design. Without it, any worker crash causes cascading deadlock.
+**Phase to address:** Auto-advance pipeline phase, with guards also added during full-lifecycle workers phase. The `auto_advance` clearing must happen in the team lead's startup sequence.
 
-**Confidence:** HIGH -- worker crashes are inevitable in long-running multi-agent systems. The v1.0 system handles this at the plan level; the v1.1 system must handle it at the phase level.
+**Confidence:** HIGH -- the auto-advance logic is clearly visible in discuss-phase.md (lines 430-476) and the HARD CONSTRAINT is explicit in the v1.2 scope.
 
 ---
 
-### Pitfall 5: .planning/ Copy Semantics Creating Divergent Realities
+### Pitfall 5: Subagents in Task() Cannot Resolve /mow: Skills or Slash Commands
 
 **What goes wrong:**
-Mowism's worktree hook (`WT_PLANNING_COPY_HOOK` in mow-tools.cjs, line 247) copies `.planning/` from the main worktree to new worktrees on creation. This means each worktree starts with a SNAPSHOT of `.planning/` state. As workers modify their local `.planning/` copies independently, each worktree develops its own version of reality. Worker A's `STATE.md` says Phase 2 is complete. Worker B's `STATE.md` says Phase 2 is still running (because B was created before A finished Phase 2).
+The full-lifecycle worker needs to run discuss-phase, plan-phase, and execute-phase. If it delegates these as Task() subagents, the subagents cannot invoke `/mow:discuss-phase` or `/mow:plan-phase` as slash commands. Skills and slash commands are resolved in the main Claude Code session context, not inside Task() subagents. The subagent sees the command as plain text, not an executable workflow.
 
-At merge time, git sees different versions of every `.planning/` file across every worktree branch. The merge produces textual conflicts on structured files (markdown tables, YAML frontmatter, JSON sections). Manual resolution of 10+ conflicting `.planning/` files is tedious and error-prone.
+The v1.2-NESTED-DELEGATION.md research confirmed this: "Skills don't resolve in Task() subagents -- must use @file references, not `/mow:` commands."
 
 **Why it happens:**
-The copy-on-create pattern treats `.planning/` as static project context, but v1.1 makes `.planning/` a live coordination surface. The v1.0 assumption was "one worktree executes one phase, then merges back." In v1.1, multiple worktrees execute multiple phases concurrently, and `.planning/` changes are happening in all of them simultaneously.
+Claude Code slash commands (`/mow:*`) are defined in `commands/mow/*.md` which Claude Code discovers and registers at session startup. Subagents spawned via Task() do not inherit this command registry. They are isolated execution contexts with only the tools, skills, and system prompt specified in their definition. The `@file` reference mechanism does work in Task() prompts (it inlines the file content), but `/mow:command` does not.
 
 **Consequences:**
-- Each worktree has a different view of project state, leading to inconsistent decisions
-- Merge conflicts in `.planning/` after every parallel execution run
-- Workers reading stale ROADMAP.md make decisions based on outdated phase status
-- The "single source of truth" property of `.planning/` is lost
+- Subagent attempts to run `/mow:plan-phase 7` and it fails or is treated as literal text
+- The subagent may try to "interpret" the command by reading the workflow file itself and following it step-by-step, but this is fragile and misses initialization logic from mow-tools.cjs
+- The worker falls back to ad-hoc implementation of workflow steps, producing inconsistent results
 
 **Prevention:**
-1. **Stop copying .planning/ to worktrees.** Instead, have workers read `.planning/` from the main worktree via absolute path or symlink. Workers write their own per-phase status files to their local worktree (which is isolated). The orchestrator reads from the main worktree's `.planning/` (single source of truth) and from per-worker status files.
-2. **If copying is required**, copy ONLY read-only context files (PROJECT.md, config.json) and NOT mutable state files (STATE.md, ROADMAP.md). Mutable state is read from main worktree or received via messages.
-3. **Symlink .planning/ to main worktree.** Instead of copying, create a symlink: `ln -s /path/to/main-worktree/.planning /path/to/new-worktree/.planning`. All worktrees read and write the same `.planning/` directory. This re-introduces concurrency concerns (see Pitfall 1) but eliminates divergent snapshots.
-4. **Orchestrator-mediated state.** Workers never read `.planning/` directly. They receive their execution context via the Agent Teams spawn prompt (plan path, phase number, dependencies). They report results via messages. The orchestrator is the only entity that reads and writes `.planning/`.
+1. **Use @file references for workflow injection.** Instead of telling the subagent to "run /mow:plan-phase", include `@~/.claude/mowism/workflows/plan-phase.md` in the Task() prompt. The workflow content is inlined into the subagent's context.
+2. **Workers run lifecycle stages INLINE, not via nested Task().** The worker reads the workflow file directly and follows it, using Task() only for leaf-level operations (spawning mow-executor, mow-verifier, mow-phase-researcher). This is the pattern already used in execute-phase.md: the orchestrator follows the workflow, spawning executor subagents for individual plans.
+3. **Define dedicated subagent types for each lifecycle stage.** Create `mow-discuss-driver`, `mow-plan-driver`, etc. as agent YAML files with the relevant workflow content as the system prompt. The worker spawns `Task(subagent_type="mow-plan-driver")` instead of trying to invoke a slash command.
+4. **The mow-phase-worker agent definition (agents/mow-phase-worker.md) already handles this correctly** for execution (spawns mow-executor). Extend the same pattern to discuss and plan stages.
 
 **Detection:**
-- `diff` between `.planning/STATE.md` in two worktrees shows different content
-- Workers make decisions that conflict with the orchestrator's understanding of project state
-- Merge of a worktree branch produces conflicts in `.planning/` files
-- A worker reads ROADMAP.md and sees a phase as "Not Started" when it's already "Complete"
+- Worker logs show "/mow:plan-phase" as plain text, not as command invocation
+- Worker output includes "command not found" or "unknown skill" errors
+- Worker tries to manually replicate workflow logic and misses critical steps (like `mow-tools.cjs init`)
 
-**Phase to address:** State coherence architecture phase. This is the same phase as Pitfall 1 -- they are two facets of the same problem (concurrent access to shared mutable state).
+**Phase to address:** Full-lifecycle workers phase. The worker agent definition must specify how each lifecycle stage is invoked (inline workflow vs subagent type), and this must be validated during the planning of that phase.
 
-**Confidence:** HIGH -- verified by reading mow-tools.cjs source (line 247, `WT_PLANNING_COPY_HOOK`). The copy semantics are explicit in the code.
+**Confidence:** HIGH -- confirmed in v1.2-NESTED-DELEGATION.md: "Skills don't resolve in Task() subagents."
+
+---
+
+### Pitfall 6: Runaway Auto-Advance Pipeline Without Cost or Duration Limits
+
+**What goes wrong:**
+The auto-advance pipeline chains: discuss -> plan -> execute -> transition -> next discuss -> ... for each phase. With full-lifecycle workers running autonomously, the pipeline can run for hours across 6+ phases, consuming millions of tokens, without any human checkpoint. The user starts `/mow:new-project --auto` expecting to review progress periodically, goes to lunch, and returns to find $200+ in API charges and a codebase full of hallucinated code from late-stage context degradation.
+
+The current auto-advance mechanism has no cost limit, no duration limit, no phase count limit, and no periodic "are you still there?" check. The only stop point is milestone completion (transition.md line 456 clears auto_advance at milestone boundary) or a verification failure with gaps.
+
+**Why it happens:**
+The auto-advance was designed for supervised use: the user watches the session and intervenes when needed. In v1.2, with full-lifecycle workers running in the background, the pipeline can run unsupervised for extended periods. The chain propagates via `--auto` flag through discuss -> plan -> execute -> transition -> discuss, with each workflow reading `workflow.auto_advance` from config.json and proceeding.
+
+Additionally, verification failure is the only automatic stop mechanism. If verification passes (even incorrectly -- the verifier may miss issues due to context degradation), the pipeline continues to the next phase.
+
+**Consequences:**
+- Uncontrolled token spend: 6 phases * 30 subagent spawns * ~5k tokens/spawn = 900k tokens minimum, potentially 2-5M tokens with context accumulation
+- Late-phase quality degradation: context degradation syndrome means later phases produce worse code
+- Difficult to roll back: 6 phases of committed code, potentially 20+ commits, that need review
+- User trust erosion: "I can't leave it running because it might burn $200"
+
+**Prevention:**
+1. **Add cost estimation before auto-advance start.** Before entering auto-advance mode, estimate the total cost: `phases_remaining * avg_subagents_per_phase * avg_tokens_per_subagent * cost_per_token`. Present to user: "Estimated cost: $X-Y for N phases. Continue?"
+2. **Add per-phase cost tracking.** Track cumulative token usage per phase (Claude Code does not expose this natively, but the worker can estimate by counting subagent spawns). If cumulative cost exceeds a configurable threshold (default: $50), pause and notify user.
+3. **Add duration limit.** If a single phase takes >30 minutes, pause the pipeline and notify user. Phase execution durations from v1.0/v1.1 averaged 2-5 minutes per plan, so >30 minutes suggests something is wrong.
+4. **Add periodic checkpoint.** Every 3 phases (configurable), pause auto-advance and present a summary to user: "Completed phases X, Y, Z. Total estimated cost: $N. Results look reasonable? Continue?"
+5. **Separate auto-advance from autonomous workers.** Auto-advance is a SINGLE-SESSION feature that chains workflows. Full-lifecycle workers are a MULTI-AGENT feature. They should not both be active simultaneously. When workers run autonomously, the lead coordinates phase transitions -- not auto-advance config. Clear `auto_advance` when entering multi-agent mode.
+
+**Detection:**
+- Session running for >1 hour with no user interaction
+- Token usage counter (if available) exceeding threshold
+- Multiple phases completing without any user checkpoint
+- Late-phase commit quality visibly worse than early-phase commits
+
+**Phase to address:** Auto-advance pipeline phase. Cost estimation and duration limits must be part of the auto-advance design. The separation from multi-agent mode must be enforced in the team lead startup.
+
+**Confidence:** HIGH -- the auto-advance chain is fully traceable through the codebase: discuss-phase.md auto_advance -> plan-phase -> execute-phase auto_advance -> transition.md -> discuss-phase --auto.
 
 ---
 
 ## Moderate Pitfalls
 
-Mistakes that cause significant rework or degraded UX, but not full rewrites.
+Mistakes that cause significant rework or degraded quality, but not full architectural breaks.
 
 ---
 
-### Pitfall 6: Message Ordering Assumptions in Async Agent Communication
+### Pitfall 7: GSD Cherry-Pick Introduces Regressions Due to Diverged Code Patterns
 
 **What goes wrong:**
-The orchestrator sends "start Phase 3" to Worker A, then "start Phase 4" to Worker B. Worker B starts faster than Worker A (Worker A is loading a larger plan). Worker B sends "Phase 4 started" before Worker A sends "Phase 3 started." The orchestrator, processing messages in arrival order, may update its internal state incorrectly or log events in the wrong order.
+The v1.2-GSD-UPSTREAM-DIFF.md identifies 9 must-port bugs. Several reference specific line numbers and function names in `gsd-tools.cjs`. But Mowism's `mow-tools.cjs` has diverged significantly: renamed functions, restructured sections, different variable names, added capabilities (worktree management, DAG scheduling, team tracking, color assignment). A cherry-pick from GSD's PR does not apply cleanly. Manual porting requires understanding both codebases' patterns and translating between them.
 
-More dangerously: the orchestrator sends "stop Phase 3, dependency unmet" to Worker A. But Worker A already sent "Phase 3 complete" -- the messages crossed in flight. The orchestrator receives "Phase 3 complete" after sending the stop command and must decide: is this the completion from before the stop, or did the worker ignore the stop?
-
-**Why it happens:**
-Agent Teams inbox messaging is asynchronous. Messages are queued and delivered when the recipient processes its inbox. There is no guaranteed ordering, no sequence numbers, no acknowledgment protocol. The delivery timing question (Q1 from the API research) remains UNVERIFIED. The system behaves like UDP messages, not TCP streams.
-
-**Prevention:**
-1. **Include sequence numbers in messages.** Every message includes a monotonically increasing sequence number and a reference to the message it replies to (if applicable). The orchestrator can detect out-of-order messages and reorder them.
-2. **Idempotent state transitions.** Phase status transitions should be idempotent: receiving "Phase 3 complete" twice is harmless. Receiving "Phase 3 complete" after "Phase 3 stopped" is resolved by last-write-wins on the status file, not message ordering.
-3. **Timestamp all messages.** Include ISO timestamps in every message. When messages arrive out of order, the orchestrator uses timestamps, not arrival order, to determine sequence.
-4. **Do not rely on stop/cancel semantics.** Agent Teams has no mechanism to interrupt a running worker (Q3, UNVERIFIED). Design around this: instead of "stop Phase 3," let the worker complete and discard the result if the dependency check fails post-completion.
-
-**Detection:**
-- Orchestrator's event log shows events in illogical order (Phase 4 started before Phase 3, when 4 depends on 3)
-- Worker reports completing a task that the orchestrator thought was stopped
-- Status display oscillates (showing "complete" then "in progress" then "complete" again)
-
-**Phase to address:** Live feedback and worker protocol design.
-
-**Confidence:** MEDIUM -- message ordering is a known concern in async systems, but Agent Teams' specific delivery guarantees are UNVERIFIED.
-
----
-
-### Pitfall 7: Notification Fatigue in Orchestrator Terminal
-
-**What goes wrong:**
-The live feedback feature shows worker activity in the orchestrator terminal. With 4 phase workers, each sending milestone messages, plus idle notifications, plus periodic status polls, the orchestrator terminal becomes a wall of scrolling status updates. The user's eyes glaze over. When a genuinely important event happens (worker blocked, checkpoint needs approval, error occurred), it scrolls past unnoticed. The system designed to improve visibility actually reduces it through noise.
+Specific risks:
+- **PR #701 (dollar sign corruption):** The fix uses callback replacers in `String.replace()`. Mowism may have already applied the same pattern in some places but not others, or may have additional `replace()` calls that GSD doesn't have.
+- **PR #702 (requirement IDs):** GSD's `cmdInitPlanPhase` and `cmdInitExecutePhase` were refactored in Mowism to support DAG scheduling. The fix location in GSD may not correspond to the same function structure in Mowism.
+- **PR #512 (feature branch timing):** Mowism's branching strategy handling was modified for worktree-per-phase. The "create branch earlier" fix may conflict with the worktree branching model.
+- **v1.19.2 (executor attempt limit):** Mowism's executor subagent is defined differently (mow-executor agent YAML, not inline). Adding an attempt limit requires modifying the agent definition, not just a workflow file.
 
 **Why it happens:**
-The natural instinct when building "live feedback" is to show everything. Every task claimed, every commit made, every file created. This is useful for 1 worker. For 4+ workers, it's information overload. The human attention bottleneck means more information does not equal better awareness -- it often equals worse awareness.
-
-Research on notification fatigue in monitoring systems shows that alert volumes exceeding 5-10 per minute cause operators to start ignoring all alerts. A 4-worker system easily generates 5+ events per minute during active execution.
+24 releases of GSD in February 2026 while Mowism diverged on a different architectural path. The codebases share an ancestor but no longer share code patterns. Line numbers, function signatures, and even the module structure (GSD split gsd-tools into 11 modules; Mowism kept a monolith) are different. Cherry-picking assumes the target codebase has similar structure to the source.
 
 **Consequences:**
-- User misses critical notifications (blocked worker, error, checkpoint requiring approval)
-- User disables or ignores the feedback system entirely, losing all visibility
-- User develops "notification blindness" and only checks status manually, defeating the purpose
+- Patch applies but breaks adjacent functionality due to surrounding code differences
+- Variable name mismatches cause silent failures (bug "fixed" but using wrong variable)
+- Tests from GSD don't apply (Mowism has no test suite for mow-tools.cjs)
+- Regressions discovered only during execution, not during porting
 
 **Prevention:**
-1. **Tiered notification severity.** Define 3 tiers:
-   - **Critical** (always shown, with sound/flash): worker error, checkpoint requiring user input, phase dependency failure
-   - **Important** (shown, no special emphasis): phase started, phase completed, worker spawned/terminated
-   - **Info** (suppressed by default, available on demand): task claimed, task completed, commit made
-2. **Aggregated status display.** Instead of streaming individual events, maintain a persistent status table that updates in place:
-   ```
-   Phase 3 [API]     ====>-------  Plan 03-02/05  Worker: green
-   Phase 4 [Web]     ===========> Complete        Worker: yellow
-   Phase 5 [Mobile]  BLOCKED      Waiting: Ph 3   Worker: blue
-   ```
-   This gives at-a-glance status without scrolling noise.
-3. **Rate limiting on info-level messages.** Batch info-level events and display a summary every 30 seconds: "Worker green: 2 tasks completed, 1 commit" instead of 3 separate messages.
-4. **Interrupt-only mode.** Allow users to suppress all output except critical notifications. Workers continue working silently; the orchestrator only speaks up when something needs human attention.
+1. **Port the BUG FIX LOGIC, not the code.** For each GSD fix, understand what was broken and why. Then find the corresponding code in Mowism and apply the same fix pattern. Do not `git cherry-pick` from GSD -- write new code in Mowism's idioms.
+2. **Create a test case for each bug BEFORE fixing it.** For PR #701 (dollar sign): create a state entry with `$1` in the text, run the state mutator, verify the output is correct. For PR #715 (progress bar): create an orphaned SUMMARY file, run progress bar computation, verify no RangeError. The test verifies the bug exists, then verifies the fix works.
+3. **Port in priority order, not batch.** Fix the easiest bugs first (progress bar RangeError, dollar sign corruption) to build confidence. Save the harder ones (requirement IDs, executor attempt limit) for later when the pattern is established.
+4. **Review each fix in isolation.** One commit per bug. Each commit message references the GSD PR number and describes what was ported. This creates a clear audit trail for debugging regressions.
 
 **Detection:**
-- User says "can you make it quieter"
-- User stops looking at the orchestrator terminal and only checks `/mow:progress` manually
-- Critical notifications (errors, checkpoints) are missed and cause delays
+- `String.replace()` calls in mow-tools.cjs that don't use callback replacers (dollar sign vulnerability)
+- `Math.min()` absent from percent computation sites (progress bar vulnerability)
+- Running `grep -n 'replace(' bin/mow-tools.cjs` and auditing each site
 
-**Phase to address:** Live feedback implementation phase. The tiered notification design must be part of the initial implementation, not added retroactively after users complain.
+**Phase to address:** GSD cherry-pick phase. Should be its own phase, not mixed with other feature work.
 
-**Confidence:** HIGH -- notification fatigue is extensively documented in monitoring UX literature.
+**Confidence:** HIGH -- the v1.2-GSD-UPSTREAM-DIFF.md provides specific bug descriptions and file locations, and the divergence is confirmed by comparing mow-tools.cjs structure against GSD's modularized codebase.
 
 ---
 
-### Pitfall 8: Terminal Color Collisions and Escape Code Incompatibility
+### Pitfall 8: Worktree Hooks Fire for ALL Subagent Worktrees, Not Just Phase Workers
 
 **What goes wrong:**
-The color-coded terminal badges use ANSI background escape codes (`\033[41m` for red, `\033[42m` for green, etc.). Two failure modes:
+If Mowism installs a WorktreeCreate hook that copies `.planning/` and initializes STATUS.md, this hook fires for EVERY subagent that uses `isolation: worktree` -- not just phase workers. If a research subagent, plan-checker subagent, or any other subagent uses worktree isolation, it gets the full `.planning/` copy and STATUS.md initialization. This wastes time, disk space, and potentially confuses subagents that see `.planning/` state they should not be reading.
 
-1. **Color collision:** The user's terminal theme uses a dark green background. Worker badge green (`\033[42m`) is invisible against it. Or the user has a light terminal theme where bright yellow text on a yellow badge is unreadable. The "clearly differentiated" colors become indistinguishable.
-
-2. **Escape code incompatibility:** The user runs Claude Code inside VS Code's integrated terminal, tmux, or a non-standard terminal emulator. Some terminals strip or misinterpret escape codes. tmux requires specific `TERM` configuration (`tmux-256color`) to pass through escape codes correctly. If `TERM` is wrong, badges appear as garbled text: `^[[42m[Phase 3]^[[0m` instead of a colored badge.
+Worse: the WorktreeRemove hook runs when subagents complete. If the hook updates the manifest to remove the worktree entry, it may remove a phase worker's entry if the subagent happened to reuse a similar name.
 
 **Why it happens:**
-ANSI escape codes are not fully standardized. While basic color codes (30-37 for foreground, 40-47 for background) are widely supported, behavior varies across terminal emulators, multiplexers, and SSH sessions. The color palette is terminal-theme-dependent: "green" in one theme is dark forest green; in another, it's neon lime. Mowism cannot know the user's terminal configuration at runtime.
-
-CachyOS with KDE Plasma uses Konsole by default, which has excellent ANSI support. But Mowism's README says it supports Claude Code generally, not just on CachyOS. Users on macOS Terminal.app, Windows Terminal, VS Code terminal, and various Linux terminal emulators will have different rendering.
+WorktreeCreate/WorktreeRemove hooks "do NOT support matchers and fire once per worktree lifecycle event." There is no way to filter by subagent type or purpose. Every worktree creation triggers the hook. The hook receives `{name, path}` but cannot distinguish "this is a phase worker worktree" from "this is a temporary research subagent worktree."
 
 **Consequences:**
-- Users cannot distinguish between workers visually, negating the purpose of color-coding
-- Garbled escape codes clutter the terminal and look broken
-- Users on unsupported terminals lose trust in the tool's quality
+- Research subagents get `.planning/` copy they don't need (wasted disk, wasted copy time)
+- STATUS.md initialized for non-worker worktrees (confusing state)
+- Manifest bloated with entries for temporary subagent worktrees
+- WorktreeRemove hook might accidentally delete manifest entries for long-lived phase worktrees
 
 **Prevention:**
-1. **Use 256-color or 24-bit RGB colors, not basic ANSI.** Basic ANSI colors (40-47) are theme-dependent. 24-bit RGB (`\033[48;2;R;G;Bm`) specifies exact colors that are independent of the theme. Most modern terminals (Konsole, iTerm2, Kitty, Windows Terminal, Ghostty) support 24-bit color. Fall back to basic ANSI only if `$COLORTERM` is not `truecolor` or `24bit`.
-2. **Include text labels, not just colors.** Every badge should include a text identifier alongside the color: `[W1: Phase 3 API]` not just a colored block. If colors fail, the text label still provides identification.
-3. **Test escape code support at startup.** Check `$TERM` and `$COLORTERM` environment variables. If the terminal does not support 256-color or 24-bit, disable color badges and use text-only labels. Print a warning: "Terminal does not support color badges. Using text labels."
-4. **Avoid tmux escape code pitfalls.** If running inside tmux (`$TMUX` is set), ensure passthrough escape codes are wrapped in tmux's DCS passthrough sequence: `\033Ptmux;\033\033[....\033\\`. Without this wrapper, tmux intercepts and potentially mangles the escape codes. Alternatively, use tmux's native pane styling API (`select-pane -P 'bg=green'`) instead of inline escape codes.
-5. **Provide a `--no-color` flag.** Allow users to disable all ANSI escape codes. Mowism should respect `NO_COLOR` environment variable (the de facto standard: https://no-color.org/).
+1. **Use a naming convention to distinguish phase worktrees.** Phase worker worktrees are named `p{NN}` (e.g., `p07`). The WorktreeCreate hook checks the `name` field: if it matches `p\d+`, run the full initialization. Otherwise, skip.
+2. **Do NOT install WorktreeCreate hooks globally.** Only install them in the team lead's session configuration, not in project-level settings. This limits the hook to multi-agent contexts where Mowism is orchestrating.
+3. **Keep phase worktree creation in `cmdWorktreeCreate`.** Do NOT rely on the hook mechanism for phase worktrees. Create them explicitly before spawning workers (current pattern). Use `isolation: worktree` ONLY for subagents that need temporary isolation (if at all).
+4. **Manifest write operations should be idempotent and conflict-safe.** The WorktreeRemove hook should only remove entries that the WorktreeCreate hook created (tracked by a `source: hook` field in the manifest entry).
 
 **Detection:**
-- Users report "weird characters" in terminal output
-- Color badges are invisible or unreadable in screenshots from users
-- Users on VS Code terminal see garbled output
-- Bug reports from tmux users about broken formatting
+- `worktree list-manifest` shows entries for temporary subagent worktrees (not just phase worktrees)
+- Disk usage grows unexpectedly during research/planning stages
+- WorktreeRemove errors when trying to clean up entries that don't exist
 
-**Phase to address:** Distributed input routing phase (color-coded terminals). Color support detection should be built into the first iteration.
+**Phase to address:** Native worktree adoption phase. The naming convention and hook filtering must be established before any subagent uses `isolation: worktree`.
 
-**Confidence:** HIGH -- ANSI compatibility issues are well-documented. The jvns.ca article on escape code standards (2025) confirms ongoing cross-terminal inconsistencies.
+**Confidence:** MEDIUM -- the hook behavior (no matchers, fires for all worktrees) is confirmed in official docs. The naming convention mitigation is a design choice that needs validation.
 
 ---
 
-### Pitfall 9: Over-Engineering Coordination That Adds Latency Without Value
+### Pitfall 9: Nested Subagent Spawn Attempts Cause OOM Crashes
 
 **What goes wrong:**
-The team builds: a heartbeat protocol, a message sequencing system, a DAG validator, a state reconciliation agent, a notification tier system, an escape code detection layer. Each addition is individually justified. Together, they add 5-10 seconds of overhead per phase transition, 20+ seconds to spawn a coordinated team, and the orchestrator spends more context tokens on coordination mechanics than on actual project coordination. The parallel execution is slower than v1.0's sequential execution because coordination overhead exceeds the parallelism benefit.
+A full-lifecycle worker (teammate) spawns a Task() subagent for planning. The planning subagent, following the plan-phase workflow, tries to spawn its own Task() subagent for research or plan-checking. Since "subagents CANNOT spawn subagents" (enforced since v1.0.64), this causes an OOM crash or silent failure. The planning workflow in plan-phase.md explicitly spawns researcher and checker subagents -- this works when plan-phase runs in the main session, but fails when plan-phase runs INSIDE a Task() subagent.
 
 **Why it happens:**
-Each pitfall in this document recommends a prevention mechanism. Implementing ALL of them simultaneously creates a coordination system that is more complex than the work it coordinates. This is the "second system effect" applied to multi-agent orchestration: the v1.0 system was simple and worked; the v1.1 system tries to solve every possible problem and becomes unusable.
+The plan-phase workflow (plan-phase.md, line 1+) is designed to run as the main session orchestrator. It spawns: (1) mow-phase-researcher via Task(), (2) mow-planner via Task(), (3) mow-plan-checker via Task(). When a phase worker runs plan-phase as a subagent, these nested Task() calls fail. The v1.2-NESTED-DELEGATION.md confirms: "Subagents CANNOT spawn subagents (enforced since v1.0.64, causes OOM if attempted)."
 
-The research paper "Why Do Multi-Agent LLM Systems Fail?" (MAST, 2025) found that 41.77% of failures were due to system design issues -- meaning the coordination architecture itself was the problem, not the individual agents.
+But phase workers are TEAMMATES, not subagents. Teammates CAN use Task(). The risk is if the worker delegates plan-phase to a Task() subagent instead of running it inline. The mow-phase-worker.md currently says "If no PLAN files exist: run the plan-phase workflow" without specifying whether to run it inline or as a subagent. If implemented as Task(), the nested spawn fails.
 
 **Consequences:**
-- Parallel execution is slower than sequential because of coordination overhead
-- The orchestrator's prompt becomes so laden with coordination instructions that it loses focus on the actual project
-- Debugging coordination failures becomes harder than debugging the original sequential system
-- Users disable parallelism because "it's slower and more complex"
+- OOM crash kills the phase worker
+- Partial state: some plans may have been created before the crash
+- The orchestrator receives no `phase_complete` message and the phase is stuck in "executing" state
+- Recovery requires manual intervention: kill the worker, release the claim, resume from checkpoint
 
 **Prevention:**
-1. **Start with the simplest coordination that could work.** Phase 1: single-writer state (orchestrator only writes STATE.md), workers report via messages, no heartbeat, no DAG, no color codes. Just parallel execution with message-based status. This alone delivers 70% of the value.
-2. **Measure before adding coordination.** Before adding heartbeats, measure how often workers actually crash. If the answer is "rarely," heartbeats are overhead without value. Add mechanisms only when failure modes are observed, not when they are theoretically possible.
-3. **Budget coordination tokens.** The orchestrator's prompt should spend <20% of its tokens on coordination mechanics. If the coordination instructions exceed the project-specific instructions, the system is over-engineered.
-4. **Set a latency budget.** Team spawn should take <30 seconds. Phase transitions should take <10 seconds. If coordination adds more than 20% to wall-clock execution time vs. sequential, the overhead exceeds the value.
-5. **Ship incrementally.** v1.1.0: parallel execution + single-writer state. v1.1.1: add DAG if users request it. v1.1.2: add color codes if users request them. Do not ship everything at once.
+1. **Workers run lifecycle workflows INLINE, always.** The mow-phase-worker must follow discuss-phase.md, plan-phase.md, and execute-phase.md directly -- reading the workflow content and executing each step. Only leaf-level operations (mow-executor for individual plans, mow-verifier for verification) are delegated as Task().
+2. **Modify plan-phase.md for worker context.** When running inside a worker (detected by STATUS.md existence), the plan-phase workflow should NOT spawn research/checker subagents via Task(). Instead, the worker spawns them directly (worker is a teammate, so Task() works at the worker level, just not from worker's subagents).
+3. **Add a guard in Task() spawning.** Before spawning a subagent, check if the current context is already a subagent. If yes, raise a clear error instead of OOM: "Cannot spawn subagent from within a subagent. Run this workflow inline instead."
+4. **Document the hierarchy clearly in the worker agent definition:** Level 0 = user session (team lead), Level 1 = teammates (phase workers), Level 2 = subagents (executors, researchers, checkers). Level 2 CANNOT spawn Level 3.
 
 **Detection:**
-- Parallel execution wall-clock time exceeds sequential execution time
-- Orchestrator context is >50% coordination mechanics
-- Users consistently choose sequential mode over parallel mode
-- Coordination code is larger than the feature code it coordinates
+- Worker process dies unexpectedly during planning stage
+- Worker log shows "out of memory" or abrupt termination
+- Phase stuck in "executing" with no further messages from worker
+- CHECKPOINT.md not written (crash was too sudden for graceful failure)
 
-**Phase to address:** All phases. This is a cross-cutting concern. Each phase should ask: "Does this coordination mechanism pay for itself in reduced failures?"
+**Phase to address:** Full-lifecycle workers phase. The inline vs subagent decision for each lifecycle stage must be made explicit in the worker agent definition.
 
-**Confidence:** HIGH -- over-engineering is the most common pitfall in multi-agent systems, per both the MAST research and Anthropic's own engineering blog on their multi-agent research system.
+**Confidence:** HIGH -- the OOM behavior is confirmed in v1.2-NESTED-DELEGATION.md and official Claude Code docs ("Subagents cannot spawn other subagents").
 
 ---
 
-### Pitfall 10: Race Condition in Worktree Claim Table
+### Pitfall 10: Auto-Advance Config Persists Across Sessions, Causing Unexpected Behavior
 
 **What goes wrong:**
-Two orchestrator processes (or a restarted orchestrator plus an old worker) both try to claim Phase 3. The claim function in mow-tools.cjs (line 5246) reads the worktree assignment table from STATE.md, checks for conflicts, and writes the updated table back. Between the read and the write, another process can read the same table, see no conflict, and write its own claim. Both processes successfully claim Phase 3. Two workers begin executing the same phase in different worktrees.
+User runs `/mow:new-project --auto` which sets `workflow.auto_advance: true` in config.json. The session completes or crashes. Later, the user starts a new session with `/mow:resume-work` or `/mow:execute-phase` -- but auto_advance is still `true` in config.json. The discuss-phase workflow reads the config and auto-advances to plan-phase without pausing for user input. The user did not request auto-advance for this session but gets it anyway because the config persisted.
+
+This is especially dangerous in v1.2 where full-lifecycle workers check `auto_advance` config. A stale `true` value from a previous session could cause workers to skip discuss pauses entirely.
 
 **Why it happens:**
-The `worktreeClaim` function in mow-tools.cjs is not atomic. It performs: (1) read STATE.md, (2) parse worktree table, (3) check for conflicts, (4) write updated table, (5) git commit. Steps 1-3 are the "check" and steps 4-5 are the "use" -- this is a classic TOCTOU (time-of-check-to-time-of-use) race condition.
-
-In v1.0, this race was unlikely because only one orchestrator existed and it claimed phases sequentially. In v1.1, multiple orchestrators or a restarted orchestrator plus workers may invoke `worktree claim` concurrently.
+`workflow.auto_advance` is stored in `.planning/config.json`, which persists on disk. It is set to `true` by new-project.md (line 197) and discuss-phase.md (line 441). It is cleared to `false` by transition.md (line 456) at milestone boundary. But if the session crashes, is manually stopped, or the user exits before reaching a milestone boundary, the flag stays `true` indefinitely.
 
 **Consequences:**
-- Two workers execute the same phase, producing duplicate commits and conflicting changes
-- At merge time, both worktrees' branches conflict on every file the phase touched
-- Wasted tokens and time (one worker's work is completely thrown away)
+- Unexpected auto-advance in new sessions
+- Discuss phase skipped silently in multi-agent mode
+- User confusion: "I didn't ask for auto mode, why is it running without pausing?"
+- Difficult to debug: the flag is in a JSON config file, not visible in the UI
 
 **Prevention:**
-1. **File-based locking.** Before reading the claim table, acquire an advisory lock on a lock file (`.planning/.state.lock`). Release after the git commit. Use `flock` on Linux. This serializes all claim operations.
-2. **Git-based locking.** Use `git lock` or a pre-commit check that verifies the worktree table hasn't changed since the claim function read it. If it has, abort and retry.
-3. **Claim via orchestrator only.** Workers do not claim phases directly. They request a claim from the orchestrator (via message), and the orchestrator serializes claim operations. This centralizes the concurrency control.
-4. **Atomic claim operation.** Rewrite `worktreeClaim` to use an atomic write pattern: write to a temp file, verify contents, then `mv` (which is atomic on POSIX filesystems) to replace STATE.md. Combined with `flock`, this prevents interleaving.
+1. **Clear auto_advance at session start.** When `/mow:resume-work` or `/mow:execute-phase` starts, reset `auto_advance` to `false` unless `--auto` flag is explicitly present in the current invocation.
+2. **Make auto_advance session-scoped, not persistent.** Instead of writing to config.json, use an environment variable (`MOW_AUTO_ADVANCE=true`) or a transient file (`.planning/.auto_advance_active`). The environment variable dies with the session. The transient file can be cleaned up at session start.
+3. **Add a TTL (time-to-live) to auto_advance.** When setting `auto_advance: true`, also set `auto_advance_set_at: <ISO timestamp>`. If the timestamp is older than 1 hour, clear auto_advance automatically. This prevents stale flags from affecting future sessions.
+4. **Display auto-advance status prominently.** When any workflow reads `auto_advance: true`, print a visible banner: "AUTO-ADVANCE ACTIVE (set at {timestamp}). Press Ctrl+C to disable." This makes the state visible even if it was set by a previous session.
 
 **Detection:**
-- Two entries in the worktree table with the same phase number but different worktree paths
-- `worktree-status` shows duplicate claims
-- Two workers report progress on the same phase simultaneously
+- User runs `/mow:execute-phase` and discuss phase is skipped without `--auto` flag
+- `config.json` contains `auto_advance: true` but user did not pass `--auto`
+- Phase completes without any user interaction in a session that was not started with `--auto`
 
-**Phase to address:** State coherence architecture phase. The claim function must be made concurrency-safe before parallel phase execution is enabled.
+**Phase to address:** Auto-advance pipeline phase. Session cleanup logic is a prerequisite for the pipeline being safe.
 
-**Confidence:** HIGH -- verified by reading mow-tools.cjs source. The function has no locking mechanism.
+**Confidence:** HIGH -- the persistence mechanism is directly visible in config.json writes across discuss-phase.md, new-project.md, and transition.md.
+
+---
+
+### Pitfall 11: Phase Worker Worktree Contains Stale .planning/ From Creation Time
+
+**What goes wrong:**
+This is a v1.2-specific variant of v1.1 Pitfall 5 (.planning/ copy semantics). In v1.2, phase workers run the FULL lifecycle (discuss -> plan -> execute). The worker creates CONTEXT.md during discuss, RESEARCH.md and PLAN.md files during plan, and SUMMARY.md during execute. All of these are written to the worktree's LOCAL copy of `.planning/`. Meanwhile, other workers are doing the same in their worktrees. The team lead in the main worktree sees none of these changes until merge-back.
+
+The new wrinkle: in v1.2, the worker needs to read ROADMAP.md to determine phase goals, read REQUIREMENTS.md for traceability, and read config.json for settings. These were copied at worktree creation time. If another worker's merged changes modified ROADMAP.md or config.json (e.g., cleared auto_advance), the current worker has stale copies.
+
+For the DISCUSS stage specifically: if two phases need discussion simultaneously, both workers create CONTEXT.md independently. At merge, there is no conflict (they are in different phase directories). But if one worker's discuss decisions affect another phase's approach, the isolation means this cross-phase context is invisible.
+
+**Why it happens:**
+The `cp -r .planning/` pattern in cmdWorktreeCreate (line 6670-6681) creates a snapshot. Workers operate on this snapshot. In v1.1, this was mitigated by the single-writer pattern (workers only write per-phase files, lead writes shared state). In v1.2, the full-lifecycle pattern means workers need to READ shared state during discuss and plan stages -- not just write per-phase files during execution.
+
+**Consequences:**
+- Workers read stale ROADMAP.md goals or REQUIREMENTS.md (minor if phases are well-defined in the snapshot)
+- Config changes (auto_advance, model profiles) not propagated to active workers
+- Cross-phase discuss decisions not visible to concurrent workers
+- Workers may make decisions that conflict with changes already merged by other workers
+
+**Prevention:**
+1. **Workers read shared files from main worktree, not local copy.** For ROADMAP.md, REQUIREMENTS.md, and config.json, use absolute paths to the main worktree: `{repo_root}/.planning/ROADMAP.md`. Keep the local `.planning/` copy for phase-specific files only.
+2. **Copy ROADMAP.md and config.json as read-only symlinks.** Instead of `cp -r`, selectively symlink shared files: `ln -s {main}/.planning/ROADMAP.md {wt}/.planning/ROADMAP.md`. This ensures reads always get the latest version. Write operations on shared files will fail (they are symlinks to main), which enforces the single-writer pattern.
+3. **Accept the staleness for discuss.** The discuss workflow reads ROADMAP.md for phase goals, which do not change during execution. The CONTEXT.md it creates is phase-specific and does not conflict. The staleness is acceptable for this stage.
+4. **For config.json specifically:** Pass critical config values (model profiles, auto_advance) via the worker spawn prompt rather than having workers read config.json. This ensures the lead controls the configuration, not the stale copy.
+
+**Detection:**
+- Worker reads outdated phase goals from ROADMAP.md (unlikely to cause problems since goals are set at roadmap creation)
+- Worker uses stale model profile after lead changed it mid-session
+- Auto-advance flag in worker's config.json disagrees with lead's config.json
+
+**Phase to address:** Native worktree adoption phase (for the copy strategy) and full-lifecycle workers phase (for the shared file read pattern).
+
+**Confidence:** MEDIUM -- the copy semantics are verified, but the practical impact depends on how frequently shared files change during execution. In most cases, ROADMAP.md and REQUIREMENTS.md are stable during a milestone run.
 
 ---
 
@@ -386,155 +429,157 @@ Issues that cause friction but are recoverable with low effort.
 
 ---
 
-### Pitfall 11: Agent Teams Task List vs. Mowism Task List Confusion
+### Pitfall 12: WorktreeCreate Hook Stdout Convention Mismatch
 
 **What goes wrong:**
-Agent Teams has a built-in task list (TaskCreate, TaskUpdate, TaskList). Mowism has its own task tracking in `.planning/` files (plan files with SUMMARY.md completion markers). The orchestrator uses BOTH systems, and they drift apart. The Agent Teams task list shows 3 tasks complete; `.planning/` shows 2 tasks complete (because a worker completed a task but didn't create SUMMARY.md). Or vice versa: `.planning/` shows complete but the AT task wasn't updated.
-
-**Prevention:**
-1. **Designate one as canonical.** `.planning/` files are the source of truth (they persist across sessions). Agent Teams task list is a coordination convenience (it's ephemeral). Workers MUST create SUMMARY.md (the v1.0 contract) regardless of Agent Teams task status.
-2. **Reconcile periodically.** The orchestrator cross-references AT task status with `.planning/` file status every wave transition. Discrepancies are logged and the `.planning/` state takes precedence.
-3. **Do not query AT task list for completion decisions.** Use SUMMARY.md existence checks (already the v1.0 pattern) for determining plan completion. Use AT task list only for real-time coordination (which workers are active, what's blocked).
-
-**Phase to address:** State coherence architecture.
-
-**Confidence:** HIGH -- dual source-of-truth is a well-known anti-pattern.
-
----
-
-### Pitfall 12: Worktree Disk Space Explosion Under Parallelism
-
-**What goes wrong:**
-Each git worktree creates a full working copy of the repository. With 4 parallel phase workers, each in its own worktree, a 2GB project becomes 8GB+. Add `node_modules` per worktree (not shared) and build artifacts, and disk usage can reach 20-30GB for a medium project. The user's development machine runs out of space mid-execution, causing cryptic failures.
-
-**Prevention:**
-1. **Warn before spawning.** Check available disk space before creating worktrees. Estimate: `repo_size * num_workers * 2` (for dependencies and artifacts). Warn if available space is below threshold.
-2. **Clean up aggressively.** Release and prune worktrees immediately after phase completion, not at session end. The v1.0 `worktree release` command exists; v1.1 should auto-prune the worktree directory after release.
-3. **Share node_modules.** Use `pnpm` or symlink `node_modules` from a shared location. Or instruct workers to skip dependency installation if the phase doesn't modify dependencies.
-4. **Cap concurrent worktrees.** Enforce a maximum (3-4) regardless of how many phases could theoretically run in parallel.
-
-**Phase to address:** Phase-level parallelism implementation.
-
-**Confidence:** HIGH -- documented in multiple git worktree experience reports.
-
----
-
-### Pitfall 13: Git Merge Conflicts in Non-.planning/ Files Across Parallel Phases
-
-**What goes wrong:**
-Phase 3 (API) and Phase 4 (Web frontend) both modify `package.json` to add their dependencies. Phase 3 adds `express`; Phase 4 adds `vite`. Both modifications are on different lines, but `package.json` is a structured file -- git's line-based merge may produce invalid JSON if both changes are in the `dependencies` object and the diff context overlaps.
-
-Similarly, both phases may modify shared configuration files (`tsconfig.json`, `.env.example`, `docker-compose.yml`), shared entry points (`src/index.ts`), or shared test configuration.
-
-**Prevention:**
-1. **Identify shared files during roadmap creation.** The roadmapper should flag files that multiple phases will modify. These shared files should be modified in a single phase, with other phases adding their changes via a dependency.
-2. **Use file ownership in the dependency graph.** Each phase declares which files it will create or modify. If two phases declare the same file, add a dependency edge between them (the second phase depends on the first).
-3. **Merge frequently.** Instead of merging all worktrees at the end, merge completed phases back to main immediately. This ensures later phases start from an up-to-date base.
-4. **Automated merge conflict detection.** Before starting parallel phases, do a dry-run: check if the phases' expected file modifications overlap. If they do, warn the user and suggest sequencing those phases.
-
-**Phase to address:** Phase-level parallelism implementation. File ownership analysis should be part of the DAG construction, not an afterthought.
-
-**Confidence:** MEDIUM -- the severity depends on project structure. Well-decomposed projects with clear module boundaries rarely have this problem. Monolithic projects with shared entry points always have it.
-
----
-
-### Pitfall 14: Background Mode Workers Cannot Receive User Input
-
-**What goes wrong:**
-Workers spawned with `run_in_background: true` are invisible to the user (confirmed in AGENT-TEAMS-API-RUNTIME.md Q6). If such a worker hits a Claude Code permission prompt or a checkpoint requiring user input, it blocks silently. The orchestrator may receive an idle notification but cannot relay the specific prompt. The distributed input routing design (user switches to worker terminal) is impossible because there IS no terminal.
+The WorktreeCreate hook must output the absolute path to the created worktree directory on stdout. If the hook prints anything else to stdout (debug messages, status updates, JSON output from mow-tools.cjs), Claude Code interprets the entire stdout as the worktree path. The `cd` to the worktree fails silently or errors with "directory not found."
 
 **Why it happens:**
-The v1.1 design assumes workers run in tmux panes or in-process mode where the user can interact with them. But the `execute-phase` workflow currently spawns workers with `run_in_background: true` (line 202 in execute-phase.md). This is correct for v1.0 (workers are autonomous executors that don't need input). For v1.1 (distributed input routing), background mode is incompatible with the UX design.
+Claude Code's WorktreeCreate hook protocol is strict: "Input to the command is JSON with name (suggested worktree slug), and stdout should contain the absolute path to the created worktree directory." Any other stdout content breaks the protocol. The mow-tools.cjs `worktree create` command outputs JSON to stdout. If the hook calls `mow-tools.cjs worktree create` and pipes its stdout, Claude Code receives JSON instead of a path.
 
 **Prevention:**
-1. **Spawn workers in tmux mode for interactive phases.** If the phase may require user input (checkpoints, permission prompts), spawn workers in tmux panes, not background mode. Use background mode only for fully autonomous workers with pre-approved tool permissions.
-2. **Pre-approve common tools.** Configure `~/.claude/settings.json` with generous `allow` rules for workers: `Bash(*)`, `Read(*)`, `Write(*)`. This reduces the frequency of permission prompts. Workers should only hit prompts for genuinely unusual operations.
-3. **If background mode is required,** workers must be instructed to skip operations requiring permission rather than blocking. They report "skipped: needs permission for X" via message, and the orchestrator queues these for the user to approve later (or re-runs them in an interactive session).
-4. **Mode selection at spawn time.** The orchestrator chooses worker mode based on phase characteristics: autonomous phases (no checkpoints) use background mode, interactive phases (with checkpoints) use tmux or in-process mode.
+1. **Redirect all mow-tools.cjs output to stderr.** The hook script calls mow-tools.cjs with stdout redirected: `node mow-tools.cjs worktree create {phase} 2>&1 >/dev/null`. Extract the path from the JSON result separately.
+2. **Write the hook as a dedicated script, not a mow-tools.cjs wrapper.** The hook reads JSON from stdin, extracts the `name`, runs mow-tools.cjs quietly, and echoes ONLY the absolute path to stdout.
+3. **Test the hook in isolation.** `echo '{"name":"p07","path":"/tmp/test"}' | ./hook-script.sh` should output exactly one line: the absolute path.
 
-**Phase to address:** Distributed input routing phase. Mode selection logic must be designed before the input routing UX.
+**Phase to address:** Native worktree adoption phase.
 
-**Confidence:** HIGH -- background mode invisibility is VERIFIED in the runtime test.
+**Confidence:** HIGH -- the stdout convention is explicitly documented and easy to violate accidentally.
+
+---
+
+### Pitfall 13: GSD Executor Attempt Limit Fix Conflicts with Mowism's Subagent Architecture
+
+**What goes wrong:**
+GSD's executor attempt limit fix (v1.19.2) adds a max retry count to the executor workflow. In GSD, the executor is an inline workflow. In Mowism, the executor is a subagent (`mow-executor` agent type) spawned via Task(). The subagent has `maxTurns` as a frontmatter field (configurable), which already limits execution length. Adding the GSD-style attempt counter inside the executor's system prompt may conflict with `maxTurns`, creating two competing limits that interact unpredictably.
+
+**Prevention:**
+1. **Use `maxTurns` as the primary limit.** Set `maxTurns: 50` (or configurable) in the mow-executor agent definition. This is the native Claude Code mechanism and does not require custom loop logic.
+2. **Add the attempt limit as a SECONDARY guard in the executor workflow.** The executor workflow tracks task attempts internally. If a task fails 3 times, the executor writes a failure to SUMMARY.md and returns -- it does not retry. This catches infinite-retry loops that `maxTurns` alone might not prevent (the executor might try different approaches within its turn limit).
+3. **Do not apply the GSD fix verbatim.** Translate the intent (prevent infinite loops) to Mowism's architecture (maxTurns + per-task attempt counter).
+
+**Phase to address:** GSD cherry-pick phase.
+
+**Confidence:** MEDIUM -- the interaction between maxTurns and custom attempt limits is implementation-specific.
+
+---
+
+### Pitfall 14: Full-Lifecycle Workers Block Team Lead Context on Long Discuss Phases
+
+**What goes wrong:**
+Phase worker 3 needs user discussion. It sends `input_needed` to the lead. The lead displays the notification. The user does not switch to the worker's terminal for 10 minutes (busy, or did not see the notification). During this time, the lead receives messages from other workers (plan completions, commits, stage transitions). The lead's context fills with coordination traffic while Worker 3 remains blocked. If the lead's context compresses, it may lose track of Worker 3's `input_needed` state.
+
+When the user finally responds to Worker 3, the lead may no longer remember that Worker 3 was blocked, and may not know how to route the completion message. Or the lead may have already sent a duplicate `input_needed` notification, causing user confusion.
+
+**Prevention:**
+1. **Write blocked state to disk.** When the lead receives `input_needed`, immediately update Active Phases table: `state update-phase-row {phase} --status blocked-input`. On every re-read of STATE.md, the lead can see which phases are blocked without relying on message history.
+2. **Periodic reminder.** If a worker has been in `blocked-input` state for >5 minutes, the lead prints a reminder notification: "Worker 3 still waiting for input in Terminal 2."
+3. **Workers self-recover.** If a worker sends `input_needed` and receives no response for 15 minutes, it can re-send the message with an updated timestamp. The lead processes the re-send idempotently.
+
+**Phase to address:** Full-lifecycle workers phase and auto-advance pipeline phase.
+
+**Confidence:** MEDIUM -- the severity depends on how often users delay responding to discuss prompts.
 
 ---
 
 ## Phase-Specific Warnings
 
-Mapping pitfalls to the likely v1.1 implementation phases, with the most relevant pitfalls per phase.
+Mapping v1.2 pitfalls to implementation phases.
 
 | Phase Topic | Likely Pitfalls | Severity | Mitigation Strategy |
 |-------------|----------------|----------|---------------------|
-| State coherence architecture | Pitfall 1 (lost updates), 5 (.planning/ copies), 10 (claim races), 11 (dual task lists) | CRITICAL | Single-writer pattern, file locking, distributed state files |
-| Phase-level parallelism (DAG) | Pitfall 3 (cycles/phantoms), 4 (orphaned workers), 12 (disk space), 13 (merge conflicts) | CRITICAL | DAG validation, heartbeats, file ownership analysis |
-| Live agent feedback | Pitfall 2 (context exhaustion), 6 (message ordering), 7 (notification fatigue) | MODERATE | Message budget, disk-first state, tiered notifications |
-| Distributed input routing | Pitfall 8 (color incompatibility), 14 (background mode), 7 (notification fatigue) | MODERATE | Color detection, mode selection, interrupt-only mode |
-| All phases (cross-cutting) | Pitfall 9 (over-engineering) | MODERATE | Ship incrementally, measure before adding coordination |
-| README overhaul | None specific to pitfalls | LOW | Document the pitfall mitigations as user-facing guidance |
+| Native worktree adoption | Pitfall 1 (path mismatch), 8 (hook fires for all subagents), 12 (stdout convention) | CRITICAL | WorktreeCreate/WorktreeRemove hooks with naming convention filter; keep cmdWorktreeCreate for coordination |
+| Simplification pass | Pitfall 2 (removing too much) | CRITICAL | Capabilities matrix before removal; only remove git worktree creation step; integration tests |
+| Full-lifecycle workers | Pitfall 3 (context accumulation), 5 (skills don't resolve), 9 (nested OOM), 14 (blocked workers) | CRITICAL | Minimize subagent returns; workers run workflows inline; leaf-only Task() delegation |
+| Auto-advance pipeline | Pitfall 4 (discuss skip), 6 (runaway execution), 10 (stale config) | CRITICAL | Clear auto_advance at team startup; cost/duration limits; session-scoped flag |
+| GSD cherry-pick | Pitfall 7 (regression from divergence), 13 (attempt limit conflict) | MODERATE | Port logic not code; test before fix; one commit per bug; use maxTurns for attempt limit |
+| Nested delegation | Pitfall 9 (nested OOM) | CRITICAL | Level 0/1/2 hierarchy enforced; workers run workflows inline |
 
-## What Breaks When Moving From Sequential to Parallel
+## What Breaks When Moving From v1.1 to v1.2
 
-A synthesis of the pitfalls above, framed as "this worked fine in v1.0 but breaks in v1.1."
-
-| v1.0 Assumption | Why It Worked | What Breaks in v1.1 |
+| v1.1 Assumption | Why It Worked | What Breaks in v1.2 |
 |-----------------|---------------|---------------------|
-| STATE.md is written by one agent at a time | Sequential execution: only one phase runs, only one agent modifies STATE.md | Multiple phase workers modify STATE.md concurrently -- lost updates (Pitfall 1) |
-| `.planning/` is copied to worktrees on creation and is "close enough" | One worktree at a time: the copy is up-to-date when the phase starts | Multiple worktrees created concurrently, each gets a different snapshot (Pitfall 5) |
-| `worktree claim` is safe because only one process calls it | Sequential: the orchestrator claims one phase, finishes it, claims the next | Multiple claim calls interleave without locking (Pitfall 10) |
-| Workers complete within a single session | One phase finishes before the next starts; session timeout is unlikely during a single phase | Parallel phases may run for 30+ minutes total; worker crashes during long runs (Pitfall 4) |
-| The orchestrator remembers everything | One phase at a time: the orchestrator's context window easily holds the state for one phase | N parallel phases flood the orchestrator's context with messages (Pitfall 2) |
-| Plan-level dependencies are within one phase | Waves within a phase are well-defined and validated | Phase-level dependencies across the DAG can have cycles, phantoms, or missing edges (Pitfall 3) |
-| Terminal output is from one agent | Readable output: one agent prints its progress | N agents printing simultaneously creates noise (Pitfall 7) |
-| Workers are autonomous (no user input needed) | Background mode works fine for autonomous executors | Distributed input routing requires interactive mode, but workers are still spawned in background (Pitfall 14) |
-| `SUMMARY.md` existence is the single completion signal | One source of truth: did the plan create its summary? | Two sources of truth: AT task list AND SUMMARY.md, and they can disagree (Pitfall 11) |
-| Disk space for one worktree is manageable | One worktree = 1x repo size | N worktrees + dependencies = Nx repo size, potentially exhausting disk (Pitfall 12) |
+| Worktrees created by cmdWorktreeCreate at `.worktrees/p{NN}` | Custom code controls creation, path, naming | Native `isolation: worktree` creates at `.claude/worktrees/` with different naming (Pitfall 1) |
+| Workers only execute (single lifecycle stage) | Context accumulation bounded to execution stage | Full-lifecycle workers accumulate 4-5x more context (Pitfall 3) |
+| Workers invoke execute-phase workflow directly | No skill resolution needed | Full-lifecycle workers need discuss-phase, plan-phase too -- skills don't resolve in Task() (Pitfall 5) |
+| Auto-advance is user-supervised | User sees and can intervene | Autonomous workers + auto-advance = unsupervised pipeline (Pitfall 6) |
+| Plan-phase runs in main session or teammate | Teammates can spawn Task() subagents | If plan-phase runs AS a Task() subagent, its nested Task() calls fail (Pitfall 9) |
+| config.json read once at session start | Single session, config doesn't change | Multi-agent with stale config.json copies in worktrees (Pitfall 10, 11) |
+| GSD upstream is parallel context (no code sharing) | Awareness only, no integration | Cherry-picking from diverged codebase requires pattern translation (Pitfall 7) |
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Lost updates in STATE.md | LOW | Re-read STATE.md, manually reconcile with `git log --all -- .planning/STATE.md`. Reconstruct correct state from individual phase completion evidence (SUMMARY.md files, git commits). |
-| Context window exhaustion | LOW | The orchestrator can recover by re-reading STATE.md and disk-based status files. Context compression loses history but the disk state is current. |
-| DAG cycle | LOW | Run `mow-tools.cjs roadmap validate-dag` to identify the cycle. Remove the weakest dependency edge. Re-run parallel execution. |
-| Worker crash with orphaned claim | LOW | `mow-tools.cjs worktree clean` to release stale claims. Re-run `/mow:execute-phase` for the affected phase (resumption logic skips completed plans). |
-| Divergent .planning/ copies | MEDIUM | After merge, run a state reconciliation script that cross-references all phase completion evidence and rebuilds a canonical STATE.md. |
-| Message ordering confusion | LOW | Ignore message order; use timestamps and sequence numbers. Re-read disk state for current truth. |
-| Notification fatigue | LOW | Switch to interrupt-only mode. Check `/mow:progress` manually. Adjust notification tiers in config. |
-| Terminal color issues | LOW | Set `NO_COLOR=1` to disable colors. Use text labels for identification. |
-| Over-engineering | HIGH | If coordination overhead exceeds value, strip back to the simplest version: single-writer state, message-based reporting, no DAG, no heartbeats. Rebuild incrementally. |
-| Claim table race condition | LOW | Delete duplicate claim. Re-claim with locking enabled. Stop the duplicate worker. |
-| Dual task list drift | LOW | Cross-reference AT task list with SUMMARY.md files. `.planning/` is canonical; update AT task list to match. |
-| Disk space exhaustion | MEDIUM | Prune completed worktrees immediately. Delete `node_modules` in inactive worktrees. Move to `pnpm` for shared dependencies. |
-| Non-.planning/ merge conflicts | MEDIUM | Resolve merge conflicts manually. For future runs, add file ownership to the DAG to prevent overlapping modifications. |
-| Background mode input blocking | LOW | Kill the background worker. Re-spawn in tmux or in-process mode. Answer the pending prompt in the new interactive session. |
+| Path mismatch (1) | MEDIUM | Refactor manifest to support arbitrary paths. Or install WorktreeCreate hook to bridge. |
+| Simplification overshoot (2) | HIGH | Re-implement removed coordination layer. Git revert if caught early. |
+| Context accumulation (3) | LOW | Switch to disk-first returns (subagents write to files, return paths). Reduce model tier for read-only stages. |
+| Discuss skip (4) | LOW | Clear auto_advance config. Re-run discuss for affected phases. CONTEXT.md is independent per phase so other phases are unaffected. |
+| Skills not resolving (5) | LOW | Convert Task() subagent calls to inline workflow execution. Change worker agent definition. |
+| Runaway pipeline (6) | MEDIUM | Kill the session. Review committed code. Cost cannot be recovered. Add limits for future runs. |
+| GSD regression (7) | LOW | Revert the specific bugfix commit. Re-port with proper testing. |
+| Hook fires for all (8) | LOW | Add naming convention filter to hook script. Clean up spurious manifest entries. |
+| Nested OOM (9) | MEDIUM | Kill crashed worker. Release claim. Resume from last checkpoint. Redesign to inline workflow execution. |
+| Stale auto_advance (10) | LOW | `mow-tools.cjs config-set workflow.auto_advance false`. One command. |
+| Stale .planning/ (11) | LOW | Workers read shared files from main worktree absolute path. One-time path update in worker definition. |
+| Stdout convention (12) | LOW | Fix hook script to output only the path. Test in isolation. |
+| Attempt limit conflict (13) | LOW | Use maxTurns as primary limit. Remove custom counter if conflicting. |
+| Blocked worker context (14) | LOW | Write blocked state to disk. Lead re-reads on next decision cycle. |
+
+## Integration Pitfalls: Replacing Custom Code with Platform-Native Features
+
+This section synthesizes the cross-cutting theme of v1.2: delegating to Claude Code's native features while preserving the coordination layer.
+
+### The Integration Surface
+
+| Mowism Custom | Claude Code Native | Integration Risk |
+|---------------|-------------------|-----------------|
+| `cmdWorktreeCreate` (path, branch, manifest, planning copy, STATUS init) | `isolation: worktree` (path, branch only) | HIGH -- 4/5 capabilities have no native equivalent |
+| `worktree claim/release` in STATE.md | Agent Teams task claiming (file-locked) | MEDIUM -- could delegate to AT, but claim tracks different data (phase-to-worktree, not task-to-agent) |
+| `worktree merge` (manifest-tracked merge with conflict detection) | None | HIGH -- no native equivalent, must keep |
+| `worktree stash/restore` (crash recovery) | Subagent resume (agent ID-based) | LOW -- different mechanisms for different problems |
+| Custom subagent spawning (mow-executor, mow-verifier) | Native subagent YAML with frontmatter | LOW -- straightforward migration, just move config to YAML |
+| Auto-advance via config.json flag | None (no native pipeline concept) | LOW -- Mowism-specific, not replacing anything |
+
+### The Golden Rule of Platform Adoption
+
+**Adopt the platform for the LEAF operations, keep custom code for COORDINATION.** Claude Code's native worktree support is excellent for creating isolated workspaces. It is NOT a coordination layer. Mowism's value-add is the coordination: tracking which phase runs where, preventing conflicts, orchestrating merges, maintaining shared state. Replacing the coordination layer with native features is not simplification -- it is removing the product's core value.
+
+**Specifically:**
+- USE `isolation: worktree` for temporary subagent isolation (research, plan-checking) where auto-cleanup is desired
+- USE WorktreeCreate/WorktreeRemove hooks to bridge native creation with Mowism coordination
+- USE native subagent YAML frontmatter for agent definitions (move from inline to `.claude/agents/`)
+- KEEP `cmdWorktreeCreate` for phase workers (long-lived, needs manifest tracking, planning copy, STATUS init)
+- KEEP `worktree claim/release/merge/stash` (no native equivalent)
+- KEEP the messaging protocol (lead-writes-state, structured messages)
 
 ## Sources
 
-**Research Papers:**
-- [Why Do Multi-Agent LLM Systems Fail? (MAST)](https://arxiv.org/abs/2503.13657) -- 1642 traces across 7 frameworks, 14-18 failure modes, 41-87% failure rates. HIGH confidence.
-
 **Official Documentation:**
-- [Claude Code Agent Teams docs](https://code.claude.com/docs/en/agent-teams) -- Agent Teams architecture, limitations, best practices. HIGH confidence.
+- [Claude Code Subagents docs](https://code.claude.com/docs/en/sub-agents) -- isolation: worktree behavior, subagent frontmatter fields, subagents cannot spawn subagents, maxTurns, background mode, auto-compaction. HIGH confidence.
+- [Claude Code v2.1.50 Release Notes](https://github.com/anthropics/claude-code/releases/tag/v2.1.50) -- WorktreeCreate/WorktreeRemove hooks, hook input/output protocol. HIGH confidence.
+
+**Pre-existing Research:**
+- `.planning/research/v1.2-NESTED-DELEGATION.md` -- 2-level hierarchy confirmed, subagent OOM on nested spawn, skills don't resolve in Task(), cost estimates. HIGH confidence.
+- `.planning/research/v1.2-GSD-UPSTREAM-DIFF.md` -- 9 must-port bugs, specific file locations, effort estimates. HIGH confidence.
+- `.planning/research/PITFALLS.md` (v1.1) -- Concurrent state access, context exhaustion, DAG cycles, .planning/ copies, over-engineering. HIGH confidence (validated during v1.1 execution).
+- `.planning/research/ARCHITECTURE.md` (v1.1) -- State coherence architecture, lead-writes-state protocol, component boundaries. HIGH confidence.
 
 **Codebase Analysis:**
-- `mow-tools.cjs` lines 5246-5296 (worktree claim, no locking) -- PRIMARY source for Pitfall 10. HIGH confidence.
-- `mow-tools.cjs` lines 247-261 (WT_PLANNING_COPY_HOOK) -- PRIMARY source for Pitfall 5. HIGH confidence.
-- `mowism/workflows/execute-phase.md` lines 160-210 (worker spawning, background mode) -- PRIMARY source for Pitfall 14. HIGH confidence.
-- `.planning/research/AGENT-TEAMS-API.md` (context exhaustion analysis) -- PRIMARY source for Pitfall 2. HIGH confidence.
-- `.planning/research/AGENT-TEAMS-API-RUNTIME.md` (background mode verification) -- PRIMARY source for Pitfall 14. HIGH confidence.
+- `bin/mow-tools.cjs` lines 6610-6724 (`cmdWorktreeCreate`, hardcoded paths, manifest, planning copy). PRIMARY source for Pitfalls 1, 2, 11. HIGH confidence.
+- `agents/mow-phase-worker.md` (full lifecycle definition, messaging protocol, constraints). PRIMARY source for Pitfalls 3, 5, 9, 14. HIGH confidence.
+- `agents/mow-team-lead.md` (multi-phase flow, task creation, worker spawning). PRIMARY source for Pitfalls 4, 6, 8. HIGH confidence.
+- `mowism/workflows/discuss-phase.md` lines 430-476 (auto_advance step). PRIMARY source for Pitfall 4. HIGH confidence.
+- `mowism/workflows/execute-phase.md` lines 519-538 (auto_advance propagation). PRIMARY source for Pitfall 6. HIGH confidence.
+- `mowism/workflows/transition.md` line 456 (auto_advance clearing at milestone boundary). PRIMARY source for Pitfall 10. HIGH confidence.
 
 **Industry Sources:**
-- [Context Window Management Strategies (Maxim)](https://www.getmaxim.ai/articles/context-window-management-strategies-for-long-context-ai-agents-and-chatbots/) -- Compression strategies, hierarchical summarization. MEDIUM confidence.
-- [Context Degradation Syndrome (James Howard)](https://jameshoward.us/2024/11/26/context-degradation-syndrome-when-large-language-models-lose-the-plot) -- Performance degradation as context fills. MEDIUM confidence.
-- [Agent Context Optimization (Acon)](https://arxiv.org/html/2510.00615v1) -- 26-54% memory reduction while maintaining performance. MEDIUM confidence.
-- [Git Worktrees for Parallel AI Coding (Upsun)](https://devcenter.upsun.com/posts/git-worktrees-for-parallel-ai-coding-agents/) -- Worktree disk space, merge conflicts. MEDIUM confidence.
-- [Building a C Compiler with Parallel Claudes (Anthropic)](https://www.anthropic.com/engineering/building-c-compiler) -- Real-world 16-agent stress test. HIGH confidence.
-- [ANSI Escape Code Standards (Julia Evans, 2025)](https://jvns.ca/blog/2025/03/07/escape-code-standards/) -- Terminal compatibility issues. MEDIUM confidence.
-- [Design Guidelines for Better Notifications UX (Smashing Magazine)](https://www.smashingmagazine.com/2025/07/design-guidelines-better-notifications-ux/) -- Notification fatigue research. MEDIUM confidence.
-- [Multi-Agent System Reliability (Maxim)](https://www.getmaxim.ai/articles/multi-agent-system-reliability-failure-patterns-root-causes-and-production-validation-strategies/) -- Failure patterns and validation. MEDIUM confidence.
-- [AI Agent Orchestration Patterns (Microsoft)](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns) -- Orchestration architecture patterns. MEDIUM confidence.
-- [CrewAI vs LangGraph vs AutoGen (DataCamp)](https://www.datacamp.com/tutorial/crewai-vs-langgraph-vs-autogen) -- Framework comparison for state management patterns. MEDIUM confidence.
+- [Building a C Compiler with Parallel Claudes (Anthropic)](https://www.anthropic.com/engineering/building-c-compiler) -- 16-agent stress test, context degradation in long sessions, CI pipeline as failure mode mitigation. HIGH confidence.
+- [Cherry-picks vs backmerges (Runway)](https://www.runway.team/blog/cherry-picks-vs-backmerges-whats-the-right-way-to-get-fixes-into-your-release-branch) -- Cherry-pick pitfalls for diverged branches. MEDIUM confidence.
+- [Claude Code Guardrails (rulebricks)](https://github.com/rulebricks/claude-code-guardrails) -- PreToolUse hook patterns for safety guardrails. MEDIUM confidence.
+- [Claude Code Multi-Agent Systems Guide (eesel.ai)](https://www.eesel.ai/blog/claude-code-multiple-agent-systems-complete-2026-guide) -- Multi-agent architecture patterns, failure modes. MEDIUM confidence.
 
 ---
-*Pitfalls research for: Mowism v1.1 multi-agent coordination features*
-*Researched: 2026-02-20*
-*Supersedes: v1.0 PITFALLS.md (2026-02-19)*
+*Pitfalls research for: Mowism v1.2 native worktrees, full-lifecycle workers, auto-advance, GSD cherry-pick*
+*Researched: 2026-02-24*
+*Supersedes: v1.1 PITFALLS.md (2026-02-20)*
