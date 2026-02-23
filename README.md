@@ -30,7 +30,6 @@ The installer copies all commands, agents, workflows, and tools to `~/.claude/` 
 |---|---|---|---|
 | Claude Code | Yes | Runtime environment | [claude.ai/code](https://claude.ai/code) |
 | Node.js | Yes | Powers mow-tools.cjs (state management, roadmap updates) | [nodejs.org](https://nodejs.org) |
-| WorkTrunk | Yes | Multi-worktree management (`wt` CLI) | [WorkTrunk repo](https://github.com/nicholasgasior/worktrunk) |
 
 **Optional:** Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` to enable multi-agent parallel execution across worktrees.
 
@@ -159,7 +158,7 @@ You can run `map-codebase` before or after `new-project`. If you're continuing w
 
 ## Commands
 
-Mowism provides 35 `/mow:*` commands and 7 quality skills.
+Mowism provides 36 `/mow:*` commands and 7 quality skills.
 
 Append `???` to any command for detailed help -- e.g., `/mow:execute-phase ???` opens the full reference for that command, including flags, examples, and edge cases.
 
@@ -198,10 +197,12 @@ Append `???` to any command for detailed help -- e.g., `/mow:execute-phase ???` 
 | Command | Description |
 |---|---|
 | `/mow:execute-phase N` | Execute all plans in a phase with wave-based parallelization |
+| `/mow:auto` | Drive the entire milestone from current phase to completion |
 | `/mow:quick` | Execute a quick task with Mowism guarantees, skip optional agents |
 
 ```
 /mow:execute-phase 3         # Execute all plans in phase 3
+/mow:auto                    # Full-milestone pipeline: all phases, DAG-aware
 /mow:quick                   # Small task: plan + execute, no research/verify
 ```
 
@@ -337,6 +338,12 @@ A complete config.json with all options at their defaults:
     "verifier": true,
     "auto_advance": false
   },
+  "worker": {
+    "stage_gates": "none"
+  },
+  "executor": {
+    "max_task_attempts": 5
+  },
   "git": {
     "branching_strategy": "none"
   },
@@ -355,10 +362,12 @@ A complete config.json with all options at their defaults:
 | `workflow.research` | `true` | Spawn researcher during plan-phase | Disable for well-understood domains |
 | `workflow.plan_check` | `true` | Spawn plan checker during plan-phase | Disable for faster iteration |
 | `workflow.verifier` | `true` | Spawn verifier during execute-phase | Disable for non-critical phases |
-| `workflow.auto_advance` | `false` | Auto-chain stages without pausing | Enable for hands-off execution |
+| `workflow.auto_advance` | `false` | Auto-chain stages without pausing | Set by `/mow:auto`; can also enable manually |
 | `git.branching_strategy` | `"none"` | Branch strategy: `none`, `phase`, or `milestone` | `"phase"` for code review per phase |
 | `planning.commit_docs` | `true` | Commit .planning/ artifacts to git | `false` for OSS contributions or client projects |
 | `planning.search_gitignored` | `false` | Include .planning/ in broad searches | `true` when .planning/ is gitignored |
+| `worker.stage_gates` | `"none"` | Lifecycle stage gates for phase workers | `"all"` to require approval at each stage boundary |
+| `executor.max_task_attempts` | `5` | Max retry attempts before executor stops on a failing task | Lower for fast-fail, raise for flaky environments |
 | `model_overrides` | `{}` | Per-agent model overrides | Override specific agents without changing profile |
 
 ### Model Profiles
@@ -393,7 +402,7 @@ Three profiles control which Claude model each agent uses. This balances reasoni
 
 Mowism installs files into `~/.claude/`:
 
-- `~/.claude/commands/mow/` -- 35 slash commands
+- `~/.claude/commands/mow/` -- 36 slash commands
 - `~/.claude/commands/` -- 7 quality skill commands
 - `~/.claude/agents/` -- 14 agent definitions (mow-*.md)
 - `~/.claude/mowism/` -- workflows, references, templates, tools
@@ -525,6 +534,16 @@ To keep planning artifacts out of git:
 /mow:debug "login fails"   # Start structured investigation
 /clear
 /mow:debug                 # Resume after context reset (state persists)
+```
+
+### Full-milestone auto-advance
+
+```
+/mow:auto                   # Drives all remaining phases to completion
+                             # Pauses at every discuss stage for your input
+                             # Respects DAG dependencies between phases
+                             # Stops at milestone boundary and shows summary
+                             # Re-run after interruption to resume from where you left off
 ```
 
 ### Parallel multi-agent execution
