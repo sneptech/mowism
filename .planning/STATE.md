@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
 Phase: 14 of 16 (Native Worktree Adoption)
-Plan: 3 of 4 in current phase
-Status: Plan 14-03 complete
-Last activity: 2026-02-24 -- Plan 14-03 executed (worktree migration script)
+Plan: 4 of 4 in current phase
+Status: Phase 14 complete
+Last activity: 2026-02-24 -- Plan 14-04 executed (WorkTrunk removal and final cleanup)
 
-Progress: [########--] 75% (Phase 14)
+Progress: [##########] 100% (Phase 14)
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [########--] 75% (Phase 14)
 | Phase 14 P01 | 4min | 2 tasks | 4 files |
 | Phase 14 P02 | 4min | 2 tasks | 5 files |
 | Phase 14 P03 | 3min | 2 tasks | 2 files |
+| Phase 14 P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent for v1.2:
 - [Phase 14-03]: Migration renames .worktrees/ to .worktrees.bak (never deletes) for safe rollback
 - [Phase 14-03]: Active git worktrees block migration with actionable error listing
 - [Phase 14-03]: Backups never auto-deleted; cleanup always user-initiated via clean-backup
+- [Phase 14-04]: CLI worktree create redirects to cmdWorktreeCreateNative via legacy alias
+- [Phase 14-04]: Hook scripts installed from .claude/hooks/ to mowism/hooks/ during install
 
 ### Pending Todos
 
@@ -95,5 +98,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 14-03-PLAN.md (worktree migration script)
-Resume: Continue with Phase 14 Plan 04
+Stopped at: Completed 14-04-PLAN.md (WorkTrunk removal and final cleanup)
+Resume: Phase 14 complete. Continue with Phase 15
