@@ -1363,6 +1363,12 @@ const CONFIG_DEFAULTS = {
     dashboard_redraw: false,
     event_log_count: 6,
   },
+  worker: {
+    stage_gates: 'none',
+  },
+  workflow: {
+    verifier: true,
+  },
 };
 
 function cmdConfigGet(cwd, keyPath, raw) {
@@ -6386,6 +6392,7 @@ function cmdInitPhaseOp(cwd, phase, raw) {
     has_plans: (phaseInfo?.plans?.length || 0) > 0,
     has_verification: phaseInfo?.has_verification || false,
     plan_count: phaseInfo?.plans?.length || 0,
+    summary_count: phaseInfo?.summaries?.length || 0,
 
     // Phase requirement IDs
     phase_requirement_ids: extractPhaseRequirementIds(cwd, phase),
