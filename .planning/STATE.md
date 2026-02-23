@@ -72,5 +72,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.2 roadmap created with 4 phases (13-16), 32 requirements mapped
+Stopped at: Phase 13 context gathered
 Resume: `/mow:plan-phase 13` (or 14, since they are parallelizable)
