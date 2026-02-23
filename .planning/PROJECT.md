@@ -29,42 +29,39 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 - ✓ Live agent feedback — 13-event message schema, dashboard renderer, NDJSON event log, pinned notifications — v1.1
 - ✓ Distributed input routing with color-coded agent terminals — 256-color ANSI banners, input_needed routing, permission prompt context — v1.1
 - ✓ README overhaul — lifecycle narrative (8 stages), 35 commands documented, brownfield entry, config/security/troubleshooting — v1.1
+- ✓ Native worktree adoption — `isolation: worktree` replaces custom cmdWorktreeCreate, WorkTrunk dependency removed — v1.2
+- ✓ Full-lifecycle workers — autonomous discuss → research → plan → execute → refine per phase with artifact-based resume — v1.2
+- ✓ Nested agent delegation — workers spawn subagents via Task() for each lifecycle stage — v1.2
+- ✓ Auto-advance pipeline — `/mow:auto` chains phases with DAG awareness; discuss always pauses for user input — v1.2
+- ✓ GSD upstream cherry-pick — 11 bugfixes ported + context window monitor hook + CLAUDE.md subagent injection — v1.2
 
 ### Active
 
-<!-- Current milestone: v1.2 Native Worktrees & Full-Lifecycle Workers -->
-
-- [ ] Native worktree adoption — `isolation: worktree` replaces custom cmdWorktreeCreate
-- [ ] Simplification pass — remove redundant worktree code, keep coordination layer
-- [ ] Full-lifecycle workers — autonomous discuss → research → plan → execute → refine per phase
-- [ ] Nested agent delegation — workers spawn subagents via Task() for each lifecycle stage
-- [ ] Auto-advance pipeline — `/mow:auto` chains phases; discuss always pauses for user input
-- [ ] GSD upstream cherry-pick — port 9 confirmed bugfixes + context window monitor hook
+(None yet — define with `/mow:new-milestone`)
 
 ### Out of Scope
 
 - Multi-year workflow persistence — state files in git are sufficient for now
 - Custom database or knowledge graph — CLAUDE.md + .planning/ files cover this
 - Mobile/web UI — CLI-only, Claude Code terminal
-- Forking/modifying WorkTrunk itself — use as-is, clean dependency boundary
 - Building a custom Agent Teams implementation — use Anthropic's experimental feature as-is
 - Plugin/extension marketplace — skills are .md files, users copy them into a directory
 - Automatic model routing — user-selected profiles are more predictable
 - Real-time streaming output from workers — Agent Teams is message-based, discrete milestones are the achievable UX
 - tmux-dependent features — not portable across terminal emulators
+- Cross-milestone auto-advance — milestones are deliberate boundaries requiring review and audit
 
 ## Context
 
-**Shipped v1.1** with 96 files modified (+21,129 lines) across 6 phases and 17 plans.
-Tech stack: Node.js (mow-tools.cjs ~3,500 LOC), Bash (install.sh), Markdown (workflows, commands, agents, templates, help).
-103+ tests passing in mow-tools.test.cjs. 54/54 total requirements satisfied (36 v1.0 + 18 v1.1).
-12 phases, 39 plans executed across two milestones.
+**Shipped v1.2** with 64 files modified (+11,528 lines) across 4 phases and 15 plans.
+Tech stack: Node.js (mow-tools.cjs ~4,500 LOC), Bash (install.sh, hooks), Markdown (workflows, commands, agents, templates, help).
+86/86 total requirements satisfied (36 v1.0 + 18 v1.1 + 32 v1.2).
+16 phases, 54 plans executed across three milestones.
 
-**GSD divergence:** Mowism adds worktree-aware state, `/mow:refine-phase` quality gates, Agent Teams coordination, DAG scheduling, multi-phase execution, live feedback dashboard, and a `???` help system — none of which exist in upstream GSD. The fork is intentionally permanent.
+**GSD divergence:** Mowism adds worktree-aware state, `/mow:refine-phase` quality gates, Agent Teams coordination, DAG scheduling, multi-phase execution, live feedback dashboard, full-lifecycle autonomous workers, `/mow:auto` pipeline, native worktree hooks, and a `???` help system — none of which exist in upstream GSD. The fork is intentionally permanent.
 
 ## Constraints
 
-- **Dependency:** WorkTrunk must be installed (`wt` CLI available in PATH) for Mowism to function
 - **Dependency:** Agent Teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (experimental, may change)
 - **Platform:** CachyOS (Arch-based Linux), fish shell, KDE Plasma on Wayland — install and skills must work in this environment
 - **Upstream:** GSD is actively maintained; the fork will diverge. No expectation of merging back upstream.
@@ -93,18 +90,12 @@ Tech stack: Node.js (mow-tools.cjs ~3,500 LOC), Bash (install.sh), Markdown (wor
 | 256-color ANSI with fallback chain | 256-color → util.styleText bold+inverse → plain text | ✓ Good — works across terminal capabilities |
 | Dashboard as notification mechanism | Lead doesn't manually notify — dashboard auto-pins input_needed events | ✓ Good — no message noise, user-driven navigation |
 | README overhaul as last v1.1 phase | Documents what was actually built; writing before implementation creates churn | ✓ Good — accurate documentation on first pass |
-
-## Current Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
-
-**Goal:** Adopt Claude Code's native worktree isolation, simplify redundant code, and enable full-lifecycle autonomous phase workers with nested agent delegation and auto-advance pipeline.
-
-**Target features:**
-- Native worktree adoption (isolation: worktree + hooks)
-- Simplification pass (remove custom worktree creation, keep coordination)
-- Full-lifecycle workers (discuss → research → plan → execute → refine)
-- Nested agent delegation (teammate → Task() subagents)
-- Auto-advance pipeline (/mow:auto with discuss pause gate)
-- GSD upstream cherry-pick (9 bugs + context window monitor)
+| Replace WorkTrunk with native worktree hooks | Claude Code's `isolation: worktree` handles creation/cleanup natively; WorkTrunk was an unnecessary dependency | ✓ Good — net LOC reduction, one fewer install requirement, migration script for existing users |
+| Callback replacer pattern for state mutations | `.replace()` with string replacement corrupts dollar signs in user data; callback replacers are safe | ✓ Good — zero data corruption since v1.2 |
+| Full-lifecycle workers with artifact-based resume | Workers detect existing CONTEXT.md/PLANs/SUMMARYs and skip completed stages on resume | ✓ Good — crash recovery without repeating work |
+| Discuss-phase always pauses for user input | Hard constraint — discuss captures user decisions that cannot be automated, even in auto-advance | ✓ Good — prevents drift from user intent |
+| `/mow:auto` delegates to team lead for DAG execution | Reuses battle-tested multi-phase orchestration rather than reimplementing scheduling | ✓ Good — single entry point, DAG-aware, discuss gates enforced |
+| Context window monitor at 25%/15% thresholds | Tighter than GSD upstream (35%/25%) to give more warning before exhaustion | ✓ Good — proactive saves prevent lost work |
 
 ---
-*Last updated: 2026-02-24 after v1.2 milestone start*
+*Last updated: 2026-02-24 after v1.2 milestone completion*

@@ -37,3 +37,22 @@
 
 ---
 
+
+## v1.2 Native Worktrees & Full-Lifecycle Workers (Shipped: 2026-02-24)
+
+**Phases completed:** 4 phases (13-16), 15 plans
+**Timeline:** 1 day (2026-02-24)
+**Commits:** 50
+**Files:** 64 modified, +11,528 / -880 lines
+**Requirements:** 32/32 satisfied
+
+**Key accomplishments:**
+- Ported 11 correctness bugfixes from GSD upstream -- dollar sign corruption, executor retry limits, progress clamping, backup-before-repair, discuss-phase ambiguity probing
+- Context window monitor hook (25%/15% thresholds) and CLAUDE.md subagent injection for project context discovery
+- Replaced WorkTrunk dependency with Claude Code native worktree hooks (`isolation: worktree`) -- net LOC reduction, migration script for existing users
+- Full-lifecycle phase workers chain discuss → research → plan → execute → refine autonomously with artifact-based resume detection
+- `/mow:auto` command drives entire milestones from one entry point with DAG-aware scheduling, discuss pause gates, and milestone boundary cleanup
+- Dashboard milestone-wide auto-advance progress banner showing current phase and completion percentage
+
+---
+
