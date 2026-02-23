@@ -72,6 +72,14 @@ v1.1-specific decisions archived in `.planning/milestones/v1.1-ROADMAP.md`.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.1 milestone archived, preparing for v1.2
-Resume: Run /mow:new-milestone to start v1.2 planning
-Context: v1.1 shipped with 18/18 requirements. Researching Claude Code native worktree support and GSD upstream changes before v1.2 scoping.
+Stopped at: v1.2 scoping complete, research saved, ready for new-milestone
+Resume: Run `/mow:new-milestone` to formalize v1.2. All research is in `.planning/research/v1.2-*.md`.
+Context: v1.1 shipped and archived (tag v1.1, not pushed). v1.2 scope discussed and agreed:
+  1. Native worktree adoption (isolation: worktree replaces custom cmdWorktreeCreate)
+  2. Simplification pass (remove redundant worktree code, keep coordination layer)
+  3. Full-lifecycle workers (discuss → research → plan → execute → refine per phase)
+  4. Nested delegation confirmed working (teammate → Task() subagents, 2-level max)
+  5. Auto-advance pipeline (/mow:auto, discuss ALWAYS pauses for user input)
+  6. GSD upstream cherry-pick (9 confirmed bugs + context window monitor hook)
+  7. Lifecycle audit paused until v1.2 ships
+Research files: v1.2-NESTED-DELEGATION.md, v1.2-GSD-UPSTREAM-DIFF.md
