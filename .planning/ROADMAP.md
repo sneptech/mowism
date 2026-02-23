@@ -79,11 +79,13 @@ Plans:
   2. When a worker completes and its worktree is removed, the manifest entry, phase claim, and dashboard state are automatically cleaned up
   3. All worktree path references across agents, workflows, and mow-tools.cjs resolve to native worktree locations (no references to old `.worktrees/pNN` paths remain)
   4. Users with existing `.worktrees/` directories can run a migration script that moves entries to native paths without losing state
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 14-01: TBD
-- [ ] 14-02: TBD
+- [ ] 14-01-PLAN.md — Hook scripts, settings.json registration, and cmdWorktreeCreateNative function
+- [ ] 14-02-PLAN.md — Path reference rewrite and coordination layer adaptation
+- [ ] 14-03-PLAN.md — Migration script with detection and .worktrees.bak cleanup offer
+- [ ] 14-04-PLAN.md — WorkTrunk removal and install.sh cleanup (net LOC reduction)
 
 ### Phase 15: Full-Lifecycle Workers
 **Goal**: Phase workers autonomously run the complete discuss-through-refine lifecycle with nested subagent delegation
