@@ -567,6 +567,75 @@ function cmdDashboardRender(cwd, options, raw) {
     }
   }
 
+  // a2. Check auto_advance config for milestone banner
+  let autoAdvance = false;
+  let autoAdvanceStats = null;
+  try {
+    const configPath = path.join(cwd, '.planning', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.workflow && config.workflow.auto_advance) {
+        autoAdvance = true;
+      }
+    }
+  } catch { /* not auto-advancing */ }
+
+  if (autoAdvance) {
+    // Compute milestone stats from ROADMAP.md
+    try {
+      const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+      const roadmapContent = safeReadFile(roadmapPath) || '';
+      const phasesDir = path.join(cwd, '.planning', 'phases');
+
+      // Find the "In Progress" milestone section
+      const inProgressMatch = roadmapContent.match(/###\s+v[\d.]+[^\n]*\(In Progress\)/i);
+      if (inProgressMatch) {
+        const sectionStart = inProgressMatch.index;
+        // Find next milestone heading or end of file
+        const restAfterMilestone = roadmapContent.slice(sectionStart + inProgressMatch[0].length);
+        const nextMilestoneMatch = restAfterMilestone.match(/\n###\s+v[\d.]+/);
+        const sectionEnd = nextMilestoneMatch
+          ? sectionStart + inProgressMatch[0].length + nextMilestoneMatch.index
+          : sectionStart + inProgressMatch[0].length + restAfterMilestone.indexOf('\n## Phase Details');
+        const milestoneSection = roadmapContent.slice(sectionStart, sectionEnd > sectionStart ? sectionEnd : undefined);
+
+        // Extract phase lines: - [x] **Phase NN: ...** or - [ ] **Phase NN: ...**
+        const phaseLinePattern = /^-\s+\[([ x])\]\s+\*\*Phase\s+(\d+(?:\.\d+)?)\s*:/gm;
+        let totalPhases = 0;
+        let completedPhases = 0;
+        let currentPhase = '?';
+        let plMatch;
+        const allPhaseNumbers = [];
+
+        while ((plMatch = phaseLinePattern.exec(milestoneSection)) !== null) {
+          totalPhases++;
+          allPhaseNumbers.push(plMatch[2]);
+          if (plMatch[1] === 'x') {
+            completedPhases++;
+          } else if (currentPhase === '?') {
+            // First incomplete phase is the current one
+            currentPhase = plMatch[2];
+          }
+        }
+
+        // If all phases are complete, current phase is the last one
+        if (currentPhase === '?' && allPhaseNumbers.length > 0) {
+          currentPhase = allPhaseNumbers[allPhaseNumbers.length - 1];
+        }
+
+        const milestonePercent = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
+
+        autoAdvanceStats = {
+          active: true,
+          current_phase: currentPhase,
+          total_phases: totalPhases,
+          completed_phases: completedPhases,
+          milestone_percent: milestonePercent,
+        };
+      }
+    } catch { /* failed to compute milestone stats, skip banner */ }
+  }
+
   // c. Read last N events
   let eventCount = 6;
   try {
@@ -592,9 +661,21 @@ function cmdDashboardRender(cwd, options, raw) {
 
   if (activeRows.length === 0) {
     if (raw) {
-      output({ lines: 0, events: events.length, pinned: pinnedNotifications.length, phases: 0 }, true, JSON.stringify({ lines: 0, events: events.length, pinned: pinnedNotifications.length, phases: 0 }));
+      const rawObj = { lines: 0, events: events.length, pinned: pinnedNotifications.length, phases: 0 };
+      if (autoAdvanceStats) rawObj.auto_advance = autoAdvanceStats;
+      output(rawObj, true, JSON.stringify(rawObj));
     } else {
       const lines = [];
+      // Prepend auto-advance banner if active
+      if (autoAdvanceStats) {
+        const bannerText = `AUTO-ADVANCE  Phase ${autoAdvanceStats.current_phase}/${autoAdvanceStats.total_phases}  Milestone: ${autoAdvanceStats.milestone_percent}%  ${autoAdvanceStats.completed_phases}/${autoAdvanceStats.total_phases} done`;
+        if (supportsColor() !== 'none') {
+          lines.push(color256(231, 27, bannerText.padEnd(width)));
+        } else {
+          lines.push(bannerText);
+        }
+        lines.push('\u2500'.repeat(width));
+      }
       if (events.length > 0) {
         lines.push('No active phases');
         lines.push('\u2500'.repeat(width));
@@ -677,6 +758,18 @@ function cmdDashboardRender(cwd, options, raw) {
 
   // e. Render summary rows
   const lines = [];
+
+  // Prepend auto-advance banner if active
+  if (autoAdvanceStats) {
+    const bannerText = `AUTO-ADVANCE  Phase ${autoAdvanceStats.current_phase}/${autoAdvanceStats.total_phases}  Milestone: ${autoAdvanceStats.milestone_percent}%  ${autoAdvanceStats.completed_phases}/${autoAdvanceStats.total_phases} done`;
+    if (supportsColor() !== 'none') {
+      lines.push(color256(231, 27, bannerText.padEnd(width)));
+    } else {
+      lines.push(bannerText);
+    }
+    lines.push('\u2500'.repeat(width));
+  }
+
   for (const pr of phaseRows) {
     lines.push(renderSummaryRow(pr, width));
   }
@@ -711,7 +804,9 @@ function cmdDashboardRender(cwd, options, raw) {
 
   // j. Output
   if (raw) {
-    output({ lines: lines.length, events: events.length, pinned: pinnedNotifications.length, phases: phaseRows.length }, true, JSON.stringify({ lines: lines.length, events: events.length, pinned: pinnedNotifications.length, phases: phaseRows.length }));
+    const rawObj = { lines: lines.length, events: events.length, pinned: pinnedNotifications.length, phases: phaseRows.length };
+    if (autoAdvanceStats) rawObj.auto_advance = autoAdvanceStats;
+    output(rawObj, true, JSON.stringify(rawObj));
   } else {
     process.stdout.write(lines.join('\n') + '\n' + bellChar);
     dashState.last_line_count = lines.length;
@@ -4032,12 +4127,11 @@ function cmdRoadmapAnalyze(cwd, raw) {
 
 // ─── DAG Analysis ─────────────────────────────────────────────────────────────
 
-function cmdRoadmapAnalyzeDag(cwd, raw) {
+function analyzeDagInternal(cwd) {
   const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
 
   if (!fs.existsSync(roadmapPath)) {
-    output({ error: 'ROADMAP.md not found' }, raw);
-    return;
+    return null;
   }
 
   const content = fs.readFileSync(roadmapPath, 'utf-8');
@@ -4143,7 +4237,7 @@ function cmdRoadmapAnalyzeDag(cwd, raw) {
     dependedBy.get(from).push(to);
   }
 
-  const result = {
+  return {
     phases: phases.map(p => ({
       number: p.number,
       name: p.name,
@@ -4162,37 +4256,45 @@ function cmdRoadmapAnalyzeDag(cwd, raw) {
       fully_sequential: waves ? waves.every(w => w.phases.length === 1) : null,
     },
   };
+}
+
+function cmdRoadmapAnalyzeDag(cwd, raw) {
+  const result = analyzeDagInternal(cwd);
+
+  if (!result) {
+    output({ error: 'ROADMAP.md not found' }, raw);
+    return;
+  }
 
   if (raw) {
     output(result, raw);
   } else {
     // Human-readable text visualization
     let text = 'DAG Analysis:\n\n';
-    if (waves) {
-      for (const w of waves) {
+    if (result.waves) {
+      for (const w of result.waves) {
         const phaseLabels = w.phases.map(pn => {
-          const p = phases.find(pp => pp.number === pn);
-          const status = completedPhases.includes(pn) ? ' (complete)' : '';
+          const status = result.completed.includes(pn) ? ' (complete)' : '';
           return `Phase ${pn}${status}`;
         });
         text += `Wave ${w.wave}: ${phaseLabels.join(', ')}\n`;
       }
     } else {
-      text += 'ERROR: ' + cycleError + '\n';
+      text += 'ERROR: ' + result.validation.cycle_error + '\n';
     }
 
-    if (ready.length > 0) {
-      text += `\nReady to execute: ${ready.map(p => 'Phase ' + p).join(', ')}\n`;
+    if (result.ready.length > 0) {
+      text += `\nReady to execute: ${result.ready.map(p => 'Phase ' + p).join(', ')}\n`;
     }
-    if (blocked.length > 0) {
-      const blockedStr = blocked.map(b =>
+    if (result.blocked.length > 0) {
+      const blockedStr = result.blocked.map(b =>
         `Phase ${b.phase} (waiting on ${b.waiting_on.map(w => 'Phase ' + w).join(', ')})`
       ).join(', ');
       text += `Blocked: ${blockedStr}\n`;
     }
-    if (missingRefs.length > 0) {
+    if (result.validation.missing_refs.length > 0) {
       text += `\nWarnings:\n`;
-      for (const mr of missingRefs) {
+      for (const mr of result.validation.missing_refs) {
         text += `  Phase ${mr.phase} references non-existent Phase ${mr.references}\n`;
       }
     }
