@@ -138,3 +138,6 @@ Session approaching context limit (~0% remaining). Work committed. Run /clear an
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
