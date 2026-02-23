@@ -20,11 +20,11 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 ### Full-Lifecycle Workers
 
 - [ ] **WORK-01**: Phase worker chains discuss → research → plan → execute → refine via sequential Task() subagent calls
-- [ ] **WORK-02**: Discuss-phase ALWAYS pauses for user input via `input_needed` message before continuing
+- [x] **WORK-02**: Discuss-phase ALWAYS pauses for user input via `input_needed` message before continuing
 - [ ] **WORK-03**: Context between lifecycle stages passed via file paths, not file contents (prevent context bloat)
 - [x] **WORK-04**: Worker detects existing stage artifacts (CONTEXT.md, PLANs, SUMMARYs) and resumes from correct point
 - [ ] **WORK-05**: Workers spawn specialized subagents (mow-phase-researcher, mow-planner, mow-executor, mow-verifier) via Task()
-- [ ] **WORK-06**: Workers send `stage_transition` messages as they move between lifecycle stages
+- [x] **WORK-06**: Workers send `stage_transition` messages as they move between lifecycle stages
 - [x] **WORK-07**: Model routing per stage: Haiku for research, default for planning, executor_model for execution, verifier_model for refinement
 
 ### Auto-Advance Pipeline
@@ -93,11 +93,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKT-06 | Phase 14 | Complete |
 | WKT-07 | Phase 14 | Complete |
 | WORK-01 | Phase 15 | Pending |
-| WORK-02 | Phase 15 | Pending |
+| WORK-02 | Phase 15 | Complete |
 | WORK-03 | Phase 15 | Pending |
 | WORK-04 | Phase 15 | Complete |
 | WORK-05 | Phase 15 | Pending |
-| WORK-06 | Phase 15 | Pending |
+| WORK-06 | Phase 15 | Complete |
 | WORK-07 | Phase 15 | Complete |
 | AUTO-01 | Phase 16 | Pending |
 | AUTO-02 | Phase 16 | Pending |

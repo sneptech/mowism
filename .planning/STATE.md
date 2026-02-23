@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
 Phase: 15 of 16 (Full-Lifecycle Workers)
-Plan: 1 of 3 in current phase
-Status: Executing Phase 15
-Last activity: 2026-02-24 -- Plan 15-01 executed (worker lifecycle fields in mow-tools)
+Plan: 3 of 3 in current phase
+Status: Phase 15 Complete
+Last activity: 2026-02-24 -- Plan 15-03 executed (workflow guards + team lead stage awareness)
 
-Progress: [###-------] 33% (Phase 15)
+Progress: [##########] 100% (Phase 15)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [###-------] 33% (Phase 15)
 | Phase 14 P04 | 5min | 2 tasks | 2 files |
 | Phase 14 P05 | 2min | 1 tasks | 1 files |
 | Phase 15 P01 | 3min | 2 tasks | 2 files |
+| Phase 15 P03 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent for v1.2:
 - [Phase 14-04]: Hook scripts installed from .claude/hooks/ to mowism/hooks/ during install
 - [Phase 15]: summary_count uses phaseInfo.summaries.length (already computed, no new I/O)
 - [Phase 15]: Worker config keys use worker.* namespace in CONFIG_DEFAULTS
+- [Phase 15]: Worker-mode detection uses worktree path + STATUS.md dual signal; discuss-phase auto_advance fully skipped in worker mode
+- [Phase 15]: Team lead shows lifecycle stage in Active Phases (e.g., 'executing (research)') via stage_transition events
 
 ### Pending Todos
 
@@ -103,8 +106,8 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 15-01-PLAN.md
-Resume: Continue with 15-02-PLAN.md execution
+Stopped at: Completed 15-03-PLAN.md
+Resume: Phase 15 complete -- proceed with verification or Phase 16
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
