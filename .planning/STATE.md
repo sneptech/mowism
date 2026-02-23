@@ -56,6 +56,7 @@ Progress: [##########] 100% (Phase 15)
 | Phase 14 P05 | 2min | 1 tasks | 1 files |
 | Phase 15 P01 | 3min | 2 tasks | 2 files |
 | Phase 15 P03 | 2min | 2 tasks | 3 files |
+| Phase 15 P02 | 3min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,8 @@ Recent for v1.2:
 - [Phase 15]: Worker config keys use worker.* namespace in CONFIG_DEFAULTS
 - [Phase 15]: Worker-mode detection uses worktree path + STATUS.md dual signal; discuss-phase auto_advance fully skipped in worker mode
 - [Phase 15]: Team lead shows lifecycle stage in Active Phases (e.g., 'executing (research)') via stage_transition events
+- [Phase 15]: Discuss runs inline (not Task()) because AskUserQuestion needs worker terminal session
+- [Phase 15]: Stage gates read at each boundary (not cached) to allow mid-lifecycle config changes
 
 ### Pending Todos
 
