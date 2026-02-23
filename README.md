@@ -3,7 +3,7 @@
 Coordinated multi-agent workflows for Claude Code -- plan, execute, and ship with parallel agents across git worktrees.
 
 ## ! IMPORTANT !
-This project is currently in early testing, do not entrust this to production work yet without accepting the risk something screw up! Let my naive self experiment, iterate, and step on the rakes so you need not.
+This project is currently in early testing, do not entrust this to production work yet without accepting the risk that something might screw up! Let my naive self experiment, iterate, and step on the rakes so you need not.
 *(last edited: 2026-02-20)*
 
 ## What is Mowism
@@ -22,7 +22,7 @@ cd mowism
 ./bin/install.sh
 ```
 
-The installer copies all commands, agents, workflows, and tools to `~/.claude/` and checks for required dependencies. It never blocks on missing dependencies -- it reports what's missing and how to install it.
+The installer copies all commands, agents, workflows, and tools to `~/.claude/` and checks for required dependencies. It never blocks on missing dependencies: it'll report what's missing and how to install it.
 
 ## Requirements
 
