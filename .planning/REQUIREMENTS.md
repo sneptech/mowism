@@ -43,9 +43,9 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 - [x] **BUG-02**: Phase requirement IDs extracted from ROADMAP.md and propagated via init functions
 - [x] **BUG-03**: Feature branch created at discuss-phase start when branching_strategy is "phase" (not delayed until execution)
 - [x] **BUG-04**: Progress bar computations clamped with Math.min(100, ...) to prevent RangeError on orphaned files
-- [ ] **BUG-05**: Executor has maximum attempt limit per task to prevent infinite retry loops
+- [x] **BUG-05**: Executor has maximum attempt limit per task to prevent infinite retry loops
 - [x] **BUG-06**: plan-phase warns if no CONTEXT.md exists; discuss-phase warns if plans already exist
-- [ ] **BUG-07**: `/mow:health --repair` creates timestamped backup of STATE.md before regeneration
+- [x] **BUG-07**: `/mow:health --repair` creates timestamped backup of STATE.md before regeneration
 - [x] **BUG-08**: Subagent spawn prompts include project CLAUDE.md content for context discovery
 - [ ] **BUG-09**: Todo system has `in-progress/` state and `todo start` subcommand (not immediately moved to done/)
 - [x] **BUG-10**: PostToolUse hook monitors context window usage and warns at 35%/25% remaining
@@ -110,9 +110,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUG-02 | Phase 13 | Complete |
 | BUG-03 | Phase 13 | Complete |
 | BUG-04 | Phase 13 | Complete |
-| BUG-05 | Phase 13 | Pending |
+| BUG-05 | Phase 13 | Complete |
 | BUG-06 | Phase 13 | Complete |
-| BUG-07 | Phase 13 | Pending |
+| BUG-07 | Phase 13 | Complete |
 | BUG-08 | Phase 13 | Complete |
 | BUG-09 | Phase 13 | Pending |
 | BUG-10 | Phase 13 | Complete |

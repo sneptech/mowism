@@ -137,7 +137,7 @@ DAG: {13, 14} -> 15 -> 16
 | 10. Live Feedback and Visual Differentiation | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 11. README Overhaul | v1.1 | 3/3 | Complete | 2026-02-20 |
 | 12. Audit Gap Closure | v1.1 | 1/1 | Complete | 2026-02-20 |
-| 13. GSD Bugfix Ports | 3/5 | In Progress|  | - |
+| 13. GSD Bugfix Ports | 4/5 | In Progress|  | - |
 | 14. Native Worktree Adoption | v1.2 | 0/? | Not started | - |
 | 15. Full-Lifecycle Workers | v1.2 | 0/? | Not started | - |
 | 16. Auto-Advance Pipeline | v1.2 | 0/? | Not started | - |
