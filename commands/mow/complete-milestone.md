@@ -106,14 +106,27 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
    - Add "Next Milestone Goals" section
    - Archive previous content in `<details>` (if v1.1+)
 
-7. **Commit and tag:**
+7. **Legacy worktree backup cleanup (if applicable):**
+
+   - Check for `.worktrees.bak` existence: `ls -d .worktrees.bak 2>/dev/null`
+   - If it exists, inform the user:
+     ```
+     Legacy worktree backup detected at `.worktrees.bak/`.
+     This was preserved during v1.2 migration. Now that the milestone is complete,
+     you can safely remove it:
+       node bin/mow-tools.cjs worktree clean-backup
+     Or keep it for reference.
+     ```
+   - This is informational only -- do NOT auto-delete. The user decides.
+
+8. **Commit and tag:**
 
    - Stage: MILESTONES.md, PROJECT.md, ROADMAP.md, STATE.md, archive files
    - Commit: `chore: archive v{{version}} milestone`
    - Tag: `git tag -a v{{version}} -m "[milestone summary]"`
    - Ask about pushing tag
 
-8. **Offer next steps:**
+9. **Offer next steps:**
    - `/mow:new-milestone` — start next milestone (questioning → research → requirements → roadmap)
 
 </process>
