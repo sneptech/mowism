@@ -115,11 +115,11 @@ Plans:
   3. Auto-advance pauses at every discuss-phase for user input and resumes automatically after CONTEXT.md is created
   4. The pipeline stops at milestone boundary, clears the auto-advance flag, and does not bleed into the next milestone
   5. The dashboard shows a progress banner with current phase and milestone completion percentage during auto-advance
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 16-01: TBD
-- [ ] 16-02: TBD
+- [ ] 16-01-PLAN.md -- cmdInitAuto function, /mow:auto command file, and auto-advance orchestration workflow
+- [ ] 16-02-PLAN.md -- Dashboard milestone-wide auto-advance progress banner
 
 ## Progress
 
