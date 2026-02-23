@@ -31,7 +31,7 @@ Show detailed worktree assignment information: which worktrees are claiming whic
    ```
 4. For each entry, also show:
    - Time since started (e.g., "2h 15m ago")
-   - Whether the worktree still exists on disk (cross-reference with `wt list --format=json`)
+   - Whether the worktree still exists on disk (cross-reference with `git worktree list` or `mow-tools.cjs worktree list-manifest`)
    - If worktree no longer exists: mark as "STALE" and suggest running any /mow:* command to auto-clean
 5. After the detail table, show:
    ```

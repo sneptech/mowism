@@ -94,7 +94,7 @@ Count plans and waves from init JSON (`plan_count`, and derive wave count from p
 
 Multi-phase mode is triggered when:
 1. The `$ARGUMENTS` contain `--multi-phase` flag, OR
-2. The invocation comes from a phase worker (detected by STATUS.md existence AND the current worktree being in `.worktrees/`)
+2. The invocation comes from a phase worker (detected by STATUS.md existence AND the current worktree being in `.claude/worktrees/`)
 
 **If multi-phase mode AND this is the main worktree (not a phase worker):**
 - This means the user wants to execute multiple phases in parallel
@@ -105,7 +105,7 @@ Multi-phase mode is triggered when:
   ```
   After the team lead completes (all workers done + close-shop), return to offer_next.
 
-**If this is a phase worker's worktree (.worktrees/pNN):**
+**If this is a phase worker's worktree (.claude/worktrees/phase-NN):**
 - This is a normal single-phase execution inside a worktree
 - Continue with the standard execute_waves flow
 - But use the multi-agent state protocol (STATUS.md writes, skip STATE.md)
@@ -461,7 +461,7 @@ Gap closure cycle: `/mow:plan-phase {X} --gaps` reads VERIFICATION.md → create
 </step>
 
 <step name="update_roadmap">
-**If executing inside a phase worktree (.worktrees/pNN):**
+**If executing inside a phase worktree (.claude/worktrees/phase-NN):**
 Skip ROADMAP.md and REQUIREMENTS.md updates. The lead handles these after merging
 the phase branch. Only commit the VERIFICATION.md and phase-specific files:
 ```bash
@@ -498,7 +498,7 @@ node ~/.claude/mowism/bin/mow-tools.cjs commit "docs(phase-{X}): complete phase 
 
 <step name="offer_next">
 
-**If executing inside a phase worktree (.worktrees/pNN):**
+**If executing inside a phase worktree (.claude/worktrees/phase-NN):**
 Skip roadmap update, skip auto-advance, skip transition. The phase worker agent handles
 phase-complete signaling. Return control to the phase worker.
 

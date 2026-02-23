@@ -48,7 +48,7 @@ Report: "Merged {N} phase branches into main."
 ## Step 3: Capture Deferred Items and Context
 
 For each completed phase worker:
-1. Read STATUS.md from the worktree: `cat .worktrees/p{NN}/.planning/phases/{phase_dir}/{NN}-STATUS.md`
+1. Read STATUS.md from the worktree: `cat .claude/worktrees/phase-{NN}/.planning/phases/{phase_dir}/{NN}-STATUS.md`
 2. Look for deferred items, new ideas, or context notes
 3. If any found, write to `.planning/phases/{phase_dir}/deferred-items.md` with YAML frontmatter:
    ```yaml
@@ -114,7 +114,7 @@ After all workers acknowledge (or timeout after 30s):
 {If deferred items: "Review deferred-items.md files for captured ideas"}
 {Suggest: /mow:progress for overview, /mow:resume-work to continue}
 
-Worktrees preserved at .worktrees/ for inspection. Run `git worktree remove .worktrees/pNN` when no longer needed.
+Worktrees preserved at .claude/worktrees/ for inspection. Run `git worktree remove .claude/worktrees/phase-NN` when no longer needed.
 ```
 </step>
 

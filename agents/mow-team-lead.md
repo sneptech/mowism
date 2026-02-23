@@ -97,10 +97,11 @@ Print the orchestrator banner once at startup (red full-width bar identifying th
 node ~/.claude/mowism/bin/mow-tools.cjs format banner --text "MOW ORCHESTRATOR" --bg 196 --fg 231
 ```
 
-For each selected phase, create a worktree:
+For each selected phase, create a worktree using the native Claude Code worktree mechanism:
 ```bash
-node ~/.claude/mowism/bin/mow-tools.cjs worktree create {phase}
+claude --worktree phase-{NN}
 ```
+The WorktreeCreate hook handles Mowism coordination automatically (manifest entry, .planning/ copy, STATUS.md init).
 
 **Important:** For downstream phases (Wave 2+), do NOT create worktrees yet. Wait until dependency phases have merged. Downstream phases branch from merged main so they get all prior work.
 
@@ -114,7 +115,7 @@ For each selected phase:
 ```
 TaskCreate({
   subject: "Execute Phase {N}: {phase_name}",
-  description: "Full lifecycle: discuss-phase -> plan-phase -> execute-phase in worktree .worktrees/p{NN}. Send structured messages to lead at milestones.",
+  description: "Full lifecycle: discuss-phase -> plan-phase -> execute-phase in worktree .claude/worktrees/phase-{NN}. Send structured messages to lead at milestones.",
   activeForm: "Executing Phase {N}: {phase_name}"
 })
 ```
