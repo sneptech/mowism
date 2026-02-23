@@ -4402,3 +4402,84 @@ describe('dashboard state management tests', () => {
     assert.ok(!fs.existsSync(statePath), 'State should be removed after clear');
   });
 });
+
+describe('init phase-op summary_count', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('init phase-op includes summary_count field as a number', () => {
+    // Create a phase with 2 plans and 1 summary
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '05-test');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '05-01-PLAN.md'), '# Plan 1');
+    fs.writeFileSync(path.join(phaseDir, '05-02-PLAN.md'), '# Plan 2');
+    fs.writeFileSync(path.join(phaseDir, '05-01-SUMMARY.md'), '# Summary 1');
+
+    // Need ROADMAP.md for phase-op to work
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap\n\n## Phases\n\n| # | Phase | Plans | Status |\n|---|-------|-------|--------|\n| 05 | test | 2 | active |\n'
+    );
+
+    const result = runMowTools('init phase-op 05 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const data = JSON.parse(result.output);
+    assert.strictEqual(typeof data.summary_count, 'number', 'summary_count should be a number');
+    assert.strictEqual(data.summary_count, 1, 'should have 1 summary');
+    assert.strictEqual(data.plan_count, 2, 'should have 2 plans');
+  });
+
+  test('init phase-op returns summary_count 0 when no summaries exist', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '06-empty');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '06-01-PLAN.md'), '# Plan 1');
+
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap\n\n## Phases\n\n| # | Phase | Plans | Status |\n|---|-------|-------|--------|\n| 06 | empty | 1 | active |\n'
+    );
+
+    const result = runMowTools('init phase-op 06 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const data = JSON.parse(result.output);
+    assert.strictEqual(data.summary_count, 0, 'should have 0 summaries');
+  });
+});
+
+describe('config-get defaults for worker and workflow', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Create a minimal config.json without worker or workflow keys
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ mode: 'yolo' })
+    );
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('worker.stage_gates defaults to "none" when not in config', () => {
+    const result = runMowTools('config-get worker.stage_gates --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(result.output, 'none', 'worker.stage_gates should default to none');
+  });
+
+  test('workflow.verifier defaults to true when not in config', () => {
+    const result = runMowTools('config-get workflow.verifier --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(result.output, 'true', 'workflow.verifier should default to true');
+  });
+});
