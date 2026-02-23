@@ -646,7 +646,7 @@ function cmdDashboardRender(cwd, options, raw) {
       const parts = planInfo.split('/');
       const done = parseInt(parts[0], 10);
       const total = parseInt(parts[1], 10);
-      if (total > 0) percent = Math.round((done / total) * 100);
+      if (total > 0) percent = Math.min(100, Math.round((done / total) * 100));
     }
 
     // Activity: most recent event for this phase
@@ -2093,7 +2093,7 @@ function cmdStateUpdateProgress(cwd, raw) {
     }
   }
 
-  const percent = totalPlans > 0 ? Math.round(totalSummaries / totalPlans * 100) : 0;
+  const percent = totalPlans > 0 ? Math.min(100, Math.round(totalSummaries / totalPlans * 100)) : 0;
   const barWidth = 10;
   const filled = Math.round(percent / 100 * barWidth);
   const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
@@ -4094,7 +4094,7 @@ function cmdRoadmapAnalyze(cwd, raw) {
     completed_phases: completedPhases,
     total_plans: totalPlans,
     total_summaries: totalSummaries,
-    progress_percent: totalPlans > 0 ? Math.round((totalSummaries / totalPlans) * 100) : 0,
+    progress_percent: totalPlans > 0 ? Math.min(100, Math.round((totalSummaries / totalPlans) * 100)) : 0,
     current_phase: currentPhase ? currentPhase.number : null,
     next_phase: nextPhase ? nextPhase.number : null,
     missing_phase_details: missingDetails.length > 0 ? missingDetails : null,
@@ -5524,7 +5524,7 @@ function cmdProgressRender(cwd, format, raw) {
     }
   } catch {}
 
-  const percent = totalPlans > 0 ? Math.round((totalSummaries / totalPlans) * 100) : 0;
+  const percent = totalPlans > 0 ? Math.min(100, Math.round((totalSummaries / totalPlans) * 100)) : 0;
 
   if (format === 'table') {
     // Render markdown table
