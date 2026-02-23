@@ -1952,7 +1952,7 @@ function cmdStatePatch(cwd, patches, raw) {
       const pattern = new RegExp(`(\\*\\*${fieldEscaped}:\\*\\*\\s*)(.*)`, 'i');
       
       if (pattern.test(content)) {
-        content = content.replace(pattern, `$1${value}`);
+        content = content.replace(pattern, (_, prefix) => prefix + value);
         results.updated.push(field);
       } else {
         results.failed.push(field);
@@ -1980,7 +1980,7 @@ function cmdStateUpdate(cwd, field, value) {
     const fieldEscaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = new RegExp(`(\\*\\*${fieldEscaped}:\\*\\*\\s*)(.*)`, 'i');
     if (pattern.test(content)) {
-      content = content.replace(pattern, `$1${value}`);
+      content = content.replace(pattern, (_, prefix) => prefix + value);
       fs.writeFileSync(statePath, content, 'utf-8');
       output({ updated: true });
     } else {
@@ -2003,7 +2003,7 @@ function stateReplaceField(content, fieldName, newValue) {
   const escaped = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(`(\\*\\*${escaped}:\\*\\*\\s*)(.*)`, 'i');
   if (pattern.test(content)) {
-    return content.replace(pattern, `$1${newValue}`);
+    return content.replace(pattern, (_, prefix) => prefix + newValue);
   }
   return null;
 }
@@ -2101,7 +2101,7 @@ function cmdStateUpdateProgress(cwd, raw) {
 
   const progressPattern = /(\*\*Progress:\*\*\s*).*/i;
   if (progressPattern.test(content)) {
-    content = content.replace(progressPattern, `$1${progressStr}`);
+    content = content.replace(progressPattern, (_, prefix) => prefix + progressStr);
     fs.writeFileSync(statePath, content, 'utf-8');
     output({ updated: true, percent, completed: totalSummaries, total: totalPlans, bar: progressStr }, raw, progressStr);
   } else {
