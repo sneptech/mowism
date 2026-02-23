@@ -32,7 +32,14 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 
 ### Active
 
-(None — next milestone requirements to be defined via `/mow:new-milestone`)
+<!-- Current milestone: v1.2 Native Worktrees & Full-Lifecycle Workers -->
+
+- [ ] Native worktree adoption — `isolation: worktree` replaces custom cmdWorktreeCreate
+- [ ] Simplification pass — remove redundant worktree code, keep coordination layer
+- [ ] Full-lifecycle workers — autonomous discuss → research → plan → execute → refine per phase
+- [ ] Nested agent delegation — workers spawn subagents via Task() for each lifecycle stage
+- [ ] Auto-advance pipeline — `/mow:auto` chains phases; discuss always pauses for user input
+- [ ] GSD upstream cherry-pick — port 9 confirmed bugfixes + context window monitor hook
 
 ### Out of Scope
 
@@ -87,5 +94,17 @@ Tech stack: Node.js (mow-tools.cjs ~3,500 LOC), Bash (install.sh), Markdown (wor
 | Dashboard as notification mechanism | Lead doesn't manually notify — dashboard auto-pins input_needed events | ✓ Good — no message noise, user-driven navigation |
 | README overhaul as last v1.1 phase | Documents what was actually built; writing before implementation creates churn | ✓ Good — accurate documentation on first pass |
 
+## Current Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
+
+**Goal:** Adopt Claude Code's native worktree isolation, simplify redundant code, and enable full-lifecycle autonomous phase workers with nested agent delegation and auto-advance pipeline.
+
+**Target features:**
+- Native worktree adoption (isolation: worktree + hooks)
+- Simplification pass (remove custom worktree creation, keep coordination)
+- Full-lifecycle workers (discuss → research → plan → execute → refine)
+- Nested agent delegation (teammate → Task() subagents)
+- Auto-advance pipeline (/mow:auto with discuss pause gate)
+- GSD upstream cherry-pick (9 bugs + context window monitor)
+
 ---
-*Last updated: 2026-02-24 after v1.1 milestone completion*
+*Last updated: 2026-02-24 after v1.2 milestone start*

@@ -5,16 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.1 shipped -- planning next milestone
+**Current focus:** v1.2 Native Worktrees & Full-Lifecycle Workers
 
 ## Current Position
 
-Milestone: v1.1 Multi-Agent UX & Documentation -- SHIPPED
-Phase: 12 of 12 (all complete)
-Status: Milestone archived
-Last activity: 2026-02-24 -- v1.1 milestone completion and archival
-
-Progress: [####################] 100% (v1.0: 22/22; v1.1: 17/17 -- 39 total plans)
+Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-24 — Milestone v1.2 started
 
 ## Performance Metrics
 
@@ -54,13 +53,13 @@ v1.1-specific decisions archived in `.planning/milestones/v1.1-ROADMAP.md`.
 ### Pending Todos
 
 1 pending todo:
-- **Full-lifecycle multi-agent workers** — workers should run discuss → research → plan → execute → refine, not just execution (`.planning/todos/pending/2026-02-20-full-lifecycle-multi-agent-workers.md`)
+- **Full-lifecycle multi-agent workers** — workers should run discuss → research → plan → execute → refine, not just execution (`.planning/todos/pending/2026-02-20-full-lifecycle-multi-agent-workers.md`) — **addressed in v1.2 scope**
 
 ### Blockers/Concerns
 
 - Agent Teams API runtime questions (6 of 8 inconclusive) -- affects coordinator design. Defensive patterns documented. See `.planning/research/AGENT-TEAMS-API-RUNTIME.md`.
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
-- Claude Code now has native worktree support — may overlap with or supersede some Mowism features
+- Claude Code now has native worktree support — v1.2 adopts this as primary strategy
 
 ### Quick Tasks Completed
 
@@ -69,17 +68,13 @@ v1.1-specific decisions archived in `.planning/milestones/v1.1-ROADMAP.md`.
 | 1 | Research Agent Teams API capabilities and constraints | 2026-02-20 | ad6260a |
 | 2 | Runtime test Agent Teams API (8 open questions) | 2026-02-20 | 16bea5a |
 
+### v1.2 Research (pre-milestone)
+
+- `.planning/research/v1.2-NESTED-DELEGATION.md` — confirmed 2-level hierarchy works (teammate → Task() subagents)
+- `.planning/research/v1.2-GSD-UPSTREAM-DIFF.md` — 9 must-port bugs identified, 8 should-consider items
+
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.2 scoping complete, research saved, ready for new-milestone
-Resume: Run `/mow:new-milestone` to formalize v1.2. All research is in `.planning/research/v1.2-*.md`.
-Context: v1.1 shipped and archived (tag v1.1, not pushed). v1.2 scope discussed and agreed:
-  1. Native worktree adoption (isolation: worktree replaces custom cmdWorktreeCreate)
-  2. Simplification pass (remove redundant worktree code, keep coordination layer)
-  3. Full-lifecycle workers (discuss → research → plan → execute → refine per phase)
-  4. Nested delegation confirmed working (teammate → Task() subagents, 2-level max)
-  5. Auto-advance pipeline (/mow:auto, discuss ALWAYS pauses for user input)
-  6. GSD upstream cherry-pick (9 confirmed bugs + context window monitor hook)
-  7. Lifecycle audit paused until v1.2 ships
-Research files: v1.2-NESTED-DELEGATION.md, v1.2-GSD-UPSTREAM-DIFF.md
+Stopped at: Milestone v1.2 started, defining requirements
+Resume: Continue with requirements definition or research.
