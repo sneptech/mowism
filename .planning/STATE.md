@@ -100,3 +100,6 @@ Recent for v1.2:
 Last session: 2026-02-24
 Stopped at: Completed 14-04-PLAN.md (WorkTrunk removal and final cleanup)
 Resume: Phase 14 complete. Continue with Phase 15
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
