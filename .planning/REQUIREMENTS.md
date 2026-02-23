@@ -39,10 +39,10 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 
 ### Bugfix Ports
 
-- [ ] **BUG-01**: STATE.md state mutators use callback replacers instead of string replacement (dollar sign corruption fix)
-- [ ] **BUG-02**: Phase requirement IDs extracted from ROADMAP.md and propagated via init functions
+- [x] **BUG-01**: STATE.md state mutators use callback replacers instead of string replacement (dollar sign corruption fix)
+- [x] **BUG-02**: Phase requirement IDs extracted from ROADMAP.md and propagated via init functions
 - [x] **BUG-03**: Feature branch created at discuss-phase start when branching_strategy is "phase" (not delayed until execution)
-- [ ] **BUG-04**: Progress bar computations clamped with Math.min(100, ...) to prevent RangeError on orphaned files
+- [x] **BUG-04**: Progress bar computations clamped with Math.min(100, ...) to prevent RangeError on orphaned files
 - [ ] **BUG-05**: Executor has maximum attempt limit per task to prevent infinite retry loops
 - [x] **BUG-06**: plan-phase warns if no CONTEXT.md exists; discuss-phase warns if plans already exist
 - [ ] **BUG-07**: `/mow:health --repair` creates timestamped backup of STATE.md before regeneration
@@ -106,10 +106,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTO-05 | Phase 16 | Pending |
 | AUTO-06 | Phase 16 | Pending |
 | AUTO-07 | Phase 16 | Pending |
-| BUG-01 | Phase 13 | Pending |
-| BUG-02 | Phase 13 | Pending |
+| BUG-01 | Phase 13 | Complete |
+| BUG-02 | Phase 13 | Complete |
 | BUG-03 | Phase 13 | Complete |
-| BUG-04 | Phase 13 | Pending |
+| BUG-04 | Phase 13 | Complete |
 | BUG-05 | Phase 13 | Pending |
 | BUG-06 | Phase 13 | Complete |
 | BUG-07 | Phase 13 | Pending |

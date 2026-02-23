@@ -46,6 +46,7 @@ Progress: [██████████] 100% (Phase 13)
 | 12-audit-gap-closure | 1 | 2min | 2min |
 | 13-gsd-bugfix-ports (plan 05) | 1 | 2min | 2min |
 | Phase 13 P03 | 2min | 2 tasks | 1 files |
+| Phase 13 P01 | 5min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ Recent for v1.2:
 - Tighter context window thresholds (25%/15%) than GSD upstream (35%/25%)
 - SubagentStart hook uses additionalContext for non-disruptive CLAUDE.md injection
 - [Phase 13-03]: Branch creation uses config-get for branching_strategy; ambiguity reframe limited to one attempt; BUG-06 context warning verified as already implemented
+- [Phase 13]: Callback replacer pattern for .replace() with user data prevents dollar sign corruption
 
 ### Pending Todos
 
@@ -77,5 +79,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 13-03-PLAN.md (workflow fixes: branch creation, ambiguity detection)
-Resume: Continue with remaining Phase 13 plans or start Phase 14
+Stopped at: Completed 13-01-PLAN.md (core mow-tools bugfixes: dollar sign, requirement IDs, progress clamping)
+Resume: Continue with remaining Phase 13 plans (02, 04) or start Phase 14
