@@ -169,6 +169,7 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
+ *   init auto                          All context for auto-advance pipeline
  */
 
 const fs = require('fs');
@@ -6812,6 +6813,113 @@ function cmdInitProgress(cwd, includes, raw) {
   output(result, raw);
 }
 
+function cmdInitAuto(cwd, raw) {
+  // Verify .planning/ exists
+  const planningDir = path.join(cwd, '.planning');
+  if (!fs.existsSync(planningDir)) {
+    error('No .planning/ directory. Run /mow:new-project first.');
+  }
+
+  // Load config and check auto_advance flag
+  const config = loadConfig(cwd);
+  const configPath = path.join(cwd, '.planning', 'config.json');
+  let autoAdvanceActive = false;
+  try {
+    const rawConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    autoAdvanceActive = !!(rawConfig.workflow && rawConfig.workflow.auto_advance);
+  } catch {}
+
+  // Run DAG analysis (reuses internal helper)
+  const dag = analyzeDagInternal(cwd);
+  if (!dag) {
+    error('ROADMAP.md not found. Cannot analyze DAG.');
+  }
+
+  // Determine milestone boundaries by scanning ROADMAP.md for the "In Progress" section
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+  const roadmapContent = safeReadFile(roadmapPath) || '';
+  const milestonePhases = [];
+
+  // Find the in-progress milestone section (### vX.Y ... (In Progress))
+  const inProgressMatch = roadmapContent.match(/^###\s+v[\d.]+\s+[^\n]*\(In Progress\)/mi);
+  if (inProgressMatch) {
+    const sectionStart = inProgressMatch.index;
+    // Section ends at the next ## heading or end of file
+    const rest = roadmapContent.slice(sectionStart);
+    const nextSection = rest.match(/\n##\s+[^#]/);
+    const section = nextSection ? rest.slice(0, nextSection.index) : rest;
+    // Extract phase numbers from checkbox lines: - [x] **Phase NN: or - [ ] **Phase NN:
+    const phaseLinePattern = /- \[[ x]\] \*\*Phase\s+(\d+(?:\.\d+)?)\s*:/gi;
+    let phaseMatch;
+    while ((phaseMatch = phaseLinePattern.exec(section)) !== null) {
+      milestonePhases.push(phaseMatch[1]);
+    }
+  }
+
+  // If no in-progress section found, fall back to all incomplete phases from DAG
+  if (milestonePhases.length === 0) {
+    for (const p of dag.phases) {
+      if (p.disk_status !== 'complete') milestonePhases.push(p.number);
+    }
+  }
+
+  // Compute counts scoped to current milestone
+  const milestoneCompleted = milestonePhases.filter(pn =>
+    dag.completed.includes(pn)
+  );
+  const milestoneRemaining = milestonePhases.filter(pn =>
+    !dag.completed.includes(pn)
+  );
+
+  // First ready phase (from DAG ready list, scoped to milestone)
+  const firstReady = dag.ready.find(pn => milestonePhases.includes(pn)) || dag.ready[0] || null;
+
+  // Check Agent Teams availability
+  const atStatus = checkAgentTeams();
+
+  // Get milestone info
+  const milestone = getMilestoneInfo(cwd);
+
+  const result = {
+    planning_exists: true,
+    auto_advance_active: autoAdvanceActive,
+    dag,
+    milestone_version: milestone.version,
+    milestone_name: milestone.name,
+    milestone_phases: milestonePhases,
+    completed_count: milestoneCompleted.length,
+    remaining_count: milestoneRemaining.length,
+    total_phase_count: milestonePhases.length,
+    first_ready_phase: firstReady,
+    agent_teams_enabled: atStatus.enabled,
+    commit_docs: config.commit_docs,
+  };
+
+  if (raw) {
+    output(result, raw);
+  } else {
+    // Human-readable summary
+    let text = `Auto-Advance Pipeline Status\n`;
+    text += `Milestone: ${milestone.version} ${milestone.name}\n`;
+    text += `Phases: ${milestonePhases.join(', ')}\n`;
+    text += `Completed: ${milestoneCompleted.length}/${milestonePhases.length}`;
+    if (milestoneCompleted.length > 0) {
+      text += ` (${milestoneCompleted.join(', ')})`;
+    }
+    text += `\n`;
+    if (milestoneRemaining.length > 0) {
+      text += `Remaining: ${milestoneRemaining.length} (${milestoneRemaining.join(', ')})\n`;
+    }
+    if (firstReady) {
+      const readyPhase = dag.phases.find(p => p.number === firstReady);
+      text += `Next: Phase ${firstReady}${readyPhase ? ' -- ' + readyPhase.name : ''}\n`;
+    }
+    text += `Auto-advance active: ${autoAdvanceActive}\n`;
+    text += `Agent Teams: ${atStatus.enabled ? 'enabled' : 'not enabled'}\n`;
+    console.log(text.trim());
+  }
+}
+
 // ─── Worktree Lifecycle Management ────────────────────────────────────────────
 
 function getRepoRoot(cwd) {
@@ -8395,8 +8503,11 @@ async function main() {
         case 'progress':
           cmdInitProgress(cwd, includes, raw);
           break;
+        case 'auto':
+          cmdInitAuto(cwd, raw);
+          break;
         default:
-          error(`Unknown init workflow: ${workflow}\nAvailable: execute-phase, plan-phase, new-project, new-milestone, quick, resume, verify-work, phase-op, todos, milestone-op, map-codebase, progress`);
+          error(`Unknown init workflow: ${workflow}\nAvailable: execute-phase, plan-phase, new-project, new-milestone, quick, resume, verify-work, phase-op, todos, milestone-op, map-codebase, progress, auto`);
       }
       break;
     }
