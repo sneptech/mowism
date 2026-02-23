@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
-**Current focus:** v1.2 Phase 13 (GSD Bugfix Ports) / Phase 14 (Native Worktree Adoption) -- parallelizable
+**Current focus:** v1.2 Phase 14 (Native Worktree Adoption)
 
 ## Current Position
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
-Phase: 13 of 16 (GSD Bugfix Ports) -- Phase 14 parallelizable
-Plan: 5 of 5 in current phase
-Status: Phase 13 complete
-Last activity: 2026-02-24 -- Plan 13-05 executed (hook infrastructure)
+Phase: 14 of 16 (Native Worktree Adoption)
+Plan: 1 of 4 in current phase
+Status: Plan 14-01 complete
+Last activity: 2026-02-24 -- Plan 14-01 executed (hook scripts and native worktree creation)
 
-Progress: [██████████] 100% (Phase 13)
+Progress: [###-------] 25% (Phase 14)
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Progress: [██████████] 100% (Phase 13)
 | Phase 13 P01 | 5min | 3 tasks | 1 files |
 | Phase 13 P02 | 5min | 2 tasks | 2 files |
 | Phase 13 P04 | 5min | 2 tasks | 2 files |
+| Phase 14 P01 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent for v1.2:
 - [Phase 13]: Backups never auto-deleted; cleanup suggestion informational only
 - [Phase 13]: Executor retry: warn at 3 attempts, hard block at max_task_attempts (default 5)
 - [Phase 13-04]: Todo 3-state lifecycle: no concurrent limit, no auto-revert, file-path overlap interference detection only
+- [Phase 14]: Phase worktrees at .claude/worktrees/phase-NN (not .worktrees/pNN) for native Claude Code convention
+- [Phase 14]: Manifest key uses worktree name (phase-NN) instead of old pNN convention
+- [Phase 14]: Remove hook always exits 0 with best-effort cleanup (cannot block removal)
 
 ### Pending Todos
 
@@ -79,10 +83,9 @@ Recent for v1.2:
 
 - Agent Teams API is experimental and may change (monitor Anthropic releases)
 - Phase 15 inline workflow execution pattern needs validation during research-phase
-- WorktreeCreate hook path convention decision needed before Phase 14 planning
 
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 13-04-PLAN.md (3-state todo lifecycle with in-progress support)
-Resume: Phase 13 fully complete (all 5 plans). Start Phase 14
+Stopped at: Completed 14-01-PLAN.md (hook scripts and native worktree creation)
+Resume: Continue with Phase 14 Plan 02
