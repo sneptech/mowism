@@ -293,6 +293,32 @@ Ask 4 questions per area before offering to continue or move on. Each answer oft
    If "Next area" → proceed to next selected area
    If "Other" (free text) → interpret intent: continuation phrases ("chat more", "keep going", "yes", "more") map to "More questions"; advancement phrases ("done", "move on", "next", "skip") map to "Next area". If ambiguous, ask: "Continue with more questions about [area], or move to the next area?"
 
+**Ambiguity Detection:**
+
+After EACH user response to a probing question, check for ambiguous answers before accepting:
+
+Ambiguous patterns (case-insensitive):
+- "maybe", "perhaps", "possibly"
+- "not sure", "unsure", "I don't know", "idk"
+- "either works", "either way", "both are fine", "doesn't matter"
+- "whatever you think", "up to you", "your call"
+- "I guess", "suppose so"
+
+**When ambiguity detected:**
+
+Do NOT record the answer as a decision. Instead:
+
+1. Acknowledge: "That's a gray area worth clarifying."
+2. Reframe as a concrete trade-off: "Let me put it this way: [Option A] means [concrete consequence]. [Option B] means [different consequence]. Which trade-off do you prefer?"
+3. If the user remains ambiguous after reframing, record as **Claude's Discretion** (not a locked decision): "User deferred to Claude's judgment: [area]. Claude will choose [reasonable default] during planning."
+
+**What NOT to do:**
+- Do not loop indefinitely on ambiguous answers (one reframe attempt, then defer to discretion)
+- Do not treat "I don't have a strong preference" as ambiguous -- that IS a decision (defer to Claude)
+- Do not probe on implementation details that are clearly Claude's domain (architecture, code patterns)
+
+This ensures CONTEXT.md captures real decisions (not "maybe" placeholders) while respecting the user's time.
+
 4. **After all areas complete:**
    - header: "Done"
    - question: "That covers [list areas]. Ready to create context?"
