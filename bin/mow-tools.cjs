@@ -6044,6 +6044,10 @@ function getMilestoneInfo(cwd) {
 function cmdInitExecutePhase(cwd, phase, includes, raw) {
   requireWorkTrunk();
   silentWorktreeClean(cwd);
+  const migration = checkMigrationNeeded(cwd);
+  if (migration.needed) {
+    process.stderr.write(`MOW: Legacy .worktrees/ detected (${migration.entry_count} entries). Run: node bin/mow-tools.cjs worktree migrate\n`);
+  }
   ensureWtConfig(cwd);
   if (!phase) {
     error('phase required for init execute-phase');
@@ -6129,6 +6133,10 @@ function cmdInitExecutePhase(cwd, phase, includes, raw) {
 function cmdInitPlanPhase(cwd, phase, includes, raw) {
   requireWorkTrunk();
   silentWorktreeClean(cwd);
+  const migration = checkMigrationNeeded(cwd);
+  if (migration.needed) {
+    process.stderr.write(`MOW: Legacy .worktrees/ detected (${migration.entry_count} entries). Run: node bin/mow-tools.cjs worktree migrate\n`);
+  }
   if (!phase) {
     error('phase required for init plan-phase');
   }
@@ -6230,6 +6238,10 @@ function cmdInitPlanPhase(cwd, phase, includes, raw) {
 function cmdInitNewProject(cwd, raw) {
   requireWorkTrunk();
   silentWorktreeClean(cwd);
+  const migration = checkMigrationNeeded(cwd);
+  if (migration.needed) {
+    process.stderr.write(`MOW: Legacy .worktrees/ detected (${migration.entry_count} entries). Run: node bin/mow-tools.cjs worktree migrate\n`);
+  }
   const config = loadConfig(cwd);
 
   // Detect Brave Search API key availability
@@ -6292,6 +6304,10 @@ function cmdInitNewProject(cwd, raw) {
 function cmdInitNewMilestone(cwd, raw) {
   requireWorkTrunk();
   silentWorktreeClean(cwd);
+  const migration = checkMigrationNeeded(cwd);
+  if (migration.needed) {
+    process.stderr.write(`MOW: Legacy .worktrees/ detected (${migration.entry_count} entries). Run: node bin/mow-tools.cjs worktree migrate\n`);
+  }
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
 
@@ -6372,6 +6388,10 @@ function cmdInitQuick(cwd, description, raw) {
 function cmdInitResume(cwd, raw) {
   requireWorkTrunk();
   silentWorktreeClean(cwd);
+  const migration = checkMigrationNeeded(cwd);
+  if (migration.needed) {
+    process.stderr.write(`MOW: Legacy .worktrees/ detected (${migration.entry_count} entries). Run: node bin/mow-tools.cjs worktree migrate\n`);
+  }
   const config = loadConfig(cwd);
 
   // Check for interrupted agent
@@ -7580,6 +7600,117 @@ function cmdWorktreeVerifyResult(cwd, phase, options, raw) {
   output({ recorded: true, phase, tier, result: verifyResult, date, blockers: blockersStr }, raw);
 }
 
+// ─── Worktree Migration ─────────────────────────────────────────────────────
+
+function checkMigrationNeeded(cwd) {
+  try {
+    const root = getRepoRoot(cwd);
+    const oldDir = path.join(root, '.worktrees');
+    const bakDir = path.join(root, '.worktrees.bak');
+    if (!fs.existsSync(oldDir) || fs.existsSync(bakDir)) {
+      return { needed: false };
+    }
+    const entries = fs.readdirSync(oldDir).filter(e => e !== 'manifest.json');
+    const hasManifest = fs.existsSync(path.join(oldDir, 'manifest.json'));
+    return { needed: true, old_path: oldDir, entry_count: entries.length, has_manifest: hasManifest };
+  } catch {
+    return { needed: false };
+  }
+}
+
+function cmdWorktreeMigrate(cwd, options, raw) {
+  const migration = checkMigrationNeeded(cwd);
+  if (!migration.needed) {
+    output({ migrated: false, reason: 'no migration needed' }, raw);
+    return;
+  }
+
+  const root = getRepoRoot(cwd);
+  const oldDir = path.join(root, '.worktrees');
+
+  // Check for active worktrees under .worktrees/
+  try {
+    const wtOutput = execSync('git worktree list --porcelain', {
+      encoding: 'utf-8', timeout: 10000, cwd: root, stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const activeInOld = [];
+    let currentPath = null;
+    let currentBranch = null;
+    for (const line of wtOutput.split('\n')) {
+      if (line.startsWith('worktree ')) {
+        currentPath = line.slice('worktree '.length);
+        currentBranch = null;
+      } else if (line.startsWith('branch ')) {
+        currentBranch = line.slice('branch '.length);
+      } else if (line === '' && currentPath) {
+        if (currentPath.startsWith(oldDir + path.sep) || currentPath === oldDir) {
+          activeInOld.push({ path: currentPath, branch: currentBranch || 'unknown' });
+        }
+        currentPath = null;
+        currentBranch = null;
+      }
+    }
+    // Handle last entry if no trailing blank line
+    if (currentPath && (currentPath.startsWith(oldDir + path.sep) || currentPath === oldDir)) {
+      activeInOld.push({ path: currentPath, branch: currentBranch || 'unknown' });
+    }
+
+    if (activeInOld.length > 0) {
+      const names = activeInOld.map(a => `${path.basename(a.path)} (${a.branch})`);
+      process.stderr.write(`MOW: Cannot migrate: ${activeInOld.length} active worktree(s) in .worktrees/:\n`);
+      names.forEach(n => process.stderr.write(`  - ${n}\n`));
+      process.stderr.write('MOW: Remove them first with: git worktree remove <path>\n');
+      output({ migrated: false, reason: 'active_worktrees', active: activeInOld.map(a => ({ name: path.basename(a.path), branch: a.branch })) }, raw);
+      return;
+    }
+  } catch {
+    // If git worktree list fails, proceed cautiously — no active worktree check possible
+  }
+
+  // Read old manifest if it exists
+  const newWorktreeDir = path.join(root, '.claude', 'worktrees');
+  if (!fs.existsSync(newWorktreeDir)) {
+    fs.mkdirSync(newWorktreeDir, { recursive: true });
+  }
+
+  let entriesMigrated = 0;
+  if (migration.has_manifest) {
+    try {
+      const oldManifest = JSON.parse(fs.readFileSync(path.join(oldDir, 'manifest.json'), 'utf-8'));
+      const newManifest = { version: oldManifest.version || '1.0', worktrees: {}, updated: new Date().toISOString() };
+      for (const [oldKey, entry] of Object.entries(oldManifest.worktrees || {})) {
+        // Convert pNN to phase-NN
+        const newKey = oldKey.startsWith('p') ? `phase-${oldKey.slice(1)}` : oldKey;
+        const newEntry = { ...entry };
+        // Update path from .worktrees/pNN to .claude/worktrees/phase-NN
+        if (newEntry.path) {
+          newEntry.path = path.join('.claude', 'worktrees', newKey);
+        }
+        newManifest.worktrees[newKey] = newEntry;
+        entriesMigrated++;
+      }
+      fs.writeFileSync(path.join(newWorktreeDir, 'manifest.json'), JSON.stringify(newManifest, null, 2) + '\n', 'utf-8');
+    } catch (e) {
+      process.stderr.write(`MOW: Warning: could not migrate manifest: ${e.message}\n`);
+    }
+  }
+
+  // Rename .worktrees/ to .worktrees.bak
+  fs.renameSync(oldDir, path.join(root, '.worktrees.bak'));
+  output({ migrated: true, entries_migrated: entriesMigrated, backup_path: '.worktrees.bak' }, raw);
+}
+
+function cmdWorktreeCleanBackup(cwd, raw) {
+  const root = getRepoRoot(cwd);
+  const bakDir = path.join(root, '.worktrees.bak');
+  if (!fs.existsSync(bakDir)) {
+    output({ cleaned: false, reason: 'no backup found' }, raw);
+    return;
+  }
+  fs.rmSync(bakDir, { recursive: true, force: true });
+  output({ cleaned: true, path: '.worktrees.bak' }, raw);
+}
+
 // ─── Agent Team Status ──────────────────────────────────────────────────────
 
 function parseTeammateTable(content) {
@@ -8058,8 +8189,12 @@ async function main() {
         }, raw);
       } else if (subcommand === 'remove-manifest') {
         cmdWorktreeRemoveManifest(cwd, args[2], raw);
+      } else if (subcommand === 'migrate') {
+        cmdWorktreeMigrate(cwd, {}, raw);
+      } else if (subcommand === 'clean-backup') {
+        cmdWorktreeCleanBackup(cwd, raw);
       } else {
-        error('Unknown worktree subcommand. Available: create, create-native, list-manifest, merge, stash, claim, release, status, update-plan, clean, verify-result, remove-manifest');
+        error('Unknown worktree subcommand. Available: create, create-native, list-manifest, merge, stash, claim, release, status, update-plan, clean, verify-result, remove-manifest, migrate, clean-backup');
       }
       break;
     }
