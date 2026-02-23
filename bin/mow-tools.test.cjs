@@ -3901,14 +3901,14 @@ describe('worktree list-manifest command', () => {
   });
 
   test('returns manifest contents when manifest exists', () => {
-    const worktreeDir = path.join(tmpDir, '.worktrees');
+    const worktreeDir = path.join(tmpDir, '.claude', 'worktrees');
     fs.mkdirSync(worktreeDir, { recursive: true });
     const manifestData = {
       version: '1.0',
       project: 'test',
       worktrees: {
-        p09: {
-          path: '.worktrees/p09',
+        'phase-09': {
+          path: path.join(tmpDir, '.claude', 'worktrees', 'phase-09'),
           branch: 'phase-09',
           phase: '09',
           phase_name: 'test-phase',
@@ -3930,9 +3930,9 @@ describe('worktree list-manifest command', () => {
     const manifest = JSON.parse(result.output);
     assert.strictEqual(manifest.version, '1.0');
     assert.strictEqual(manifest.project, 'test');
-    assert.ok(manifest.worktrees.p09, 'should have p09 entry');
-    assert.strictEqual(manifest.worktrees.p09.branch, 'phase-09');
-    assert.strictEqual(manifest.worktrees.p09.status, 'active');
+    assert.ok(manifest.worktrees['phase-09'], 'should have phase-09 entry');
+    assert.strictEqual(manifest.worktrees['phase-09'].branch, 'phase-09');
+    assert.strictEqual(manifest.worktrees['phase-09'].status, 'active');
   });
 });
 
@@ -3952,7 +3952,7 @@ describe('worktree create command', () => {
     // Clean up git worktrees before removing tmpDir
     try {
       execSync('git worktree prune', { cwd: tmpDir, stdio: 'pipe' });
-      const wtDir = path.join(tmpDir, '.worktrees');
+      const wtDir = path.join(tmpDir, '.claude', 'worktrees');
       if (fs.existsSync(wtDir)) {
         // Remove worktree directories first
         const entries = fs.readdirSync(wtDir).filter(e => e !== 'manifest.json');
@@ -3971,20 +3971,19 @@ describe('worktree create command', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.created, true);
     assert.strictEqual(output.reused, false);
-    assert.strictEqual(output.path, '.worktrees/p09');
+    assert.strictEqual(output.path, path.join(tmpDir, '.claude', 'worktrees', 'phase-09'));
     assert.strictEqual(output.branch, 'phase-09');
 
     // Verify worktree directory exists
-    assert.ok(fs.existsSync(path.join(tmpDir, '.worktrees', 'p09')), 'worktree directory should exist');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'worktrees', 'phase-09')), 'worktree directory should exist');
 
     // Verify manifest was updated
-    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.worktrees', 'manifest.json'), 'utf-8'));
-    assert.ok(manifest.worktrees.p09, 'manifest should have p09 entry');
-    assert.strictEqual(manifest.worktrees.p09.status, 'active');
-    assert.strictEqual(manifest.worktrees.p09.branch, 'phase-09');
-    assert.strictEqual(manifest.worktrees.p09.phase, '09');
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.claude', 'worktrees', 'manifest.json'), 'utf-8'));
+    assert.ok(manifest.worktrees['phase-09'], 'manifest should have phase-09 entry');
+    assert.strictEqual(manifest.worktrees['phase-09'].status, 'active');
+    assert.strictEqual(manifest.worktrees['phase-09'].branch, 'phase-09');
+    assert.strictEqual(manifest.worktrees['phase-09'].phase, '09');
   });
 
   test('reuses existing worktree when directory exists', () => {
@@ -3997,9 +3996,8 @@ describe('worktree create command', () => {
     assert.ok(result2.success, `Reuse failed: ${result2.error}`);
 
     const output = JSON.parse(result2.output);
-    assert.strictEqual(output.created, false);
     assert.strictEqual(output.reused, true);
-    assert.strictEqual(output.path, '.worktrees/p09');
+    assert.strictEqual(output.path, path.join(tmpDir, '.claude', 'worktrees', 'phase-09'));
   });
 
   test('cleans stale manifest entry when directory is gone', () => {
@@ -4007,7 +4005,7 @@ describe('worktree create command', () => {
     runMowTools('worktree create 09 --raw', tmpDir);
 
     // Remove the worktree directory but keep manifest entry
-    const wtPath = path.join(tmpDir, '.worktrees', 'p09');
+    const wtPath = path.join(tmpDir, '.claude', 'worktrees', 'phase-09');
     try {
       execSync(`git worktree remove "${wtPath}" --force`, { cwd: tmpDir, stdio: 'pipe' });
     } catch {}
@@ -4017,8 +4015,8 @@ describe('worktree create command', () => {
     execSync('git worktree prune', { cwd: tmpDir, stdio: 'pipe' });
 
     // Verify manifest still has the entry
-    const manifestBefore = JSON.parse(fs.readFileSync(path.join(tmpDir, '.worktrees', 'manifest.json'), 'utf-8'));
-    assert.ok(manifestBefore.worktrees.p09, 'stale entry should still exist before create');
+    const manifestBefore = JSON.parse(fs.readFileSync(path.join(tmpDir, '.claude', 'worktrees', 'manifest.json'), 'utf-8'));
+    assert.ok(manifestBefore.worktrees['phase-09'], 'stale entry should still exist before create');
 
     // Try to remove the branch so we can recreate
     try {
@@ -4030,7 +4028,6 @@ describe('worktree create command', () => {
     assert.ok(result.success, `Recreate failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.created, true);
     assert.strictEqual(output.reused, false);
   });
 });
