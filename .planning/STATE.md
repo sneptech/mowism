@@ -10,12 +10,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
-Phase: 14 of 16 (Native Worktree Adoption)
-Plan: 5 of 5 in current phase
-Status: Phase 14 complete (including gap closure)
-Last activity: 2026-02-24 -- Plan 14-05 executed (worktree test suite update for native paths)
+Phase: 15 of 16 (Full-Lifecycle Workers)
+Plan: 1 of 3 in current phase
+Status: Executing Phase 15
+Last activity: 2026-02-24 -- Plan 15-01 executed (worker lifecycle fields in mow-tools)
 
-Progress: [##########] 100% (Phase 14)
+Progress: [###-------] 33% (Phase 15)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [##########] 100% (Phase 14)
 | Phase 14 P03 | 3min | 2 tasks | 2 files |
 | Phase 14 P04 | 5min | 2 tasks | 2 files |
 | Phase 14 P05 | 2min | 1 tasks | 1 files |
+| Phase 15 P01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent for v1.2:
 - [Phase 14-03]: Backups never auto-deleted; cleanup always user-initiated via clean-backup
 - [Phase 14-04]: CLI worktree create redirects to cmdWorktreeCreateNative via legacy alias
 - [Phase 14-04]: Hook scripts installed from .claude/hooks/ to mowism/hooks/ during install
+- [Phase 15]: summary_count uses phaseInfo.summaries.length (already computed, no new I/O)
+- [Phase 15]: Worker config keys use worker.* namespace in CONFIG_DEFAULTS
 
 ### Pending Todos
 
@@ -100,8 +103,8 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Phase 15 context gathered
-Resume: .planning/phases/15-full-lifecycle-workers/15-CONTEXT.md — continue with /mow:plan-phase 15
+Stopped at: Completed 15-01-PLAN.md
+Resume: Continue with 15-02-PLAN.md execution
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
@@ -114,6 +117,9 @@ Session approaching context limit (~14% remaining). Work committed. Run /clear a
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~12% remaining). Work committed. Run /clear and resume.
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
 
 ### Context Window Handoff (2026-02-23)
 Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
