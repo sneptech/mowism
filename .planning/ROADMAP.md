@@ -98,11 +98,12 @@ Plans:
   3. A worker resumed after interruption detects completed stage artifacts (CONTEXT.md, PLANs, SUMMARYs) and skips to the first incomplete stage
   4. The dashboard shows which lifecycle stage (discuss/research/plan/execute/refine) each active worker is currently in via stage transition messages
   5. Subagent spawns use cost-appropriate models: Haiku for research, executor_model for execution, verifier_model for refinement
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
+- [ ] 15-01-PLAN.md -- Tooling foundation: summary_count in init phase-op, worker.stage_gates config default
+- [ ] 15-02-PLAN.md -- Worker lifecycle rewrite: full 5-stage pipeline with resume detection, stage gates, nested delegation
+- [ ] 15-03-PLAN.md -- Workflow guards and team lead updates: worker-mode detection, stage_transition rendering
 
 ### Phase 16: Auto-Advance Pipeline
 **Goal**: A single `/mow:auto` command drives the entire milestone from current phase to completion with human checkpoints at discuss stages
