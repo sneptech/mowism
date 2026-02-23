@@ -133,7 +133,11 @@ Each worker is spawned via Task() with:
 - `team_name`: the team name
 - `name`: `"phase-{NN}"` (e.g., `"phase-09"`)
 - `subagent_type`: `"general-purpose"` (has all tools including Task() for nested executors)
-- `prompt`: Reference `agents/mow-phase-worker.md` agent definition with phase-specific parameters (phase number, worktree path, phase directory)
+- `prompt`: Reference `agents/mow-phase-worker.md` agent definition with phase-specific parameters (phase number, worktree path, phase directory). Include stage gate config for visibility:
+  ```
+  Worker autonomy: stage_gates = {gate_value}
+  ```
+  Where `gate_value` is read from config at spawn time via `node ~/.claude/mowism/bin/mow-tools.cjs config-get worker.stage_gates 2>/dev/null || echo "none"`.
 - `run_in_background`: false (NOT background -- workers need terminal access for user interaction during discuss-phase)
 
 Record each worker in Active Phases table:
@@ -176,6 +180,25 @@ React to messages from workers. Handle by event type using the `<message_process
 - The lead does NOT need to manually notify the user -- the dashboard is the notification
 - The lead does NOT send anything to the worker -- the worker is waiting in its terminal
 - When the worker resumes (sends any subsequent message), the pin auto-dismisses
+
+**On `stage_transition` (worker moving between lifecycle stages):**
+1. Parse from_stage and to_stage from the message
+2. Update Active Phases table with current stage:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs state update-phase-row {phase} \
+     --status "executing ({to_stage})" --last-update "$(date -u +%H:%M)"
+   ```
+3. Add to dashboard event log:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs dashboard event add --type stage_transition --phase {N} \
+     --detail "Phase {N}: {from_stage} -> {to_stage}"
+   ```
+4. Re-render dashboard:
+   ```bash
+   node ~/.claude/mowism/bin/mow-tools.cjs dashboard render
+   ```
+
+The dashboard render already handles stage_transition events. This explicit handling ensures the Active Phases table also reflects the current lifecycle stage (not just "executing" generically).
 
 **On `blocker` (worker needs user input for discuss-phase -- fallback):**
 - Same behavior as before: notify user "Phase {N} worker needs your input for {discuss-phase/checkpoint/etc}. Switch to terminal: phase-{NN}"
@@ -223,6 +246,13 @@ When user runs `/mow:close-shop` or tells lead to wrap up:
    SendMessage({ type: "shutdown_request", recipient: "{worker-name}", content: "All work complete", summary: "Shutdown: close-shop" })
    ```
 8. After all acknowledge: `TeamDelete()`
+
+### Stage Gate Configuration
+
+Workers respect the `worker.stage_gates` config setting. The lead does NOT enforce stage gates -- workers read this config themselves at each stage boundary. The lead's role is:
+
+1. **If a worker sends `input_needed` with `input_type: stage_gate`:** The dashboard auto-pins the notification. No special handling needed beyond the existing input_needed flow.
+2. **When spawning workers:** Include the current worker.stage_gates value in the worker prompt as context (informational -- workers read config themselves, but this provides visibility).
 
 </multi_phase_flow>
 
@@ -409,7 +439,7 @@ PARSED=$(node ~/.claude/mowism/bin/mow-tools.cjs message parse '${MESSAGE_CONTEN
 | `task_claimed` | Informational -- append to dashboard events. No state update needed. |
 | `commit_made` | Informational -- append to dashboard events with commit hash in detail. |
 | `task_complete` | Informational -- append to dashboard events. No state update needed. |
-| `stage_transition` | Update Active Phases activity field: `state update-phase-row {phase} --last-update "{ts}"`. Append to dashboard events. |
+| `stage_transition` | **Stage-aware update:** Parse `from_stage` and `to_stage` from message. Update Active Phases with current stage: `state update-phase-row {phase} --status "executing ({to_stage})" --last-update "{ts}"`. Append to dashboard events with detail `"Phase {N}: {from_stage} -> {to_stage}"`. Re-render dashboard. |
 | `input_needed` | **Input routing:** Append to dashboard events (auto-pins notification, which also drives `isBlocked=true` for the summary row). Notify user: the dashboard will show which phase terminal needs attention. Do NOT send a message to the worker -- it is already waiting. |
 | `plan_created` | Informational -- append to dashboard events. |
 
