@@ -12,8 +12,8 @@ Requirements for v1.2 release. Each maps to roadmap phases.
 - [x] **WKT-01**: Agent spawns use `--worktree` flag or `isolation: worktree` frontmatter instead of custom cmdWorktreeCreate
 - [x] **WKT-02**: WorktreeCreate hook copies `.planning/` directory and initializes STATUS.md in new worktrees
 - [x] **WKT-03**: WorktreeRemove hook removes manifest entry, releases phase claim, and clears dashboard state
-- [ ] **WKT-04**: All worktree path references updated from `.worktrees/pNN` to `.claude/worktrees/phase-NN`
-- [ ] **WKT-05**: Coordination layer (claim, merge, manifest, status) works with native worktree paths
+- [x] **WKT-04**: All worktree path references updated from `.worktrees/pNN` to `.claude/worktrees/phase-NN`
+- [x] **WKT-05**: Coordination layer (claim, merge, manifest, status) works with native worktree paths
 - [ ] **WKT-06**: Migration script detects existing `.worktrees/` entries and offers migration to native paths
 - [ ] **WKT-07**: Redundant worktree creation code removed from mow-tools.cjs (net LOC reduction)
 
@@ -88,8 +88,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKT-01 | Phase 14 | Complete |
 | WKT-02 | Phase 14 | Complete |
 | WKT-03 | Phase 14 | Complete |
-| WKT-04 | Phase 14 | Pending |
-| WKT-05 | Phase 14 | Pending |
+| WKT-04 | Phase 14 | Complete |
+| WKT-05 | Phase 14 | Complete |
 | WKT-06 | Phase 14 | Pending |
 | WKT-07 | Phase 14 | Pending |
 | WORK-01 | Phase 15 | Pending |

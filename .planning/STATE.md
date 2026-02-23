@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
 Phase: 14 of 16 (Native Worktree Adoption)
-Plan: 1 of 4 in current phase
-Status: Plan 14-01 complete
-Last activity: 2026-02-24 -- Plan 14-01 executed (hook scripts and native worktree creation)
+Plan: 2 of 4 in current phase
+Status: Plan 14-02 complete
+Last activity: 2026-02-24 -- Plan 14-02 executed (path reference migration)
 
-Progress: [###-------] 25% (Phase 14)
+Progress: [#####-----] 50% (Phase 14)
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Progress: [###-------] 25% (Phase 14)
 | Phase 13 P02 | 5min | 2 tasks | 2 files |
 | Phase 13 P04 | 5min | 2 tasks | 2 files |
 | Phase 14 P01 | 4min | 2 tasks | 4 files |
+| Phase 14 P02 | 4min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent for v1.2:
 - [Phase 14]: Phase worktrees at .claude/worktrees/phase-NN (not .worktrees/pNN) for native Claude Code convention
 - [Phase 14]: Manifest key uses worktree name (phase-NN) instead of old pNN convention
 - [Phase 14]: Remove hook always exits 0 with best-effort cleanup (cannot block removal)
+- [Phase 14-02]: readManifest dual-path lookup (.claude/worktrees/ first, .worktrees/ fallback with deprecation warning)
+- [Phase 14-02]: getActiveWorktrees uses git worktree list --porcelain (no WorkTrunk dependency)
+- [Phase 14-02]: Team lead agent uses claude --worktree native mechanism for worktree creation
 
 ### Pending Todos
 
@@ -87,5 +91,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 14-01-PLAN.md (hook scripts and native worktree creation)
-Resume: Continue with Phase 14 Plan 02
+Stopped at: Completed 14-02-PLAN.md (path reference migration)
+Resume: Continue with Phase 14 Plan 03
