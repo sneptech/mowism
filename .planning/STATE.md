@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers
 Phase: 14 of 16 (Native Worktree Adoption)
-Plan: 2 of 4 in current phase
-Status: Plan 14-02 complete
-Last activity: 2026-02-24 -- Plan 14-02 executed (path reference migration)
+Plan: 3 of 4 in current phase
+Status: Plan 14-03 complete
+Last activity: 2026-02-24 -- Plan 14-03 executed (worktree migration script)
 
-Progress: [#####-----] 50% (Phase 14)
+Progress: [########--] 75% (Phase 14)
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [#####-----] 50% (Phase 14)
 | Phase 13 P04 | 5min | 2 tasks | 2 files |
 | Phase 14 P01 | 4min | 2 tasks | 4 files |
 | Phase 14 P02 | 4min | 2 tasks | 5 files |
+| Phase 14 P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Recent for v1.2:
 - [Phase 14-02]: readManifest dual-path lookup (.claude/worktrees/ first, .worktrees/ fallback with deprecation warning)
 - [Phase 14-02]: getActiveWorktrees uses git worktree list --porcelain (no WorkTrunk dependency)
 - [Phase 14-02]: Team lead agent uses claude --worktree native mechanism for worktree creation
+- [Phase 14-03]: Migration renames .worktrees/ to .worktrees.bak (never deletes) for safe rollback
+- [Phase 14-03]: Active git worktrees block migration with actionable error listing
+- [Phase 14-03]: Backups never auto-deleted; cleanup always user-initiated via clean-backup
 
 ### Pending Todos
 
@@ -91,5 +95,5 @@ Recent for v1.2:
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 14-02-PLAN.md (path reference migration)
-Resume: Continue with Phase 14 Plan 03
+Stopped at: Completed 14-03-PLAN.md (worktree migration script)
+Resume: Continue with Phase 14 Plan 04
