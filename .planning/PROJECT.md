@@ -53,6 +53,8 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 
 ## Context
 
+**Repository:** https://github.com/sneptech/mowism
+
 **Shipped v1.2** with 64 files modified (+11,528 lines) across 4 phases and 15 plans.
 Tech stack: Node.js (mow-tools.cjs ~4,500 LOC), Bash (install.sh, hooks), Markdown (workflows, commands, agents, templates, help).
 86/86 total requirements satisfied (36 v1.0 + 18 v1.1 + 32 v1.2).

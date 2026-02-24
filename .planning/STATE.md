@@ -4,6 +4,7 @@
 
 See: .planning/PROJECT.md (updated 2026-02-24)
 
+**Repository:** https://github.com/sneptech/mowism
 **Core value:** Multiple Claude Code agents can work in parallel across git worktrees with coherent shared state, automated quality gates, and coordinated orchestration -- without manual context-checking between sessions.
 **Current focus:** Planning next milestone
 
@@ -73,3 +74,6 @@ v1.2-specific decisions archived in `.planning/milestones/v1.2-ROADMAP.md`.
 Last session: 2026-02-24
 Stopped at: v1.2 milestone complete
 Resume: Run `/mow:new-milestone` to start v1.3
+
+### Context Window Handoff (2026-02-23)
+Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
