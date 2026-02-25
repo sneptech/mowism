@@ -61,8 +61,9 @@ v1.2-specific decisions archived in `.planning/milestones/v1.2-ROADMAP.md`.
 
 ### Pending Todos
 
-1 pending todo (addressed in v1.2):
+2 pending todos:
 - **Full-lifecycle multi-agent workers** -- `.planning/todos/pending/2026-02-20-full-lifecycle-multi-agent-workers.md`
+- **Install script hook registration in settings.json** -- `.planning/todos/pending/2026-02-25-install-script-hook-registration-in-settings-json.md`
 
 ### Blockers/Concerns
 
