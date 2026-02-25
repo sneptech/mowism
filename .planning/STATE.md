@@ -11,9 +11,9 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Milestone: v1.3 tmux Multi-Agent Execution
-Phase: Not started (defining requirements)
-Status: Defining requirements
-Last activity: 2026-02-25 -- Milestone v1.3 started
+Phase: Not started (requirements defined, awaiting roadmap)
+Status: Requirements complete, needs roadmap
+Last activity: 2026-02-25 -- 16 requirements defined
 
 ## Performance Metrics
 
@@ -71,5 +71,16 @@ v1.2-specific decisions archived in `.planning/milestones/v1.2-ROADMAP.md`.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Defining v1.3 requirements
-Resume: Continue requirements definition and roadmap creation
+Stopped at: v1.3 requirements defined (16 reqs), research complete (5 files in .planning/research/v1.3-*.md)
+Resume: Run roadmapper to create ROADMAP.md from REQUIREMENTS.md. Phase numbering starts at 17 (v1.2 ended at phase 16). Then /mow:discuss-phase 17.
+
+### Key Decisions Made This Session
+- Orchestrator is Node.js (mow-tools.cjs), NOT a Claude agent — saves ~800k tokens, no context exhaustion
+- Workers are separate interactive `claude` CLI processes in tmux panes (not Agent Teams subprocesses)
+- `-e CLAUDECODE=""` on all tmux split-window calls (critical env var override)
+- Use split-window "command" (NOT send-keys) to avoid shell init race condition
+- fs.watch + polling fallback for STATUS.md coordination (no external deps)
+- Layout: main-vertical, orchestrator left sidebar, workers stacked right
+- Pane lifecycle: auto-spawn, ask before close
+- Three-mode fallback: tmux → agent-teams → sequential
+- Max workers default: 3 with staggered startup
