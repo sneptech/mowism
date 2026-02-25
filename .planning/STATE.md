@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Milestone: v1.2 Native Worktrees & Full-Lifecycle Workers -- SHIPPED 2026-02-24
-Phase: All 16 phases complete across 3 milestones
-Status: Milestone complete
-Last activity: 2026-02-24 -- v1.2 milestone archived
+Milestone: v1.3 tmux Multi-Agent Execution
+Phase: Not started (defining requirements)
+Status: Defining requirements
+Last activity: 2026-02-25 -- Milestone v1.3 started
 
 ## Performance Metrics
 
@@ -70,9 +70,6 @@ v1.2-specific decisions archived in `.planning/milestones/v1.2-ROADMAP.md`.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: v1.2 milestone complete
-Resume: Run `/mow:new-milestone` to start v1.3
-
-### Context Window Handoff (2026-02-23)
-Session approaching context limit (~0% remaining). Work committed. Run /clear and resume.
+Last session: 2026-02-25
+Stopped at: Defining v1.3 requirements
+Resume: Continue requirements definition and roadmap creation

@@ -37,7 +37,7 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 
 ### Active
 
-(None yet — define with `/mow:new-milestone`)
+(Defined in REQUIREMENTS.md for v1.3)
 
 ### Out of Scope
 
@@ -48,7 +48,7 @@ Multiple Claude Code agents can work in parallel across git worktrees with coher
 - Plugin/extension marketplace — skills are .md files, users copy them into a directory
 - Automatic model routing — user-selected profiles are more predictable
 - Real-time streaming output from workers — Agent Teams is message-based, discrete milestones are the achievable UX
-- tmux-dependent features — not portable across terminal emulators
+- ~~tmux-dependent features~~ — moved to Active in v1.3 (with graceful fallback for non-tmux environments)
 - Cross-milestone auto-advance — milestones are deliberate boundaries requiring review and audit
 
 ## Context
@@ -99,5 +99,16 @@ Tech stack: Node.js (mow-tools.cjs ~4,500 LOC), Bash (install.sh, hooks), Markdo
 | `/mow:auto` delegates to team lead for DAG execution | Reuses battle-tested multi-phase orchestration rather than reimplementing scheduling | ✓ Good — single entry point, DAG-aware, discuss gates enforced |
 | Context window monitor at 25%/15% thresholds | Tighter than GSD upstream (35%/25%) to give more warning before exhaustion | ✓ Good — proactive saves prevent lost work |
 
+## Current Milestone: v1.3 tmux Multi-Agent Execution
+
+**Goal:** Replace Agent Teams subprocesses with separate `claude` CLI processes in tmux panes, giving users full visibility and direct interaction with each worker agent.
+
+**Target features:**
+- tmux session and pane lifecycle management (create, layout, close)
+- Orchestrator sidebar with DAG-driven worker spawning
+- File-based worker coordination (STATUS.md, STATE.md)
+- Existing notification infrastructure wired to tmux pane awareness
+- Graceful fallback to subprocess mode when tmux is unavailable
+
 ---
-*Last updated: 2026-02-24 after v1.2 milestone completion*
+*Last updated: 2026-02-25 after v1.3 milestone start*
