@@ -74,6 +74,64 @@ if [ -d "$MOWISM_SRC/.claude/hooks" ]; then
   HOOK_COUNT=$(ls "$HOOK_DIR"/*.sh 2>/dev/null | wc -l)
 fi
 
+# Register hooks in ~/.claude/settings.json
+SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+register_hooks() {
+  if ! command -v node &>/dev/null; then
+    echo "  [SKIP] Node.js not found — cannot register hooks in settings.json"
+    echo "         After installing Node.js, re-run this script or add hooks manually."
+    return
+  fi
+
+  node -e '
+const fs = require("fs");
+const path = process.argv[1];
+const hooksDir = process.argv[2];
+
+// Read or create settings
+let settings = {};
+try { settings = JSON.parse(fs.readFileSync(path, "utf8")); } catch {}
+if (!settings.hooks) settings.hooks = {};
+
+// Hooks to register: [event, scriptName]
+const wanted = [
+  ["Stop", "mow-context-monitor.sh"],
+  ["SubagentStart", "mow-inject-claude-md.sh"],
+];
+
+let registered = 0;
+for (const [event, script] of wanted) {
+  // Check if this script is already registered (any path)
+  const entries = settings.hooks[event] || [];
+  const already = entries.some(e =>
+    (e.hooks || []).some(h => h.command && h.command.includes(script))
+  );
+  if (already) {
+    console.log("    " + event + " → " + script + " (already registered)");
+    continue;
+  }
+
+  // Append new entry
+  if (!settings.hooks[event]) settings.hooks[event] = [];
+  settings.hooks[event].push({
+    hooks: [{ type: "command", command: "bash " + hooksDir + "/" + script }]
+  });
+  console.log("    " + event + " → " + script + " (registered)");
+  registered++;
+}
+
+fs.writeFileSync(path, JSON.stringify(settings, null, 2) + "\n");
+if (registered > 0) {
+  console.log("    Updated: " + path);
+}
+' "$SETTINGS_FILE" "$HOOK_DIR" 2>&1
+
+  echo ""
+}
+
+echo "Registering hooks..."
+register_hooks
+
 # Check dependencies (check and report, NEVER block)
 echo "Checking dependencies..."
 echo ""
